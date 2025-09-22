@@ -1,0 +1,18 @@
+using System;
+using InventorySurvivor.Code.Utility.AttributeRef.Attributes;
+using UnityEngine;
+
+namespace InventorySurvivor.Code.Utility.Tools
+{
+    [Serializable]
+    public sealed class Stopwatch
+    {
+        [SerializeField, ReadOnly] private float timeElapsed;
+
+        public void Reset() => timeElapsed = 0;
+
+        public void Tick( float tickInterval ) => timeElapsed += tickInterval;
+
+        public static implicit operator float( Stopwatch stopwatch ) => stopwatch.timeElapsed;
+    }
+}
