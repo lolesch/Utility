@@ -4,7 +4,7 @@ using System.Reflection;
 using System.Text.RegularExpressions;
 using UnityEngine;
 
-namespace InventorySurvivor.Code.Utility.Extensions
+namespace Submodules.Utility.Extensions
 {
     public static class StringExtensions
     {

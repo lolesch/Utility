@@ -1,9 +1,9 @@
-using InventorySurvivor.Code.Utility.AttributeRef.Attributes;
+using Submodules.Utility.AttributeRef.Attributes;
 using UnityEditor;
 using UnityEngine;
 
 #if UNITY_EDITOR
-namespace InventorySurvivor.Code.Utility.AttributeRef.Drawer
+namespace Submodules.Utility.AttributeRef.Drawer
 {
     [CustomPropertyDrawer( typeof(ReadOnlyAttribute) )]
     public sealed class ReadOnlyDrawer : PropertyDrawer

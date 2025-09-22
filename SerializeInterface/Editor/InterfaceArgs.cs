@@ -2,7 +2,7 @@
 using UnityEngine;
 using Object = UnityEngine.Object;
 
-namespace InventorySurvivor.Code.Utility.SerializeInterface.Editor
+namespace Submodules.Utility.SerializeInterface.Editor
 {
     internal readonly struct InterfaceArgs
     {

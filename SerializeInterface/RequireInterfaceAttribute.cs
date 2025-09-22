@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-namespace InventorySurvivor.Code.Utility.SerializeInterface
+namespace Submodules.Utility.SerializeInterface
 {
     [AttributeUsage( AttributeTargets.Field )]
     public sealed class RequireInterfaceAttribute : PropertyAttribute

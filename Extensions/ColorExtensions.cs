@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-namespace InventorySurvivor.Code.Utility.Extensions
+namespace Submodules.Utility.Extensions
 {
     public static class ColorExtensions
     {

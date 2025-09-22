@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace InventorySurvivor.Code.Utility.AttributeRef.Attributes
+namespace Submodules.Utility.AttributeRef.Attributes
 {
     public sealed class ReadOnlyAttribute : PropertyAttribute
     {

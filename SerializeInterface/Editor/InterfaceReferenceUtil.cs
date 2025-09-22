@@ -1,7 +1,7 @@
 ﻿using UnityEditor;
 using UnityEngine;
 
-namespace InventorySurvivor.Code.Utility.SerializeInterface.Editor
+namespace Submodules.Utility.SerializeInterface.Editor
 {
     internal static class InterfaceReferenceUtil
     {

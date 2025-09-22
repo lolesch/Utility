@@ -3,7 +3,7 @@ using System.Globalization;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 
-namespace InventorySurvivor.Code.Utility.Extensions
+namespace Submodules.Utility.Extensions
 {
     /// <summary>
     /// Representation of 2D coordinates on the XZ-Plane

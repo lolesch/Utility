@@ -1,11 +1,11 @@
 using System;
-using InventorySurvivor.Code.Utility.Extensions;
+using Submodules.Utility.Extensions;
 using UnityEditor;
 using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
 using UnityEngine;
 
-namespace InventorySurvivor.Code.Utility
+namespace Submodules.Utility
 {
     public sealed class BundleVersionSetter : IPreprocessBuildWithReport
     {

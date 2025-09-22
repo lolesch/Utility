@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
 
-namespace InventorySurvivor.Code.Utility.Extensions
+namespace Submodules.Utility.Extensions
 {
     public static class UIExtensions
     {

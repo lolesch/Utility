@@ -2,7 +2,7 @@
 using UnityEngine;
 using Object = UnityEngine.Object;
 
-namespace InventorySurvivor.Code.Utility.SerializeInterface
+namespace Submodules.Utility.SerializeInterface
 {
     [Serializable]
     public class InterfaceReference<TInterface, TObject> where TObject : Object where TInterface : class

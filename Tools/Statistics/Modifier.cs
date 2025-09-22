@@ -2,7 +2,7 @@
 using Sirenix.Serialization;
 using UnityEngine;
 
-namespace InventorySurvivor.Code.Utility.Tools.Statistics
+namespace Submodules.Utility.Tools.Statistics
 {
     public struct Modifier : IComparable<Modifier>, IEquatable<Modifier>, IModifier
     {

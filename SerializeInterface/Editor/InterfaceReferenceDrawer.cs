@@ -6,7 +6,7 @@ using UnityEditor;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
-namespace InventorySurvivor.Code.Utility.SerializeInterface.Editor
+namespace Submodules.Utility.SerializeInterface.Editor
 {
     [CustomPropertyDrawer( typeof(InterfaceReference<>) )]
     [CustomPropertyDrawer( typeof(InterfaceReference<,>) )]

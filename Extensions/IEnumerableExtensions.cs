@@ -4,7 +4,7 @@ using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
-namespace InventorySurvivor.Code.Utility.Extensions
+namespace Submodules.Utility.Extensions
 {
     public static class EnumerableExtensions
     {

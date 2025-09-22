@@ -1,6 +1,6 @@
 {
     "name": "Utility",
-    "rootNamespace": "InventorySurvivor",
+    "rootNamespace": "",
     "references": [
         "Unity.TextMeshPro",
         "Unity.TextMeshPro.Editor",

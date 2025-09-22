@@ -1,8 +1,8 @@
 using System;
-using InventorySurvivor.Code.Utility.AttributeRef.Attributes;
+using Submodules.Utility.AttributeRef.Attributes;
 using UnityEngine;
 
-namespace InventorySurvivor.Code.Utility.Tools
+namespace Submodules.Utility.Tools
 {
     [Serializable]
     public sealed class Stopwatch

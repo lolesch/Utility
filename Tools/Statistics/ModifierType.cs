@@ -1,6 +1,6 @@
 using System.ComponentModel;
 
-namespace InventorySurvivor.Code.Utility.Tools.Statistics
+namespace Submodules.Utility.Tools.Statistics
 {
     public enum ModifierType : short
     {

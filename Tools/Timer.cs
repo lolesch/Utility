@@ -1,10 +1,10 @@
 using System;
-using InventorySurvivor.Code.Utility.Tools.Statistics;
 using Sirenix.Serialization;
+using Submodules.Utility.Tools.Statistics;
 using UnityEngine;
 using UnityEngine.Assertions;
 
-namespace InventorySurvivor.Code.Utility.Tools
+namespace Submodules.Utility.Tools
 {
     public sealed class Timer
     {

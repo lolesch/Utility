@@ -5,7 +5,7 @@ using Sirenix.OdinInspector;
 using Sirenix.Serialization;
 using UnityEngine;
 
-namespace InventorySurvivor.Code.Utility.Tools.Statistics
+namespace Submodules.Utility.Tools.Statistics
 {
     public sealed class MutableFloat : IMutable<float>, IFormattable
     {
