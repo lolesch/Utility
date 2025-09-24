@@ -1,9 +1,8 @@
-using Submodules.Utility.AttributeRef.Attributes;
 using UnityEditor;
 using UnityEngine;
 
 #if UNITY_EDITOR
-namespace Submodules.Utility.AttributeRef.Drawer
+namespace Submodules.Utility.Attributes.Editor
 {
     [CustomPropertyDrawer( typeof(ReadOnlyAttribute) )]
     public sealed class ReadOnlyDrawer : PropertyDrawer

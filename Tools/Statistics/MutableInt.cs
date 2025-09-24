@@ -1,90 +1,54 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Sirenix.OdinInspector;
-using Sirenix.Serialization;
+using Submodules.Utility.Attributes;
 using UnityEngine;
 
 namespace Submodules.Utility.Tools.Statistics
 {
+    [Serializable]
     public sealed class MutableInt : IMutable<int>
     {
-        [OdinSerialize, ReadOnly] private int _totalValue;
-        [OdinSerialize] private readonly int _baseValue;
-        [OdinSerialize] private readonly List<Modifier> _modifiers;
-        
-        public event Action<int> OnTotalChanged;
+        [SerializeField, ReadOnly] private int totalValue;
+        [SerializeField, ReadOnly] private MutableInt mutableFloat;
         
         public MutableInt( int baseValue )
         {
-            _baseValue = baseValue;
-            _totalValue = baseValue;
-            _modifiers = new List<Modifier>();
+            mutableFloat = new MutableInt( baseValue );
+            totalValue = baseValue;
             OnTotalChanged = null;
         }
-        public static implicit operator int( MutableInt mutableInt ) => mutableInt._totalValue;
+        
+        public static implicit operator int( MutableInt mutableInt ) => mutableInt!.totalValue;
+        
+        public event Action<int> OnTotalChanged;
 
         private void CalculateTotalValue()
         {
-            ApplyModifiers( out var newTotal );
-
+            var newTotal = Mathf.RoundToInt( mutableFloat );
             //newTotal = Mathf.Clamp(newTotal, range.min, range.max);
 
-            if( Mathf.Approximately( _totalValue, newTotal ) )
+            if( Mathf.Approximately( totalValue, newTotal ) )
                 return;
 
-            _totalValue = newTotal;
-            OnTotalChanged?.Invoke( _totalValue );
+            totalValue = newTotal;
+            OnTotalChanged?.Invoke( totalValue );
         }
 
-        private void ApplyModifiers( out int newTotal )
-        {
-            float moddedFloat = _baseValue;
-            if( !_modifiers.Any() )
-            {
-                newTotal = _baseValue;   
-                return;
-            }
-
-            var overwriteMods = _modifiers.Where( x => x.Type == ModifierType.Overwrite )
-                .OrderByDescending( x => x );
-            if( overwriteMods.Any() )
-            {
-                moddedFloat = overwriteMods.FirstOrDefault();
-                newTotal = Mathf.RoundToInt( moddedFloat ); // should always round up?
-                return;
-            }
-
-            var flatAddModValue = _modifiers.Where( x => x.Type == ModifierType.FlatAdd ).Sum( x => x );
-            moddedFloat += flatAddModValue;
-
-            var percentAddModValue = _modifiers.Where( x => x.Type == ModifierType.PercentAdd ).Sum( x => x / 100f );
-            moddedFloat *= 1 + percentAddModValue;
-
-            var percentMultMods = _modifiers.Where( x => x.Type == ModifierType.PercentMult );
-            moddedFloat = percentMultMods.Aggregate( moddedFloat, ( current, mod ) => current * ( 1 + mod / 100f ) );
-                
-            newTotal = Mathf.RoundToInt( moddedFloat );
-        }
-        
         public void AddModifier( Modifier modifier )
         {
-            _modifiers.Add( modifier );
+            mutableFloat.AddModifier( modifier );
             CalculateTotalValue();
         }
 
         public bool TryRemoveModifier( Modifier modifier )
         {
-            for( var i = _modifiers.Count; i-- > 0; )
-                if( _modifiers[i].Equals( modifier ) )
-                {
-                    _modifiers.RemoveAt( i );
-
-                    CalculateTotalValue();
-                    return true;
-                }
-
-            Debug.LogWarning( $"Modifier {modifier} not found" );
+            if( mutableFloat.TryRemoveModifier( modifier ) )
+            {
+                CalculateTotalValue();
+                return true;
+            }
+            
             return false;
         }
     }

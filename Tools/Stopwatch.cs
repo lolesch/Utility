@@ -1,5 +1,5 @@
 using System;
-using Submodules.Utility.AttributeRef.Attributes;
+using Submodules.Utility.Attributes;
 using UnityEngine;
 
 namespace Submodules.Utility.Tools
@@ -13,6 +13,6 @@ namespace Submodules.Utility.Tools
 
         public void Tick( float tickInterval ) => timeElapsed += tickInterval;
 
-        public static implicit operator float( Stopwatch stopwatch ) => stopwatch.timeElapsed;
+        public static implicit operator float( Stopwatch stopwatch ) => stopwatch!.timeElapsed;
     }
 }

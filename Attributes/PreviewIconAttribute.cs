@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-namespace Submodules.Utility.AttributeRef.Attributes
+namespace Submodules.Utility.Attributes
 {
     public sealed class PreviewIconAttribute : PropertyAttribute
     {

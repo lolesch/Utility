@@ -5,7 +5,6 @@ namespace Submodules.Utility.Tools.Statistics
     public enum ModifierType : short
     {
         // WORDING
-        // how to consistently translate the modifier types
         // - Overwrite   => absolute, explicit, fix
         // - FlatAdd     => additional, additive, bonus, 
         // - PercentAdd  => more/less

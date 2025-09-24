@@ -1,56 +1,58 @@
 using System;
-using Sirenix.Serialization;
+using Submodules.Utility.Attributes;
 using Submodules.Utility.Tools.Statistics;
 using UnityEngine;
 using UnityEngine.Assertions;
 
 namespace Submodules.Utility.Tools
 {
+    [Serializable]
     public sealed class Timer
     {
-        [OdinSerialize] private MutableFloat _duration;
-        [OdinSerialize] private Stopwatch _stopwatch = new();
-        [OdinSerialize] public int Laps { get; private set; }
-
-        public event Action OnRewind;
-        public event Action OnComplete;
-        public event Action<float> OnTick;
-        
-        public float Remaining => Mathf.Clamp( _duration - _stopwatch, 0, _duration );
-        public float Progress01 => 1 - Mathf.Clamp01( Remaining / _duration );
+        [SerializeField, ReadOnly] private float duration;
+        [SerializeField, ReadOnly] private int laps;
+        [SerializeField] private Stopwatch stopwatch;
 
         public Timer( float duration, int laps = 1, bool startFinished = false )
         {
             Assert.IsTrue( 0 < duration, $"Duration {duration} must be positive" );
             Assert.IsTrue( 0 <= laps, $"Repetitions {laps} must be positive" );
 
-            _duration = new MutableFloat( duration );
-            Laps = laps;
+            this.duration = new MutableFloat( duration );
+            this.laps = laps;
+            stopwatch = new Stopwatch();
             
             if( startFinished )
-                _stopwatch.Tick( duration );
+                stopwatch?.Tick( duration );
         }
+
+        public event Action OnRewind;
+        public event Action OnComplete;
+        public event Action<float> OnTick;
+        
+        public float remaining => Mathf.Clamp( duration - stopwatch, 0, duration );
+        public float progress01 => 1 - Mathf.Clamp01( remaining / duration );
 
        public bool Tick( float tickInterval )
        {
-           if ( Laps < 1 )
+           if ( laps < 1 )
            {
                Debug.LogWarning("This timer has expired and should no longer receive ticks");
                return false;
            }
 
-            _stopwatch.Tick( tickInterval );
-            OnTick?.Invoke( Progress01 );
+            stopwatch?.Tick( tickInterval );
+            OnTick?.Invoke( progress01 );
             
-            if ( _stopwatch < _duration )
+            if ( stopwatch < duration )
                 return false;
 
-            Laps--;
+            laps--;
            
-            if ( 0 < Laps )
+            if ( 0 < laps )
                 Rewind();
             
-            if ( Laps == 0 )
+            if ( laps == 0 )
                 OnComplete?.Invoke();
             
             return true;
@@ -58,21 +60,18 @@ namespace Submodules.Utility.Tools
 
        private void Rewind()
        {
-           _stopwatch.Tick( -_duration );
+           stopwatch?.Tick( -duration );
            OnRewind?.Invoke();
        }
 
         public void Restart( int laps = 1 )
         {
-            _stopwatch.Reset();
-            Laps = laps;
+            stopwatch?.Reset();
+            this.laps = laps;
         }
 
-        public void Repeat( int amount = 1 ) => Laps += amount;
-        
-        public void AddModifier( Modifier modifier ) => _duration.AddModifier( modifier );
-        public bool TryRemoveModifier( Modifier modifier ) => _duration.TryRemoveModifier( modifier );
+        public void Repeat( int amount = 1 ) => laps += amount;
 
-        public static implicit operator float( Timer timer ) => timer._duration;
+        public static implicit operator float( Timer timer ) => timer.duration;
     }
 }

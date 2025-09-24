@@ -1,30 +1,29 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Sirenix.OdinInspector;
-using Sirenix.Serialization;
+using Submodules.Utility.Attributes;
 using UnityEngine;
 
 namespace Submodules.Utility.Tools.Statistics
 {
+    [Serializable]
     public sealed class MutableFloat : IMutable<float>, IFormattable
     {
-        [OdinSerialize, ReadOnly] private float _totalValue;
-        // consider making _baseValue a Modifiable -> And growthPerLevel is applied on level up
-        [OdinSerialize] private readonly float _baseValue;
-        [OdinSerialize] private readonly List<Modifier> _modifiers;
-
-        public event Action<float> OnTotalChanged;
+        [SerializeField, ReadOnly] private float totalValue;
+        [SerializeField, ReadOnly] private float baseValue;
+        [SerializeField, ReadOnly] private List<Modifier> modifiers;
         
         public MutableFloat( float baseValue )
         {
-            _baseValue = baseValue;
-            _totalValue = baseValue;
-            _modifiers = new List<Modifier>();
+            this.baseValue = baseValue;
+            totalValue = baseValue;
+            modifiers = new List<Modifier>();
             OnTotalChanged = null;
         }
 
-        public static implicit operator float( MutableFloat mutableFloat ) => mutableFloat._totalValue;
+        public static implicit operator float( MutableFloat mutableFloat ) => mutableFloat!.totalValue;
+
+        public event Action<float> OnTotalChanged;
         
         private void CalculateTotalValue()
         {
@@ -32,20 +31,20 @@ namespace Submodules.Utility.Tools.Statistics
 
             //newTotal = Mathf.Clamp(newTotal, range.min, range.max);
 
-            if( Mathf.Approximately( _totalValue, newTotal ) )
+            if( Mathf.Approximately( totalValue, newTotal ) )
                 return;
 
-            _totalValue = newTotal;
-            OnTotalChanged?.Invoke( _totalValue );
+            totalValue = newTotal;
+            OnTotalChanged?.Invoke( totalValue );
         }
 
         private void ApplyModifiers( out float newTotal )
         {
-            newTotal = _baseValue;
-            if( !_modifiers.Any() )
+            newTotal = baseValue;
+            if( !modifiers.Any() )
                 return;
 
-            var overwriteMods = _modifiers.Where( x => x.Type == ModifierType.Overwrite )
+            var overwriteMods = modifiers.Where( x => x.Type == ModifierType.Overwrite )
                 .OrderByDescending( x => x );
             if( overwriteMods.Any() )
             {
@@ -53,28 +52,28 @@ namespace Submodules.Utility.Tools.Statistics
                 return;
             }
 
-            var flatAddModValue = _modifiers.Where( x => x.Type == ModifierType.FlatAdd ).Sum( x => x );
+            var flatAddModValue = modifiers.Where( x => x.Type == ModifierType.FlatAdd ).Sum( x => x );
             newTotal += flatAddModValue;
 
-            var percentAddModValue = _modifiers.Where( x => x.Type == ModifierType.PercentAdd ).Sum( x => x / 100f );
+            var percentAddModValue = modifiers.Where( x => x.Type == ModifierType.PercentAdd ).Sum( x => x / 100f );
             newTotal *= 1 + percentAddModValue;
 
-            var percentMultMods = _modifiers.Where( x => x.Type == ModifierType.PercentMult );
+            var percentMultMods = modifiers.Where( x => x.Type == ModifierType.PercentMult );
             newTotal = percentMultMods.Aggregate( newTotal, ( current, mod ) => current * ( 1 + mod / 100f ) );
         }
 
         public void AddModifier( Modifier modifier )
         {
-            _modifiers.Add( modifier );
+            modifiers.Add( modifier );
             CalculateTotalValue();
         }
 
         public bool TryRemoveModifier( Modifier modifier )
         {
-            for( var i = _modifiers.Count; i-- > 0; )
-                if( _modifiers[i].Equals( modifier ) )
+            for( var i = modifiers.Count; i-- > 0; )
+                if( modifiers[i].Equals( modifier ) )
                 {
-                    _modifiers.RemoveAt( i );
+                    modifiers.RemoveAt( i );
 
                     CalculateTotalValue();
                     return true;
@@ -84,8 +83,8 @@ namespace Submodules.Utility.Tools.Statistics
             return false;
         }
 
-        public string ToString(string format) => _totalValue.ToString( format );
-        public string ToString(string format, IFormatProvider provider) => _totalValue.ToString( format, provider );
+        public string ToString(string format) => totalValue.ToString( format );
+        public string ToString(string format, IFormatProvider provider) => totalValue.ToString( format, provider );
     }
 
     internal interface IMutable<out T>
