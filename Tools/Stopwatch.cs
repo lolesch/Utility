@@ -1,11 +1,11 @@
 using System;
-using Submodules.Utility.Attributes;
+using NaughtyAttributes;
 using UnityEngine;
 
 namespace Submodules.Utility.Tools
 {
     [Serializable]
-    public sealed class Stopwatch
+    public sealed class Stopwatch : IStopwatch
     {
         [SerializeField, ReadOnly] private float timeElapsed;
 
@@ -14,5 +14,11 @@ namespace Submodules.Utility.Tools
         public void Tick( float tickInterval ) => timeElapsed += tickInterval;
 
         public static implicit operator float( Stopwatch stopwatch ) => stopwatch!.timeElapsed;
+    }
+
+    public interface IStopwatch
+    {
+        void Tick( float tickInterval );
+        void Reset();
     }
 }

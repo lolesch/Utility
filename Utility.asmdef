@@ -5,7 +5,8 @@
         "Unity.TextMeshPro",
         "Unity.TextMeshPro.Editor",
         "Unity.Mathematics",
-        "Unity.Mathematics.Editor"
+        "Unity.Mathematics.Editor",
+        "NaughtyAttributes.Core"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

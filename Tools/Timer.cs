@@ -1,13 +1,12 @@
 using System;
-using Submodules.Utility.Attributes;
-using Submodules.Utility.Tools.Statistics;
+using NaughtyAttributes;
 using UnityEngine;
 using UnityEngine.Assertions;
 
 namespace Submodules.Utility.Tools
 {
     [Serializable]
-    public sealed class Timer
+    public sealed class Timer : ITimer
     {
         [SerializeField, ReadOnly] private float duration;
         [SerializeField, ReadOnly] private int laps;
@@ -18,7 +17,7 @@ namespace Submodules.Utility.Tools
             Assert.IsTrue( 0 < duration, $"Duration {duration} must be positive" );
             Assert.IsTrue( 0 <= laps, $"Repetitions {laps} must be positive" );
 
-            this.duration = new MutableFloat( duration );
+            this.duration = duration;
             this.laps = laps;
             stopwatch = new Stopwatch();
             
@@ -26,21 +25,23 @@ namespace Submodules.Utility.Tools
                 stopwatch?.Tick( duration );
         }
 
+        public static implicit operator float( Timer timer ) => timer.duration;
+        
         public event Action OnRewind;
         public event Action OnComplete;
         public event Action<float> OnTick;
         
         public float remaining => Mathf.Clamp( duration - stopwatch, 0, duration );
         public float progress01 => 1 - Mathf.Clamp01( remaining / duration );
-
-       public bool Tick( float tickInterval )
-       {
-           if ( laps < 1 )
-           {
+        
+        public bool Tick( float tickInterval )
+        { 
+            if ( laps < 1 )
+            {
                Debug.LogWarning("This timer has expired and should no longer receive ticks");
                return false;
-           }
-
+            } 
+            
             stopwatch?.Tick( tickInterval );
             OnTick?.Invoke( progress01 );
             
@@ -58,12 +59,6 @@ namespace Submodules.Utility.Tools
             return true;
         }
 
-       private void Rewind()
-       {
-           stopwatch?.Tick( -duration );
-           OnRewind?.Invoke();
-       }
-
         public void Restart( int laps = 1 )
         {
             stopwatch?.Reset();
@@ -71,7 +66,24 @@ namespace Submodules.Utility.Tools
         }
 
         public void Repeat( int amount = 1 ) => laps += amount;
+        
+        private void Rewind()
+        {
+            stopwatch?.Tick( -duration );
+            OnRewind?.Invoke();
+        }
+    }
 
-        public static implicit operator float( Timer timer ) => timer.duration;
+    public interface ITimer
+    {
+        float remaining { get; }
+        float progress01 { get; }
+        bool Tick( float tickInterval );
+        void Restart( int laps = 1 );
+        void Repeat( int amount = 1 );
+
+        event Action OnRewind;
+        event Action OnComplete;
+        event Action<float> OnTick;
     }
 }
