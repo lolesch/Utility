@@ -2,23 +2,39 @@ using System;
 using NaughtyAttributes;
 using UnityEngine;
 using UnityEngine.Assertions;
-
 namespace Submodules.Utility.Tools
 {
     [Serializable]
     public sealed class Timer : ITimer
     {
+        // TODO: timer should register to global time events instead of being ticked and provide start/pause/stop 
+        
         [SerializeField, ReadOnly] private float duration;
-        [SerializeField, ReadOnly] private int laps;
+        [SerializeField, ReadOnly] private bool autoRepeat;
+        [SerializeField, ReadOnly, HideIf("autoRepeat"), AllowNesting] private int laps = 1;
         [SerializeField] private Stopwatch stopwatch;
 
-        public Timer( float duration, int laps = 1, bool startFinished = false )
+        public Timer( float duration, int laps, bool startFinished = false )
         {
             Assert.IsTrue( 0 < duration, $"Duration {duration} must be positive" );
             Assert.IsTrue( 0 <= laps, $"Repetitions {laps} must be positive" );
 
             this.duration = duration;
             this.laps = laps;
+            this.autoRepeat = false;
+            stopwatch = new Stopwatch();
+            
+            if( startFinished )
+                stopwatch?.Tick( duration );
+        }
+        
+        public Timer( float duration, bool autoRepeat = true, bool startFinished = false )
+        {
+            Assert.IsTrue( 0 < duration, $"Duration {duration} must be positive" );
+
+            this.duration = duration;
+            this.laps = 1;
+            this.autoRepeat = autoRepeat;
             stopwatch = new Stopwatch();
             
             if( startFinished )
@@ -48,7 +64,8 @@ namespace Submodules.Utility.Tools
             if ( stopwatch < duration )
                 return false;
 
-            laps--;
+            if( !autoRepeat )
+                laps--;
            
             if ( 0 < laps )
                 Rewind();
@@ -65,7 +82,7 @@ namespace Submodules.Utility.Tools
             this.laps = laps;
         }
 
-        public void Repeat( int amount = 1 ) => laps += amount;
+        //public void Repeat( int amount = 1 ) => laps += amount;
         
         private void Rewind()
         {
@@ -80,7 +97,7 @@ namespace Submodules.Utility.Tools
         float progress01 { get; }
         bool Tick( float tickInterval );
         void Restart( int laps = 1 );
-        void Repeat( int amount = 1 );
+        //void Repeat( int amount = 1 );
 
         event Action OnRewind;
         event Action OnComplete;
