@@ -1,5 +1,4 @@
 ﻿using UnityEditor;
-using UnityEditorInternal;
 using UnityEngine;
 
 #if UNITY_EDITOR
@@ -15,6 +14,8 @@ namespace Submodules.Utility.Attributes.Editor
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
+            property.serializedObject.Update();
+            
             position = EditorGUI.IndentedRect(position);
             EditorGUI.BeginProperty(position, label, property);
             
@@ -24,7 +25,7 @@ namespace Submodules.Utility.Attributes.Editor
             int controlID = property.propertyPath.GetHashCode();
             Sprite sprite = property.objectReferenceValue as Sprite;
 
-            if (sprite == null)
+            if ( !sprite )
             {
                 Rect fieldRect = new Rect(position.x, position.y, position.width, EditorGUIUtility.singleLineHeight);
                 EditorGUI.PropertyField(fieldRect, property, label);
@@ -67,43 +68,13 @@ namespace Submodules.Utility.Attributes.Editor
             {
                 property.objectReferenceValue = EditorGUIUtility.GetObjectPickerObject() as Sprite;
                 property.serializedObject.ApplyModifiedProperties();
-
-                GUI.changed = true;
-                EditorUtility.SetDirty(property.serializedObject.targetObject);
-                InternalEditorUtility.RepaintAllViews();
             }
 
             EditorGUI.indentLevel = prevIndent;
             EditorGUI.EndProperty();
+            
+            property.serializedObject.ApplyModifiedProperties();
         }
-
-
-        //public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
-        //{
-        //    position = EditorGUI.IndentedRect(position);
-        //    EditorGUI.BeginProperty(position, label, property);
-        //    EditorGUI.indentLevel = 0;
-//
-        //    var labelRect = new Rect(position.x, position.y, EditorGUIUtility.labelWidth, EditorGUIUtility.singleLineHeight);
-        //    GUI.Label(labelRect, property.displayName);
-        //    var spriteRect = new Rect(labelRect.x + EditorGUIUtility.labelWidth, position.y, _textureSize, _textureSize);
-//
-        //    property.objectReferenceValue = EditorGUI.ObjectField( spriteRect, property.objectReferenceValue, typeof(Sprite), false );
-//
-        //    if( property.objectReferenceValue is Sprite sprite && sprite.texture != null && Event.current.type == EventType.Repaint )
-        //    {
-        //        var texture = sprite.texture;
-        //        var texCoords = sprite.rect;
-        //        texCoords.x /= texture.width;
-        //        texCoords.y /= texture.height;
-        //        texCoords.width /= texture.width;
-        //        texCoords.height /= texture.height;
-//
-        //        GUI.DrawTextureWithTexCoords( spriteRect, texture, texCoords );
-        //    }
-//
-        //    EditorGUI.EndProperty();
-        //}
     }
 }
 #endif
