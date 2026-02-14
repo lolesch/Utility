@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace Submodules.Utility.Tools.Timer
 {
-    internal static class TimerUpdate
+    internal static class TimerTicker
     {
         private static List<ITimer> timers = new();
         

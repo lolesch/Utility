@@ -40,7 +40,7 @@ namespace Submodules.Utility.Tools.Timer
                 return;
             
             IsRunning = true;
-            TimerUpdate.RegisterTimer( this );
+            TimerTicker.RegisterTimer( this );
             OnRewind?.Invoke();
         }
 
@@ -53,7 +53,7 @@ namespace Submodules.Utility.Tools.Timer
                 return;
             
             IsRunning = false;
-            TimerUpdate.DeregisterTimer( this );
+            TimerTicker.DeregisterTimer( this );
             OnComplete?.Invoke();
         }
         
@@ -82,7 +82,7 @@ namespace Submodules.Utility.Tools.Timer
 
         public void Dispose()
         {
-            TimerUpdate.DeregisterTimer( this );
+            TimerTicker.DeregisterTimer( this );
         }
     }
 

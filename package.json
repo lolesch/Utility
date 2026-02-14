@@ -1,8 +1,8 @@
 {
 	"name": "com.lolesch.utility",
-	"displayName":"Toolsmiths Utility",
+	"displayName":"ToolSmiths Utility",
 	"version": "0.1.0",
-	"description": "Toolsmiths Utility includes: \n\u25AA Frequently used Extensions \n\u25AA Runtime Tools \n\u25AA SerializeInterface by @ Adam Myhre",
+	"description": "ToolSmiths Utility includes: \n\u25AA Frequently used Extensions \n\u25AA Runtime Tools \n\u25AA SerializeInterface by @ Adam Myhre",
 	"dependencies": {
 		"com.dbrizov.naughtyattributes": "2.1.4"
 	},

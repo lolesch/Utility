@@ -32,7 +32,7 @@ namespace Submodules.Utility.Tools.Timer
                     RemoveTimerManager<Update>( ref currentPlayerLoop );
                     PlayerLoop.SetPlayerLoop( currentPlayerLoop );
                     
-                    TimerUpdate.Clear();
+                    TimerTicker.Clear();
                 }
             }
         }
@@ -46,8 +46,8 @@ namespace Submodules.Utility.Tools.Timer
         {
             timerSystem = new PlayerLoopSystem
             {
-                type = typeof(TimerUpdate),
-                updateDelegate = TimerUpdate.TickTimers,
+                type = typeof(TimerTicker),
+                updateDelegate = TimerTicker.TickTimers,
                 subSystemList = null
             };
             
