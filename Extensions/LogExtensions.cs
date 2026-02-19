@@ -1,4 +1,4 @@
-﻿using UnityEditor;
+using UnityEditor;
 using UnityEngine;
 
 namespace Submodules.Utility.Extensions
@@ -17,7 +17,7 @@ namespace Submodules.Utility.Extensions
         private static bool doLog = true;
 
 #if UNITY_EDITOR
-        [MenuItem( "DC/ToggleLogExtensions", false, 100 )]
+        [MenuItem( "ToolSmiths/ToggleLogExtensions", false, 100 )]
         public static void ToggleLogExtensions()
         {
             doLog = !doLog;

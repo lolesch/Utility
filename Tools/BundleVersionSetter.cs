@@ -125,16 +125,16 @@ namespace Submodules.Utility.Tools
         }
 
 
-        [MenuItem("VersionNumber/Update GitHash", false, 800)]
+        [MenuItem("ToolSmiths/Version/GitHash Update", false, 800)]
         private static string UpdateGitHash() => IncrementBundleVersion( IncrementType.GitHash);
 
-        [MenuItem("VersionNumber/Increase Minor Number", false, 801)]
+        [MenuItem("ToolSmiths/Version/Minor Update", false, 801)]
         private static string IncreaseMinorNumber() => IncrementBundleVersion( IncrementType.Minor);
 
-        [MenuItem("VersionNumber/Increase Major Number", false, 802)]
+        [MenuItem("ToolSmiths/Version/Major Update", false, 802)]
         private static string IncreaseMajorNumber() => IncrementBundleVersion( IncrementType.Major);
 
-        [MenuItem("VersionNumber/Increase ReleaseType", false, 803)]
+        [MenuItem("ToolSmiths/Version/Increase ReleaseType", false, 803)]
         private static string IncreaseReleaseType() => IncrementBundleVersion( IncrementType.ReleaseType);
     }
 }
