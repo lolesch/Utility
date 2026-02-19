@@ -119,7 +119,7 @@ namespace Submodules.Utility.Tools
 
             using Process process = Process.Start(startInfo);
             string result = process.StandardOutput.ReadToEnd();
-            result.Trim(); // returns something like "734713b"
+            result = result.Trim(); // returns something like "734713b"
             
             return string.IsNullOrEmpty( result ) ? "N/A" : result;
         }
