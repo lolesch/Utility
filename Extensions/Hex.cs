@@ -117,10 +117,9 @@ namespace Submodules.Utility.Extensions
         #region Conversion
 
         /// <summary>
-        /// Converts a Hex coordinate to unity's hexagonal grid coordinate. 
-        /// For pointyTopGrids these are "OddRows" coordinates.
+        /// Converts a Hex position to cell position.
         /// </summary>
-        public readonly Vector3Int ToGrid() => new(q + (r - (r & 1)) / 2, r, 0);
+        public readonly Vector3Int ToCell() => new(q + (r - (r & 1)) / 2, -r, 0);
 
         public readonly Vector3 ToWorldPos( float hexWidth, float hexCircumradius )
         {
@@ -130,7 +129,7 @@ namespace Submodules.Utility.Extensions
             return new Vector3( (q + ( r - ( r & 1 ) ) / 2f) * hexWidth + oddRowIndent, 0, -r * rowSquash );
         }
 
-        public readonly Vector3 ToPixel(Grid hexGrid) => hexGrid.CellToWorld(ToGrid());
+        public readonly Vector3 ToPixel(Grid hexGrid) => hexGrid.CellToWorld(ToCell());
         public readonly Vector3 ToPixel(float hexSize, Vector2Int spacing, Vector2 origin)
         {
             var x = (hexSize + spacing.x) * (Mathf.Sqrt(3) * q + Mathf.Sqrt(3) / 2 * r);

@@ -4,8 +4,12 @@ namespace Submodules.Utility.Extensions
 {
     public static class HexExtensions
     {
-        public static Hex GridToHex(this Vector3Int grid) => new(grid.x - (grid.y - (grid.y & 1)) / 2, grid.y);
-        public static Hex PixelToHex(this Vector3 pixel, Grid hexGrid) => GridToHex(hexGrid.WorldToCell(pixel));
+        /// <summary>
+        /// Converts a cell position to Hex position.
+        /// </summary>
+        //NOTE: inverted cell.y to match unity's grid with y pointing up
+        public static Hex CellToHex(this Vector3Int cell) => new(cell.x - (-cell.y - (-cell.y & 1)) / 2, -cell.y);
+        public static Hex PixelToHex(this Vector3 pixel, Grid hexGrid) => CellToHex(hexGrid.WorldToCell(pixel));
         public static Hex PixelToHex(this Vector2 pixel, float hexSize, Vector2Int spacing, Vector2 origin)
         {
             pixel -= origin;
