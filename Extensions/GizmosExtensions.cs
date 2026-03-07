@@ -64,5 +64,17 @@ namespace Submodules.Utility.Extensions
             Gizmos.DrawRay( from + length, up * arrowHeadLength );
             Gizmos.DrawRay( from + length, down * arrowHeadLength );
         }
+        
+        public static void DrawArrow2D(Vector2 from, Vector2 direction, float headSize = 8f)
+        {
+            var tip = from + direction;
+            Gizmos.DrawLine(from, tip);
+
+            var shaft = direction.normalized;
+            var right = new Vector2(-shaft.y, shaft.x);
+
+            Gizmos.DrawLine(tip, tip - shaft * headSize + right * headSize * 0.5f);
+            Gizmos.DrawLine(tip, tip - shaft * headSize - right * headSize * 0.5f);
+        }
     }
 }

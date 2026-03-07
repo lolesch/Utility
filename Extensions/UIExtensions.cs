@@ -5,44 +5,30 @@ namespace Submodules.Utility.Extensions
 {
     public static class UIExtensions
     {
-        /// <summary>
-        ///     Returns true if the passed position extends the screen's current resolution
-        /// </summary>
-        /// <param characterName="position"></param>
-        /// <remarks>
-        ///     Make sure that the position is calculated with the transform's lossyScale in mind.
-        /// </remarks>
-        public static bool IsOutsideOfGameWindow( Vector2 position )
-        {
-            return position.x < 0 ||
-                   position.x > Screen.width ||
-                   position.y < 0 ||
-                   position.y > Screen.height;
-        }
+        public static bool IsOutsideOfGameWindow(Vector2 position) =>
+            position.x < 0 || position.x > Screen.width ||
+            position.y < 0 || position.y > Screen.height;
 
-        /// <summary>
-        ///     Forces an immediate rebuild of the layout element and child layout elements affected by the calculations.
-        /// </summary>
-        /// <remarks>
-        ///     Usage should be restricted to cases where multiple layout passes are unavaoidable despite the extra cost in
-        ///     performance!
-        /// </remarks>
-        public static void RefreshContentFitter( this RectTransform transform )
+        // The pixel distance from one cell origin to the next, including spacing.
+        public static Vector2 CellStep(this GridLayoutGroup grid) => grid.cellSize + grid.spacing;
+
+        // Usage should be restricted to cases where multiple layout passes are unavoidable.
+        public static void RefreshContentFitter(this RectTransform transform)
         {
-            if ( transform == null || !transform.gameObject.activeSelf )
+            if (transform == null || !transform.gameObject.activeSelf)
                 return;
 
-            foreach ( RectTransform child in transform )
-                RefreshContentFitter( child );
+            foreach (RectTransform child in transform)
+                RefreshContentFitter(child);
 
-            if ( transform.TryGetComponent( out LayoutGroup layoutGroup ) )
+            if (transform.TryGetComponent(out LayoutGroup layoutGroup))
             {
                 layoutGroup.SetLayoutHorizontal();
                 layoutGroup.SetLayoutVertical();
             }
 
-            if ( transform.GetComponent<ContentSizeFitter>() )
-                LayoutRebuilder.ForceRebuildLayoutImmediate( transform );
+            if (transform.GetComponent<ContentSizeFitter>())
+                LayoutRebuilder.ForceRebuildLayoutImmediate(transform);
         }
     }
 }
