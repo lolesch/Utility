@@ -87,6 +87,13 @@ namespace Submodules.Utility.Extensions
          * - viewport?
          * - ...
          */
+        
+        public static Vector2Int ToVector2Int(this int value) => new(value, value);
+        public static Vector3Int ToVector3Int(this int value) => new(value, value, value);
+        public static Vector2 ToVector2(this int value) => new(value, value);
+        public static Vector3 ToVector3(this int value) => new(value, value, value);
+        public static Vector2 ToVector2(this float value) => new(value, value);
+        public static Vector3 ToVector3(this float value) => new(value, value, value);
 
         #endregion Conversions
     }
