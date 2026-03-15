@@ -25,6 +25,12 @@ namespace Submodules.Utility.Tools.Timer
 
         public static implicit operator float( Timer timer ) => timer.duration;
         
+        public float Duration
+        {
+            get => duration;
+            set { if (!Mathf.Approximately(duration, value)) duration = value; }
+        }
+        
         public event Action OnRewind;
         public event Action OnComplete;
         //public event Action<float> OnTick;
