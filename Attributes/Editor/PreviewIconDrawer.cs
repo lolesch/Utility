@@ -14,66 +14,61 @@ namespace Submodules.Utility.Attributes.Editor
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
-            property.serializedObject.Update();
-            
-            position = EditorGUI.IndentedRect(position);
-            EditorGUI.BeginProperty(position, label, property);
-            
-            int prevIndent = EditorGUI.indentLevel;
-            EditorGUI.indentLevel = 0;
+            label = EditorGUI.BeginProperty(position, label, property);
 
-            int controlID = property.propertyPath.GetHashCode();
-            Sprite sprite = property.objectReferenceValue as Sprite;
-
-            if ( !sprite )
-            {
-                Rect fieldRect = new Rect(position.x, position.y, position.width, EditorGUIUtility.singleLineHeight);
-                EditorGUI.PropertyField(fieldRect, property, label);
-            }
+            if (property.objectReferenceValue == null)
+                EditorGUI.PropertyField(position, property, label);
             else
             {
-                Rect labelRect = new(position.x, position.y, EditorGUIUtility.labelWidth, EditorGUIUtility.singleLineHeight);
-                GUI.Label(labelRect, label);
+                Rect incented = EditorGUI.PrefixLabel(position, label);
+             
+                int prevIndent = EditorGUI.indentLevel;
+                EditorGUI.indentLevel = 0;
 
-                // Draw preview instead of picker
-                Rect previewRect = new(labelRect.x + EditorGUIUtility.labelWidth, position.y, _textureSize, _textureSize);
-
+                int controlID = GUIUtility.GetControlID( FocusType.Passive );
+                Sprite sprite = property.objectReferenceValue as Sprite;
+                
+                Rect previewRect = new Rect(incented.x, incented.y, _textureSize, _textureSize);
+                
+                // Draw preview
                 if (Event.current.type == EventType.Repaint)
                 {
                     var tex = sprite.texture;
-                    Rect texCoords = sprite.rect;
-                    texCoords.x /= tex.width;
-                    texCoords.y /= tex.height;
-                    texCoords.width /= tex.width;
-                    texCoords.height /= tex.height;
+                    if (tex != null)
+                    {
+                        Rect texCoords = sprite.rect;
+                        texCoords.x /= tex.width;
+                        texCoords.y /= tex.height;
+                        texCoords.width /= tex.width;
+                        texCoords.height /= tex.height;
 
-                    GUI.DrawTextureWithTexCoords(previewRect, tex, texCoords);
-                    GUI.Box(previewRect, GUIContent.none, EditorStyles.helpBox);
+                        GUI.DrawTextureWithTexCoords(previewRect, tex, texCoords);
+                    }
+                    EditorStyles.helpBox.Draw(previewRect, false, false, false, false);
                 }
-
+                
                 // Open picker on click
-                if ( Event.current.type == EventType.MouseDown &&
-                     Event.current.button == 0 &&
-                     previewRect.Contains(Event.current.mousePosition))
+                if (Event.current.type == EventType.MouseDown &&
+                    Event.current.button == 0 &&
+                    previewRect.Contains(Event.current.mousePosition))
                 {
                     EditorGUIUtility.ShowObjectPicker<Sprite>(sprite, false, null, controlID);
                     Event.current.Use();
                 }
+                
+                // Handle picker update or cleared selection
+                if (Event.current.type == EventType.ExecuteCommand && 
+                    EditorGUIUtility.GetObjectPickerControlID() == controlID &&
+                    Event.current.commandName == "ObjectSelectorUpdated")
+                {
+                    property.objectReferenceValue = EditorGUIUtility.GetObjectPickerObject() as Sprite;
+                    property.serializedObject.ApplyModifiedProperties();
+                }
+                
+                EditorGUI.indentLevel = prevIndent;
             }
-
-            // Handle picker update or cleared selection
-            if ((Event.current.commandName == "ObjectSelectorUpdated" ||
-                 Event.current.commandName == "ObjectSelectorClosed") &&
-                EditorGUIUtility.GetObjectPickerControlID() == controlID)
-            {
-                property.objectReferenceValue = EditorGUIUtility.GetObjectPickerObject() as Sprite;
-                property.serializedObject.ApplyModifiedProperties();
-            }
-
-            EditorGUI.indentLevel = prevIndent;
-            EditorGUI.EndProperty();
             
-            property.serializedObject.ApplyModifiedProperties();
+            EditorGUI.EndProperty();
         }
     }
 }
