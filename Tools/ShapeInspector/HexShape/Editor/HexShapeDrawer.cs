@@ -74,12 +74,10 @@ namespace Submodules.Utility.Tools.ShapeInspector.HexShape.Editor
             label.tooltip = $"Radius: {hexRadiusProperty.intValue}";
 
             const float resetButtonWidth = 52f;
-            const float radiusLabelWidth = 14f;
             const float radiusFieldWidth = 56f;
             const float spacing = 4f;
             
             var foldRect = new Rect(foldoutRect) { width = foldoutRect.width - radiusFieldWidth - resetButtonWidth - spacing * 3 };
-            var radiusLabelRect = new Rect(foldoutRect) { x = foldRect.xMax + spacing,            width = radiusLabelWidth };
             var radiusRect = new Rect(foldoutRect) { x = foldRect.xMax + spacing, width = radiusFieldWidth };
             var resetRect  = new Rect(foldoutRect) { x = radiusRect.xMax + spacing, width = resetButtonWidth };
             property.isExpanded = EditorGUI.Foldout(foldRect, property.isExpanded, label, true);
