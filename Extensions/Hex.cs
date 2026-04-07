@@ -68,7 +68,7 @@ namespace Submodules.Utility.Extensions
         public bool IsValid => !Equals(Invalid);
         
         #region Overrides and Operators
-        public override int GetHashCode() => base.GetHashCode();
+        public override int GetHashCode() => HashCode.Combine(q, r);
 
         public bool Equals(Hex other) => q == other.q && r == other.r;
         public override bool Equals(object other) => other is Hex hex && q == hex.q && r == hex.r;
@@ -119,7 +119,7 @@ namespace Submodules.Utility.Extensions
         /// <summary>
         /// Converts a Hex position to cell position.
         /// </summary>
-        public readonly Vector3Int ToCell() => new(q + (r - (r & 1)) / 2, -r, 0);
+        public readonly Vector3Int ToCell() => new(q + ((r - (r & 1)) >> 1), -r, 0);
 
         public readonly Vector3 ToWorldPos( float hexWidth, float hexCircumradius )
         {
@@ -162,8 +162,6 @@ namespace Submodules.Utility.Extensions
                 return HexDirection.Zero;
                 
             var normalized = new FloatHex(new Vector2(vector.q, vector.r) / length).Round();
-
-            Debug.LogWarning($"direction: {normalized}");
 
             if (normalized == Hex.right)
                 return HexDirection.Right;
@@ -222,47 +220,45 @@ namespace Submodules.Utility.Extensions
         //TODO: calculate terrain cost (heuristic)
         public readonly List<Hex> ReachableHexes(int range, List<Hex> invalidPositions)
         {
-            var visited = new List<Hex> { this };
-
-            var fringes = new List<List<Hex>> { new List<Hex>() };
-
-            fringes[0].Add(this);
+            var invalidSet = new HashSet<Hex>(invalidPositions);
+            var visited = new HashSet<Hex> { this };
+            var fringes = new List<List<Hex>> { new List<Hex> { this } };
 
             for (var i = 1; i <= range; i++) //TODO: calculate terrain cost (heuristic)
             {
-                fringes.Add(new List<Hex>());
+                var nextFringe = new List<Hex>();
+                fringes.Add(nextFringe);
 
                 foreach (var hex in fringes[i - 1])
                 {
-                    var validNeighbors = hex.Neighbors().Except(invalidPositions.Concat(visited));
-
-                    foreach (var neighbor in validNeighbors)
+                    foreach (var neighbor in hex.Neighbors())
                     {
-                        visited.Add(neighbor);
+                        if (invalidSet.Contains(neighbor) || !visited.Add(neighbor))
+                            continue;
 
-                        fringes[i].Add(neighbor);
+                        nextFringe.Add(neighbor);
                     }
                 }
             }
-            return visited;
+
+            return visited.ToList();
         }
 
-        public readonly Hex GetClosestValidNeighbor(List<Hex> invalidPositions, int maxRange = 10)
+        public readonly Hex GetNearestValidPosition(HashSet<Hex> invalidPositions, int maxRange = 10)
         {
-            if (invalidPositions.Contains(this))
+            if (!invalidPositions.Contains(this)) return this;
+            
+            var neighbors = new List<Hex>();
+
+            for (var i = 1; i <= maxRange; i++)
             {
-                var neighbors = new List<Hex>();
+                neighbors = HexRange(i).Except(invalidPositions).ToList();
 
-                for (var i = 1; i <= maxRange; i++)
-                {
-                    neighbors = HexRange(i).Except(invalidPositions).ToList();
-
-                    if( !neighbors.Any() ) 
-                        continue;
+                if( !neighbors.Any() ) 
+                    continue;
                     
-                    var from = this;
-                    return neighbors.Randomize().OrderBy(x => x.Distance(from)).FirstOrDefault();
-                }
+                var from = this;
+                return neighbors.Randomize().OrderBy(x => x.Distance(from)).FirstOrDefault();
             }
             return Invalid;
         }
@@ -332,7 +328,7 @@ namespace Submodules.Utility.Extensions
             r = vector3.y;
             s = -q - r;
             if (q + r + s != 0)
-                throw new ArgumentException("q + r + s must be 0");
+                Debug.LogWarning($"Float inaccuracy: q + r + s should be 0 but was {q + r + s}");
         }
         public FloatHex(Vector2 vector2)
         {
