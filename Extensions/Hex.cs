@@ -76,7 +76,7 @@ namespace Submodules.Utility.Extensions
         public override string ToString() => Name(this);
         public static string Name(Hex hex) => Name(hex.q, hex.r);
         public static string Name(Vector2Int grid) => Name(grid.x, grid.y);
-        public static string Name(int q, int r) => $"Hex({q}, {r})";//, {-q - r})";
+        public static string Name(int q, int r) => $"Hex ({q}, {r})";//, {-q - r})";
 
         public static bool operator ==(Hex a, Hex b) => a.q == b.q && a.r == b.r;
         public static bool operator !=(Hex a, Hex b) => !(a == b);
@@ -117,7 +117,7 @@ namespace Submodules.Utility.Extensions
         #region Conversion
 
         /// <summary>
-        /// Converts a Hex position to cell position.
+        /// Converts a Hex position to Unity's Grid cell position.
         /// </summary>
         public readonly Vector3Int ToCell() => new(q + ((r - (r & 1)) >> 1), -r, 0);
 
@@ -129,7 +129,7 @@ namespace Submodules.Utility.Extensions
             return new Vector3( (q + ( r - ( r & 1 ) ) / 2f) * hexWidth + oddRowIndent, 0, -r * rowSquash );
         }
 
-        public readonly Vector3 ToPixel(Grid hexGrid) => hexGrid.CellToWorld(ToCell());
+        public readonly Vector3 ToWorld(Grid hexGrid) => hexGrid.CellToWorld(ToCell());
         public readonly Vector3 ToPixel(float hexSize, Vector2Int spacing, Vector2 origin)
         {
             var x = (hexSize + spacing.x) * (Mathf.Sqrt(3) * q + Mathf.Sqrt(3) / 2 * r);
