@@ -47,22 +47,29 @@ namespace Submodules.Utility.Tools.Timer
             
             IsRunning = true;
             TimerTicker.RegisterTimer( this );
-            OnRewind?.Invoke();
         }
 
         public void Resume() => IsRunning = true;
         public void Pause() => IsRunning = false;
 
+        /// <summary>Cancels the timer. Silent by contract — does NOT fire OnComplete.</summary>
         public void Stop()
         {
             if( !IsRunning )
                 return;
-            
+
+            IsRunning = false;
+            TimerTicker.DeregisterTimer( this );
+        }
+
+        /// <summary>Natural elapse of a non-repeat timer: deregister, then notify listeners.</summary>
+        private void Complete()
+        {
             IsRunning = false;
             TimerTicker.DeregisterTimer( this );
             OnComplete?.Invoke();
         }
-        
+
         private void Rewind()
         {
             stopwatch?.Tick( -duration );
@@ -83,7 +90,7 @@ namespace Submodules.Utility.Tools.Timer
             if( repeat )
                 Rewind();
             else
-                Stop();
+                Complete();
         }
 
         public void Dispose()
