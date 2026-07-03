@@ -10,10 +10,27 @@ namespace Submodules.Utility.Extensions
     public struct CellTile<T> : ISerializationCallbackReceiver where T : TileBase
     {
         [HideInInspector] public string name;
-        [SerializeField, ReadOnly, AllowNesting] private Vector3Int cell;
-        [SerializeField] private T tile;
+        [field: SerializeField, ReadOnly, AllowNesting] public Vector3Int cell { get; private set; }
+        [field: SerializeField] public T tile { get; private set; }
             
         public  CellTile(Vector3Int cell, T tile)
+        {
+            this.cell = cell;
+            this.tile = tile;
+            name = string.Empty;
+        }
+
+        public void OnBeforeSerialize() => name = $"{cell}\t{tile.name}";
+        public void OnAfterDeserialize() {}
+    }
+    [Serializable]
+    public struct CellTile : ISerializationCallbackReceiver
+    {
+        [HideInInspector] public string name;
+        [field: SerializeField, ReadOnly, AllowNesting] public Vector3Int cell { get; private set; }
+        [field: SerializeField] public TileBase tile { get; private set; }
+            
+        public  CellTile(Vector3Int cell, TileBase tile)
         {
             this.cell = cell;
             this.tile = tile;
@@ -32,14 +49,14 @@ namespace Submodules.Utility.Extensions
             return tile != null;
         }
         
-        public static IEnumerable<CellTile<T>> GetAllCellTiles<T>(this Tilemap tilemap) where T : TileBase
+        public static IEnumerable<CellTile> GetAllCellTiles(this Tilemap tilemap) 
         {
             tilemap.CompressBounds();
             foreach (var cell in tilemap.cellBounds.allPositionsWithin)
             {
                 if (cell.z != 0) continue;
-                if (tilemap.TryGetTile<T>(cell,  out var tile))
-                    yield return new CellTile<T>( cell, tile);
+                if (tilemap.TryGetTile<TileBase>(cell,  out var tile))
+                    yield return new CellTile( cell, tile);
             }
         }
         
