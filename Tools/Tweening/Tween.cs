@@ -19,10 +19,9 @@ namespace Submodules.Utility.Tools.Tweening
     /// allocating a hundred. The only per-start allocation is the applier / OnComplete
     /// delegate; there is none per tick.
     /// </summary>
-    public sealed class Tween : ITickable
+    public sealed class Tween
     {
         private static readonly Stack<Tween> pool = new();
-        private static readonly List<Tween> active = new();
 
         private float duration;
         private float elapsed;
@@ -41,7 +40,7 @@ namespace Submodules.Utility.Tools.Tweening
         public float Progress => duration <= 0f ? 1f : Mathf.Clamp01( elapsed / duration );
 
         /// <summary>Count of running tweens, across every target.</summary>
-        public static int ActiveCount => active.Count;
+        public static int ActiveCount => TimerTicker.Tweens.Count;
 
         /// <summary>
         /// Starts a tween. <paramref name="onUpdate"/> is handed the eased fraction
@@ -63,8 +62,7 @@ namespace Submodules.Utility.Tools.Tweening
             tween.linked = false;
             tween.IsRunning = true;
 
-            active.Add( tween );
-            TimerTicker.Register( tween );
+            TimerTicker.RegisterTween( tween );
 
             return tween;
         }
@@ -138,8 +136,7 @@ namespace Submodules.Utility.Tools.Tweening
             link = null;
             linked = false;
 
-            active.Remove( this );
-            TimerTicker.Deregister( this );
+            TimerTicker.DeregisterTween( this );
             pool.Push( this );
         }
 
@@ -149,9 +146,10 @@ namespace Submodules.Utility.Tools.Tweening
             if ( target == null )
                 return;
 
-            for ( var i = active.Count - 1; i >= 0; i-- )
-                if ( Equals( active[i].target, target ) )
-                    active[i].Kill();
+            var tweens = TimerTicker.Tweens;
+            for ( var i = tweens.Count - 1; i >= 0; i-- )
+                if ( Equals( tweens[i].target, target ) )
+                    tweens[i].Kill();
         }
 
         /// <summary>True while a running tween is tagged with <paramref name="target"/>.</summary>
@@ -160,8 +158,9 @@ namespace Submodules.Utility.Tools.Tweening
             if ( target == null )
                 return false;
 
-            for ( var i = 0; i < active.Count; i++ )
-                if ( Equals( active[i].target, target ) )
+            var tweens = TimerTicker.Tweens;
+            for ( var i = 0; i < tweens.Count; i++ )
+                if ( Equals( tweens[i].target, target ) )
                     return true;
 
             return false;
@@ -170,8 +169,9 @@ namespace Submodules.Utility.Tools.Tweening
         /// <summary>Cancels every running tween. Silent. For play-mode exit and between test cases.</summary>
         public static void KillAll()
         {
-            for ( var i = active.Count - 1; i >= 0; i-- )
-                active[i].Kill();
+            var tweens = TimerTicker.Tweens;
+            for ( var i = tweens.Count - 1; i >= 0; i-- )
+                tweens[i].Kill();
         }
     }
 }
