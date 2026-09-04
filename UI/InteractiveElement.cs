@@ -1,4 +1,5 @@
 using Submodules.Utility.Extensions;
+using Submodules.Utility.Tools.Tweening;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -8,8 +9,8 @@ namespace Submodules.Utility.UI
     /// <summary>
     /// The shared <see cref="Selectable"/> + <see cref="ISubmitHandler"/> wiring every
     /// button and toggle sits on: raycast-target enforcement, pointer / submit / select
-    /// hooks. The serialized <see cref="tooltip"/> renders nowhere yet — an ambient
-    /// tooltip host wires it later.
+    /// hooks, the hover/press scale tween and the sound hooks. The serialized
+    /// <see cref="tooltip"/> renders nowhere yet — an ambient tooltip host wires it later.
     /// </summary>
     [RequireComponent(typeof(GraphicRaycaster), typeof(CanvasRenderer))]
     public class InteractiveElement : Selectable, ISubmitHandler
@@ -34,5 +35,14 @@ namespace Submodules.Utility.UI
         public override void OnPointerExit(PointerEventData eventData) => base.OnPointerExit(eventData);
 
         public virtual void OnSubmit(BaseEventData eventData) { }
+
+        protected void Scale(bool condition, float factor)
+        {
+            if (targetGraphic)
+                _ = targetGraphic.transform.TweenScale(condition ? factor : 1f, .15f, Ease.InOutSine);
+        }
+
+        public virtual void PlayHoverSound() { } // => AudioProvider.Instance.PlayButtonHover();
+        public virtual void PlayClickSound() { } // => AudioProvider.Instance.PlayButtonClick();
     }
 }
