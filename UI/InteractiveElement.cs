@@ -1,4 +1,5 @@
 using Submodules.Utility.Extensions;
+using Submodules.Utility.Tools.Tweening;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -8,9 +9,10 @@ namespace Submodules.Utility.UI
     /// <summary>
     /// The shared <see cref="Selectable"/> + <see cref="ISubmitHandler"/> wiring every
     /// button and toggle sits on: raycast-target enforcement, pointer / submit / select
-    /// hooks. When <see cref="tooltip"/> is non-empty it requests a hint from the ambient
-    /// <see cref="TooltipHost{T}.Current"/> on pointer-enter / select and hides it on
-    /// exit / deselect; with no host in the scene the calls are inert.
+    /// hooks, the hover/press scale tween and the sound hooks. When <see cref="tooltip"/>
+    /// is non-empty it requests a hint from the ambient <see cref="TooltipHost{T}.Current"/>
+    /// on pointer-enter / select and hides it on exit / deselect; with no host in the scene
+    /// the calls are inert.
     /// </summary>
     [RequireComponent(typeof(GraphicRaycaster), typeof(CanvasRenderer))]
     public class InteractiveElement : Selectable, ISubmitHandler
@@ -80,5 +82,14 @@ namespace Submodules.Utility.UI
 
             TooltipHost.Current?.Hide();
         }
+
+        protected void Scale(bool condition, float factor)
+        {
+            if (targetGraphic)
+                _ = targetGraphic.transform.TweenScale(condition ? factor : 1f, .15f, Ease.InOutSine);
+        }
+
+        public virtual void PlayHoverSound() { } // => AudioProvider.Instance.PlayButtonHover();
+        public virtual void PlayClickSound() { } // => AudioProvider.Instance.PlayButtonClick();
     }
 }

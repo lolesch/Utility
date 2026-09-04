@@ -1,5 +1,4 @@
 using NaughtyAttributes;
-using Submodules.Utility.Extensions;
 using Submodules.Utility.Tools.Tweening;
 using System;
 using UnityEngine;
@@ -165,14 +164,6 @@ namespace Submodules.Utility.UI
                 PlayClickSound();
         }
 
-        private void Scale(bool condition, float factor)
-        {
-            if (targetGraphic)
-                _ = targetGraphic.transform.TweenScale(condition ? factor : 1f, .15f, Ease.InOutSine);
-        }
-
-        public virtual void PlayHoverSound() { } // => AudioProvider.Instance.PlayButtonHover();
-        public virtual void PlayClickSound() { } // => AudioProvider.Instance.PlayButtonClick();
         public virtual void PlayToggleSound(bool isOn) { } // => AudioProvider.Instance.PlayButtonClick();
     }
 }
