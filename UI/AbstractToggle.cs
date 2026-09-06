@@ -73,8 +73,13 @@ namespace Submodules.Utility.UI
 
             PlayToggleSound(IsOn);
 
-            if (IsOn && RadioGroup)
-                RadioGroup.Activate(this);
+            if (RadioGroup)
+            {
+                if (IsOn)
+                    RadioGroup.Activate(this);
+                else if (RadioGroup.ActivatedToggle == this)
+                    RadioGroup.Deactivate(this);
+            }
         }
 
         public override void OnSubmit(BaseEventData eventData)
