@@ -13,16 +13,22 @@ namespace Submodules.Utility.UI
             base.SetToggle(isOn);
 
             foreach (var panel in panelsToTurnOn)
+            {
+                if (panel == null) continue;
                 if (isOn)
                     panel.FadeIn();
                 else
                     panel.FadeOut();
+            }
 
             foreach (var panel in panelsToTurnOff)
+            {
+                if (panel == null) continue;
                 if (isOn)
                     panel.FadeOut();
                 else
                     panel.FadeIn();
+            }
         }
     }
 }
