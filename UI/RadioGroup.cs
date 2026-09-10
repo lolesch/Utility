@@ -18,24 +18,19 @@ namespace Submodules.Utility.UI
         public event Action OnGroupChanged;
 
         private readonly List<AbstractToggle> radioToggles = new();
+        private AbstractToggle previouslyActivatedToggle;
 
-        private void OnValidate()
+        public void Activate(AbstractToggle toActivate)
         {
-            if (!TryGetComponent(out LayoutGroup _))
-                LogExtensions.MissingComponent(nameof(LayoutGroup), gameObject);
-        }
-
-        public void Activate(AbstractToggle activatedToggle)
-        {
-            if (activatedToggle == null || ActivatedToggle == activatedToggle)
+            if (toActivate == null || ActivatedToggle == toActivate)
                 return;
 
-            ActivatedToggle = activatedToggle;
-
-            foreach (var toggle in radioToggles)
-                if (toggle != ActivatedToggle /*&& toggle.IsOn*/)
-                    toggle.SetToggle(false);
-
+            previouslyActivatedToggle = ActivatedToggle;
+            ActivatedToggle = toActivate;
+            
+            if (previouslyActivatedToggle != null) /*&& previouslyActivatedToggle.IsOn)*/
+                previouslyActivatedToggle.SetToggle(false);
+    
             OnGroupChanged?.Invoke();
         }
 

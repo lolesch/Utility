@@ -7,6 +7,7 @@ namespace Submodules.Utility.UI
     {
         [SerializeField] protected List<AbstractPanel> panelsToTurnOn;
         [SerializeField] protected List<AbstractPanel> panelsToTurnOff;
+        [SerializeField] protected List<RadioGroup> groupsToTurnOff;
 
         public override void SetToggle(bool isOn)
         {
@@ -28,6 +29,13 @@ namespace Submodules.Utility.UI
                     panel.FadeOut();
                 else
                     panel.FadeIn();
+            }
+
+            foreach (var rg in groupsToTurnOff)
+            {
+                if (rg == null) continue;
+                if (rg.ActivatedToggle != null)
+                    rg.ActivatedToggle.SetToggle(false);
             }
         }
     }
