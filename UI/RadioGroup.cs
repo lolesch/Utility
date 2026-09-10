@@ -10,6 +10,7 @@ namespace Submodules.Utility.UI
     public class RadioGroup : MonoBehaviour
     {
         [field: SerializeField, ReadOnly] public AbstractToggle ActivatedToggle { get; private set; }
+        [field: SerializeField, ReadOnly] public AbstractToggle PreviouslyActivatedToggle { get; private set; }
         [field: SerializeField] public bool AllowSwitchOff { get; private set; } = false;
 
         /// <summary>Fires whenever the group's state changes: a toggle registered or
@@ -18,18 +19,17 @@ namespace Submodules.Utility.UI
         public event Action OnGroupChanged;
 
         private readonly List<AbstractToggle> radioToggles = new();
-        private AbstractToggle previouslyActivatedToggle;
 
         public void Activate(AbstractToggle toActivate)
         {
             if (toActivate == null || ActivatedToggle == toActivate)
                 return;
 
-            previouslyActivatedToggle = ActivatedToggle;
+            PreviouslyActivatedToggle = ActivatedToggle;
             ActivatedToggle = toActivate;
             
-            if (previouslyActivatedToggle != null) /*&& previouslyActivatedToggle.IsOn)*/
-                previouslyActivatedToggle.SetToggle(false);
+            if (PreviouslyActivatedToggle != null) /*&& PreviouslyActivatedToggle.IsOn)*/
+                PreviouslyActivatedToggle.SetToggle(false);
     
             OnGroupChanged?.Invoke();
         }

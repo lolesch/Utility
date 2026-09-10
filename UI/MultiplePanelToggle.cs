@@ -34,8 +34,10 @@ namespace Submodules.Utility.UI
             foreach (var rg in groupsToTurnOff)
             {
                 if (rg == null) continue;
-                if (rg.ActivatedToggle != null)
+                if (isOn && rg.ActivatedToggle != null)
                     rg.ActivatedToggle.SetToggle(false);
+                else if (!isOn && rg.PreviouslyActivatedToggle != null)
+                        rg.PreviouslyActivatedToggle.SetToggle(true);
             }
         }
     }
