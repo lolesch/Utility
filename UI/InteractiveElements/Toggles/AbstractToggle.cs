@@ -64,9 +64,9 @@ namespace Submodules.Utility.UI
             SetToggle(!IsOn);
         }
         
-        public void SetToggle(bool isOn)
+        public void SetToggle(bool toggleOn)
         {
-            IsOn = isOn;
+            IsOn = toggleOn;
 
             Interact( SelectionState.Selected, true);
             

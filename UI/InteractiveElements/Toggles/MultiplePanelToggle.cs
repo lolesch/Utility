@@ -5,8 +5,8 @@ namespace Submodules.Utility.UI
 {
     public class MultiplePanelToggle : AbstractToggle
     {
-        [SerializeField] private List<AbstractPanel> panelsToTurnOn;
-        [SerializeField] private List<AbstractPanel> panelsToTurnOff;
+        [SerializeField] private List<SimplePanel> panelsToTurnOn;
+        [SerializeField] private List<SimplePanel> panelsToTurnOff;
         [SerializeField] private List<RadioGroup> groupsToTurnOff;
 
         protected override void OnToggle()
@@ -14,19 +14,13 @@ namespace Submodules.Utility.UI
             foreach (var panel in panelsToTurnOn)
             {
                 if (panel == null) continue;
-                if (IsOn)
-                    panel.FadeIn();
-                else
-                    panel.FadeOut();
+                panel.Toggle(IsOn);
             }
 
             foreach (var panel in panelsToTurnOff)
             {
                 if (panel == null) continue;
-                if (IsOn)
-                    panel.FadeOut();
-                else
-                    panel.FadeIn();
+                panel.Toggle(IsOn);
             }
 
             foreach (var rg in groupsToTurnOff)

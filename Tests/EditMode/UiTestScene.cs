@@ -109,9 +109,9 @@ namespace Submodules.Utility.Tests.EditMode
         public SpyToggle Toggle(RadioGroup group = null, bool interactable = true, System.Type graphicType = null) =>
             Element<SpyToggle>(interactable, parent: group != null ? group.transform : null, graphicType: graphicType);
 
-        /// <summary>A panel with the components <see cref="AbstractPanel"/> requires
+        /// <summary>A panel with the components <see cref="SimplePanel"/> requires
         /// (<c>CanvasGroup</c>, <c>GraphicRaycaster</c>) already attached. Its <c>Awake</c>
-        /// never runs — <see cref="AbstractPanel"/> is not <c>[ExecuteAlways]</c> — so
+        /// never runs — <see cref="SimplePanel"/> is not <c>[ExecuteAlways]</c> — so
         /// <c>FadeIn</c>/<c>FadeOut</c> are exercised exactly as a caller like
         /// <see cref="MultiplePanelToggle"/> would, with none of the panel's own startup
         /// side effects in the way.</summary>

@@ -45,7 +45,7 @@ namespace Submodules.Utility.UI
             else if (string.IsNullOrWhiteSpace(sceneToLoad))
             {
                 Debug.LogError($"Cant load '{sceneToLoad}' as sceneName");
-                //LoadMainMenu();
+                //LoadScene(Constants.MainMenuScene);
             }
             else
             {
@@ -57,12 +57,6 @@ namespace Submodules.Utility.UI
         {
             yield return null;
 
-            //if (sceneToLoad == ApplicationProvider.Instance.bootstrapperScene)
-            //{
-            //    Debug.LogError($"Cannot load {sceneToLoad.Colored(ColorExtensions.LightBlue)} again after application initialisation");
-            //    yield break;
-            //}
-
             Debug.Log($"{"LOADING:".Colored(ColorExtensions.Orange)}\t{sceneToLoad.Colored(ColorExtensions.LightBlue)}");
 
             if (Display && showProgress)
@@ -73,7 +67,7 @@ namespace Submodules.Utility.UI
 
                 timeStamp = Time.unscaledTime;
 
-                /// Wait for FadeIn
+                // Wait for FadeIn
                 yield return new WaitWhile(() => Time.unscaledTime - timeStamp < Display.FadeDuration);
 
                 if (loaderOperation != null)
@@ -88,15 +82,15 @@ namespace Submodules.Utility.UI
 
                 currentProgress = 0;
 
-                /// Wait for progressionBar
+                // Wait for progressionBar
                 while (currentProgress < 1)
                 {
                     yield return null;
 
-                    /// map progress (from 0f to .9f) to 0f to 1f
+                    // map progress (from 0f to .9f) to 0f to 1f
                     targetProgress = Mathf.Clamp01(loaderOperation.progress / .9f);
 
-                    /// Wait for the new sceneName to preload
+                    // Wait for the new sceneName to preload
                     if (targetProgress < .5f)
                         targetProgress *= 0.25f;
 
@@ -137,8 +131,5 @@ namespace Submodules.Utility.UI
 
             OnSceneLoaded?.Invoke(sceneToLoad);
         }
-
-        //[ContextMenu("Load MainMenu")]
-        //public void LoadMainMenu() => LoadScene(Constants.MainMenuScene);
     }
 }

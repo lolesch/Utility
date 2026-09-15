@@ -4,7 +4,7 @@ using UnityEngine.UI;
 
 namespace Submodules.Utility.UI
 {
-    public class LoadingScreenPanel : AbstractPanel
+    public class LoadingScreenPanel : SimplePanel
     {
         [SerializeField] private Image progressionBar;
         [SerializeField] private TextMeshProUGUI progressionText;

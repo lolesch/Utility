@@ -4,17 +4,14 @@ namespace Submodules.Utility.UI
 {
     public class PanelToggle : AbstractToggle
     {
-        [SerializeField] protected AbstractPanel panel;
+        [SerializeField] protected SimplePanel panel;
 
         protected override void OnToggle()
         {
             if (!panel) 
                 return;
             
-            if (IsOn)
-                panel.FadeIn();
-            else
-                panel.FadeOut();
+            panel.Toggle(IsOn);
         }
     }
 }
