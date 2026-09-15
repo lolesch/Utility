@@ -6,11 +6,6 @@ namespace Submodules.Utility.UI
     {
         //TODO: disable the button for x seconds to disable button spamming
         //TODO: implement audio feedback on click
-
-        protected AbstractButton()
-        {
-            staySelected = true;
-        }
         
         protected override void Interact(SelectionState state, bool instant)
         {

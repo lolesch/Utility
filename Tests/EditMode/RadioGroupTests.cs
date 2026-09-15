@@ -1,3 +1,4 @@
+using System.Reflection;
 using NUnit.Framework;
 using Submodules.Utility.UI;
 
@@ -9,7 +10,10 @@ namespace Submodules.Utility.Tests.EditMode
     /// by <c>MultiplePanelToggle</c> and by <c>MapPanel</c>, so both are pinned here.
     ///
     /// Driven through <see cref="RadioGroup.Activate"/> / <see cref="RadioGroup.Deactivate"/>
-    /// — the whole public surface since the membership list was removed.
+    /// — the whole public surface since the membership list was removed and
+    /// <c>Adopt</c> retired: a toggle's group is exactly its nearest <see cref="RadioGroup"/>
+    /// ancestor, so <see cref="UiTestScene.Toggle"/> parents a toggle under the group the same
+    /// way a real scene would.
     /// </summary>
     [TestFixture]
     public sealed class RadioGroupTests
@@ -163,5 +167,89 @@ namespace Submodules.Utility.Tests.EditMode
                 "the toggle that just went off is the one a restore has to bring back — "
                 + "MultiplePanelToggle reads PreviouslyActivatedToggle to undo itself");
         }
+
+        [Test]
+        public void Deactivate_Null_LeavesTheGroupAlone_EvenWhenNothingIsActive()
+        {
+            var changes = 0;
+            group.OnGroupChanged += () => changes++;
+
+            Assert.That(() => group.Deactivate(null), Throws.Nothing);
+            Assert.That(changes, Is.Zero, "a null toggle must not be read as 'the (null) active toggle switched off'");
+        }
+
+        /// <summary>The membership guard (issue: a hand-edited/reparented toggle left a
+        /// foreign group's <c>ActivatedToggle</c> pointing at it). A group can only ever
+        /// activate its own child.</summary>
+        [Test]
+        public void Activate_AToggleThatBelongsToAnotherGroup_IsIgnored()
+        {
+            var otherGroup = scene.Group();
+            var foreign = scene.Toggle(otherGroup);
+
+            group.Activate(foreign);
+
+            Assert.That(group.ActivatedToggle, Is.Null, "a group can only activate its own members");
+        }
+
+        [Test]
+        public void SetToggle_False_OnTheActiveToggle_AnnouncesTheChange()
+        {
+            var toggle = scene.Toggle(group);
+            toggle.SetToggle(true);
+
+            var changes = 0;
+            group.OnGroupChanged += () => changes++;
+
+            toggle.SetToggle(false);
+
+            Assert.That(changes, Is.EqualTo(1),
+                "the toggle switching itself off is a real 'no panel open' state change, "
+                + "whichever of click / hotkey / script routed it through SetToggle");
+        }
+
+        /// <summary>The self-heal counterpart to the membership guard: a reference that was
+        /// never produced by <see cref="RadioGroup.Activate"/> — e.g. a stale value left over
+        /// from a reparent, or hand-edited directly in the Inspector — is cleared the next
+        /// time the Editor validates the group, rather than persisting indefinitely.</summary>
+        [Test]
+        public void OnValidate_AnActivatedToggleThatIsNoLongerAMember_IsCleared()
+        {
+            var otherGroup = scene.Group();
+            var foreign = scene.Toggle(otherGroup);
+            UiTestScene.SetObject(group, "<ActivatedToggle>k__BackingField", foreign);
+
+            InvokeOnValidate(group);
+
+            Assert.That(group.ActivatedToggle, Is.Null);
+        }
+
+        [Test]
+        public void OnValidate_APreviouslyActivatedToggleThatIsNoLongerAMember_IsCleared()
+        {
+            var otherGroup = scene.Group();
+            var foreign = scene.Toggle(otherGroup);
+            UiTestScene.SetObject(group, "<PreviouslyActivatedToggle>k__BackingField", foreign);
+
+            InvokeOnValidate(group);
+
+            Assert.That(group.PreviouslyActivatedToggle, Is.Null);
+        }
+
+        [Test]
+        public void OnValidate_DoesNotClearAGenuineMember()
+        {
+            var toggle = scene.Toggle(group);
+            group.Activate(toggle);
+
+            InvokeOnValidate(group);
+
+            Assert.That(group.ActivatedToggle, Is.SameAs(toggle));
+        }
+
+        private static void InvokeOnValidate(RadioGroup target) =>
+            typeof(RadioGroup)
+                .GetMethod("OnValidate", BindingFlags.NonPublic | BindingFlags.Instance)
+                ?.Invoke(target, null);
     }
 }

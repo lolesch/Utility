@@ -20,7 +20,7 @@ namespace Submodules.Utility.UI
             foreach (var panel in panelsToTurnOff)
             {
                 if (panel == null) continue;
-                panel.Toggle(IsOn);
+                panel.Toggle(!IsOn);
             }
 
             foreach (var rg in groupsToTurnOff)

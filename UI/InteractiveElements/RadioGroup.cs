@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using NaughtyAttributes;
 using UnityEngine;
 
@@ -17,14 +16,25 @@ namespace Submodules.Utility.UI
         /// emitters; the group keeps no membership list, so a toggle being enabled or
         /// disabled is not by itself a change and does not raise this.</summary>
         public event Action OnGroupChanged;
-
-        public void Activate(AbstractToggle toActivate)
+        
+#if UNITY_EDITOR
+        private void OnValidate()
         {
-            if (toActivate == null || ActivatedToggle == toActivate)
+            if (ActivatedToggle != null && ActivatedToggle.RadioGroup != this)
+                ActivatedToggle = null;
+
+            if (PreviouslyActivatedToggle != null && PreviouslyActivatedToggle.RadioGroup != this)
+                PreviouslyActivatedToggle = null;
+        }
+#endif
+
+        public void Activate(AbstractToggle toggle)
+        {
+            if (toggle == null || toggle.RadioGroup != this || ActivatedToggle == toggle)
                 return;
 
             PreviouslyActivatedToggle = ActivatedToggle;
-            ActivatedToggle = toActivate;
+            ActivatedToggle = toggle;
             
             if (PreviouslyActivatedToggle != null) /*&& PreviouslyActivatedToggle.IsOn)*/
                 PreviouslyActivatedToggle.SetToggle(false);
@@ -42,7 +52,7 @@ namespace Submodules.Utility.UI
         /// </summary>
         public void Deactivate(AbstractToggle toggle)
         {
-            if (toggle == null || toggle != ActivatedToggle)
+            if (toggle == null || toggle.RadioGroup != this || toggle != ActivatedToggle)
                 return;
 
             // The toggle that just went off is the one a restore has to bring back —

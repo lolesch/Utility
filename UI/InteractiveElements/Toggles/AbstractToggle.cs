@@ -6,14 +6,16 @@ namespace Submodules.Utility.UI
     public abstract class AbstractToggle : AbstractButton
     {
         //TODO: implement audio feedback on toggle
-
-        protected AbstractToggle()
-        {
-            staySelected = true;
-        }
         
         [field: SerializeField] public bool IsOn { get; private set; } = false;
 
+        /// <summary>A toggle's group is wherever it sits in the hierarchy — the nearest
+        /// <see cref="RadioGroup"/> ancestor — never assigned directly. A toggle that needs a
+        /// different group belongs under a different parent, not pointed at a group that sits
+        /// elsewhere: that is exactly how a group used to end up with an
+        /// <see cref="RadioGroup.ActivatedToggle"/> that was not one of its own children —
+        /// the group's own editor validation now self-heals that, but the fix is to not
+        /// produce it in the first place.</summary>
         [SerializeField, ReadOnly] protected RadioGroup radioGroup = null;
         public RadioGroup RadioGroup => radioGroup != null ? radioGroup : radioGroup = GetComponentInParent<RadioGroup>();
 
@@ -25,7 +27,10 @@ namespace Submodules.Utility.UI
         protected override void OnValidate()
         {
             if (RadioGroup != null && RadioGroup.transform != transform.parent)
+            {
+                RadioGroup.Deactivate(this);
                 radioGroup = null;
+            }
 
             if (IsOn && RadioGroup)
                 RadioGroup.Activate(this);
@@ -63,6 +68,9 @@ namespace Submodules.Utility.UI
 
             SetToggle(!IsOn);
         }
+        
+        [ContextMenu("Toggle")]
+        private void Toggle() => SetToggle(!IsOn);
         
         public void SetToggle(bool toggleOn)
         {
