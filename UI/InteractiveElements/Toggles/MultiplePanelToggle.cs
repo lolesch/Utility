@@ -1,16 +1,15 @@
 using System.Collections.Generic;
-using Submodules.Utility.UI.InteractiveElements;
 using UnityEngine;
 
 namespace Submodules.Utility.UI
 {
-    public sealed class MultiplePanelToggle : AbstractToggle
+    public class MultiplePanelToggle : AbstractToggle
     {
         [SerializeField] private List<AbstractPanel> panelsToTurnOn;
         [SerializeField] private List<AbstractPanel> panelsToTurnOff;
         [SerializeField] private List<RadioGroup> groupsToTurnOff;
 
-        protected override void ToggleSideEffects()
+        protected override void OnToggle()
         {
             foreach (var panel in panelsToTurnOn)
             {

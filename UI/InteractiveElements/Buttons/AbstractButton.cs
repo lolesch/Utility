@@ -1,6 +1,6 @@
 using UnityEngine.EventSystems;
 
-namespace Submodules.Utility.UI.InteractiveElements
+namespace Submodules.Utility.UI
 {
     public abstract class AbstractButton : InteractiveElement, IPointerClickHandler
     {

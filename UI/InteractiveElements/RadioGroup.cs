@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using NaughtyAttributes;
-using Submodules.Utility.UI.InteractiveElements;
 using UnityEngine;
 
 namespace Submodules.Utility.UI
@@ -12,9 +11,11 @@ namespace Submodules.Utility.UI
         [field: SerializeField, ReadOnly] public AbstractToggle PreviouslyActivatedToggle { get; private set; }
         [field: SerializeField] public bool CanDeactivateAll { get; private set; } = false;
 
-        /// <summary>Fires whenever the group's state changes: a toggle registered or
-        /// unregistered, a sibling took over, or the active toggle switched itself off
-        /// (then <see cref="ActivatedToggle"/> is null - issue #30).</summary>
+        /// <summary>Fires whenever the group's selection changes: a sibling took over, or
+        /// the active toggle switched itself off (then <see cref="ActivatedToggle"/> is null
+        /// - issue #30). <see cref="Activate"/> and <see cref="Deactivate"/> are the only
+        /// emitters; the group keeps no membership list, so a toggle being enabled or
+        /// disabled is not by itself a change and does not raise this.</summary>
         public event Action OnGroupChanged;
 
         public void Activate(AbstractToggle toActivate)
@@ -44,6 +45,9 @@ namespace Submodules.Utility.UI
             if (toggle == null || toggle != ActivatedToggle)
                 return;
 
+            // The toggle that just went off is the one a restore has to bring back —
+            // MultiplePanelToggle reads PreviouslyActivatedToggle to undo itself.
+            PreviouslyActivatedToggle = toggle;
             ActivatedToggle = null;
 
             OnGroupChanged?.Invoke();

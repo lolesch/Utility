@@ -169,7 +169,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 73940948}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 401f5316d05eafd4b919b52765ab358b, type: 3}
+  m_Script: {fileID: 11500000, guid: 10fe3e07b31a40c7a39c36c8e5ba3e5b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ToolSmiths.InventorySystem.GUI.Components.Buttons.TestButton
   m_Navigation:
@@ -331,7 +331,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 321959891}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 401f5316d05eafd4b919b52765ab358b, type: 3}
+  m_Script: {fileID: 11500000, guid: 10fe3e07b31a40c7a39c36c8e5ba3e5b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ToolSmiths.InventorySystem.GUI.Components.Buttons.TestButton
   m_Navigation:
@@ -1331,7 +1331,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 1291983732}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6bc87f49238b4dd42936fa46074818a5, type: 3}
+  m_Script: {fileID: 11500000, guid: ca38d5aaa90a4b8ebe82475cfcdcbfaf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ToolSmiths.InventorySystem.GUI.Components.Toggles.Toggle
   m_Navigation:
@@ -2202,7 +2202,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 2113032097}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6bc87f49238b4dd42936fa46074818a5, type: 3}
+  m_Script: {fileID: 11500000, guid: ca38d5aaa90a4b8ebe82475cfcdcbfaf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ToolSmiths.InventorySystem.GUI.Components.Toggles.Toggle
   m_Navigation:

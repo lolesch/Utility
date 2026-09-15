@@ -1,7 +1,7 @@
 using Submodules.Utility.Extensions;
 using UnityEngine;
 
-namespace Submodules.Utility.UI.InteractiveElements
+namespace Submodules.Utility.UI
 {
     public sealed class TestButton : AbstractButton
     {

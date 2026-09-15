@@ -1,4 +1,3 @@
-using Submodules.Utility.UI.InteractiveElements;
 using UnityEngine;
 
 namespace Submodules.Utility.UI
@@ -7,7 +6,7 @@ namespace Submodules.Utility.UI
     {
         [SerializeField] protected AbstractPanel panel;
 
-        protected override void ToggleSideEffects()
+        protected override void OnToggle()
         {
             if (!panel) 
                 return;

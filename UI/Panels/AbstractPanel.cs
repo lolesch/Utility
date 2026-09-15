@@ -47,11 +47,6 @@ namespace Submodules.Utility.UI
             FadeOut(0);
         }
 
-        void OnValidate()
-        {
-            transform.localScale = Vector3.one;
-        }
-
         protected virtual void OnDestroy() => KillTweens();
 
         protected virtual void OnDisable() => KillTweens();
@@ -81,7 +76,8 @@ namespace Submodules.Utility.UI
 
             if (IsScaling)
             {
-                Transform.localScale = new Vector2(scaleFrom, scaleFrom);
+                // Vector3, not Vector2 — a widened Vector2 would zero the z scale.
+                Transform.localScale = new Vector3(scaleFrom, scaleFrom, 1f);
                 _ = Transform.TweenScale(1f, fadeInDuration, Ease.InOutQuad);
             }
         }
@@ -106,6 +102,11 @@ namespace Submodules.Utility.UI
         protected virtual void BeforeAppear() { }
 
         /// <summary>
+        /// Called right before the CanvasGroup fades out.
+        /// </summary>
+        protected virtual void BeforeDisappear() { }
+
+        /// <summary>
         /// Called after the CanvasGroup completed fading in.
         /// </summary>
         protected virtual void OnAppear()
@@ -127,7 +128,7 @@ namespace Submodules.Utility.UI
         {
             KillTweens();
 
-            // BeforeDisappear()
+            BeforeDisappear();
 
             if (fadeOutDuration <= 0)
             {

@@ -1,7 +1,7 @@
 using NaughtyAttributes;
 using UnityEngine;
 
-namespace Submodules.Utility.UI.InteractiveElements
+namespace Submodules.Utility.UI
 {
     public abstract class AbstractToggle : AbstractButton
     {
@@ -38,8 +38,11 @@ namespace Submodules.Utility.UI.InteractiveElements
         {
             switch (state)
             {
-                case SelectionState.Normal:
+                // Hover always grows, on or off — same affordance AbstractButton gives.
                 case SelectionState.Highlighted:
+                    Scale(hoverScale);
+                    break;
+                case SelectionState.Normal:
                 case SelectionState.Selected:
                     Scale(IsOn ? hoverScale : 1);
                     break;
@@ -67,7 +70,9 @@ namespace Submodules.Utility.UI.InteractiveElements
 
             Interact( SelectionState.Selected, true);
             
-            if (toggledOffSprite != null && toggledOnSprite != null)
+            // `image` is the target graphic cast to Image — null whenever it is any other
+            // Graphic, which nothing in the inspector forbids while the sprites are set.
+            if (image != null && toggledOffSprite != null && toggledOnSprite != null)
                 image.sprite = IsOn ? toggledOnSprite : toggledOffSprite;
 
             if (RadioGroup)
@@ -84,9 +89,9 @@ namespace Submodules.Utility.UI.InteractiveElements
                 }
             }
 
-            ToggleSideEffects();
+            OnToggle();
         }
 
-        protected abstract void ToggleSideEffects();
+        protected abstract void OnToggle();
     }
 }

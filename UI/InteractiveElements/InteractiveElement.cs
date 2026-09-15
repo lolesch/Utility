@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-namespace Submodules.Utility.UI.InteractiveElements
+namespace Submodules.Utility.UI
 {
     [RequireComponent(typeof(GraphicRaycaster), typeof(CanvasRenderer))]
     public class InteractiveElement : Selectable
@@ -19,10 +19,10 @@ namespace Submodules.Utility.UI.InteractiveElements
         {
             base.Awake();
 
-            if (targetGraphic)
-                targetGraphic.raycastTarget = interactable;
-            else
+            if (!targetGraphic)
                 LogExtensions.MissingComponent(nameof(Graphic), gameObject);
+
+            SyncRaycastTarget();
         }
 
         protected override void OnDisable()
@@ -37,6 +37,8 @@ namespace Submodules.Utility.UI.InteractiveElements
         {
             base.DoStateTransition(state, instant);
 
+            SyncRaycastTarget();
+
             Interact(state, instant);
         }
 
@@ -50,7 +52,8 @@ namespace Submodules.Utility.UI.InteractiveElements
                 // ensures that clicks have no visual feedback
                 case SelectionState.Pressed:
                 case SelectionState.Selected:
-                    targetGraphic.CrossFadeColor( colors.highlightedColor,  instant ? 0f : colors.fadeDuration, true, true);
+                    if (targetGraphic)
+                        targetGraphic.CrossFadeColor( colors.highlightedColor, instant ? 0f : colors.fadeDuration, true, true);
                     break;
                 case SelectionState.Normal:
                 case SelectionState.Disabled:
@@ -68,10 +71,30 @@ namespace Submodules.Utility.UI.InteractiveElements
                 EventSystem.current.SetSelectedGameObject(null);
         }
 
+        /// <summary>
+        /// Keeps raycast reception in step with <see cref="Selectable.interactable"/> for the
+        /// life of the component. Setting <c>interactable</c> routes through
+        /// <see cref="DoStateTransition"/>, so this is the one place that sees every change —
+        /// syncing only in <c>Awake</c> freezes the flag at its authored value and leaves an
+        /// element that is re-enabled at runtime permanently unclickable.
+        /// </summary>
+        private void SyncRaycastTarget()
+        {
+            if (targetGraphic)
+                targetGraphic.raycastTarget = interactable;
+        }
+
         protected void ResetScale() => Scale(1f);
 
         protected void Scale( float factor )
         {
+            // The tween pump is installed by TimerBootstrapper's [RuntimeInitializeOnLoadMethod],
+            // so it only ticks in play mode. Selectable is [ExecuteAlways] and OnValidate drives
+            // DoStateTransition in the editor — starting a tween there leaks a handle that never
+            // advances, never completes, and leaves IsTweening true forever.
+            if (!Application.isPlaying)
+                return;
+
             if (targetGraphic)
                 _ = targetGraphic.transform.TweenScale( factor, colors.fadeDuration, Ease.InOutSine);
         }
