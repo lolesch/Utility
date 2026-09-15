@@ -1,9 +1,8 @@
 using System;
 using System.Collections.Generic;
 using NaughtyAttributes;
-using Submodules.Utility.Extensions;
+using Submodules.Utility.UI.InteractiveElements;
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace Submodules.Utility.UI
 {
@@ -11,14 +10,12 @@ namespace Submodules.Utility.UI
     {
         [field: SerializeField, ReadOnly] public AbstractToggle ActivatedToggle { get; private set; }
         [field: SerializeField, ReadOnly] public AbstractToggle PreviouslyActivatedToggle { get; private set; }
-        [field: SerializeField] public bool AllowSwitchOff { get; private set; } = false;
+        [field: SerializeField] public bool CanDeactivateAll { get; private set; } = false;
 
         /// <summary>Fires whenever the group's state changes: a toggle registered or
         /// unregistered, a sibling took over, or the active toggle switched itself off
         /// (then <see cref="ActivatedToggle"/> is null - issue #30).</summary>
         public event Action OnGroupChanged;
-
-        private readonly List<AbstractToggle> radioToggles = new();
 
         public void Activate(AbstractToggle toActivate)
         {
@@ -33,27 +30,7 @@ namespace Submodules.Utility.UI
     
             OnGroupChanged?.Invoke();
         }
-
-        public void Register(AbstractToggle item)
-        {
-            if (radioToggles.Contains(item))
-                return;
-
-            radioToggles.Add(item);
-
-            OnGroupChanged?.Invoke();
-        }
-
-        public void Unregister(AbstractToggle item)
-        {
-            if (!radioToggles.Contains(item))
-                return;
-
-            radioToggles.Remove(item);
-
-            OnGroupChanged?.Invoke();
-        }
-
+        
         /// <summary>
         /// The counterpart to <see cref="Activate"/>: the active toggle turned off, so the
         /// group clears and fires <see cref="OnGroupChanged"/> (issue #30). Reached from

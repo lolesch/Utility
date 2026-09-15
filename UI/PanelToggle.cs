@@ -1,3 +1,4 @@
+using Submodules.Utility.UI.InteractiveElements;
 using UnityEngine;
 
 namespace Submodules.Utility.UI
@@ -6,15 +7,15 @@ namespace Submodules.Utility.UI
     {
         [SerializeField] protected AbstractPanel panel;
 
-        public override void SetToggle(bool isOn)
+        protected override void ToggleSideEffects()
         {
-            base.SetToggle(isOn);
-
-            if (panel)
-                if (isOn)
-                    panel.FadeIn();
-                else
-                    panel.FadeOut();
+            if (!panel) 
+                return;
+            
+            if (IsOn)
+                panel.FadeIn();
+            else
+                panel.FadeOut();
         }
     }
 }

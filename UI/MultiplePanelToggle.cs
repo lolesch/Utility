@@ -1,22 +1,21 @@
 using System.Collections.Generic;
+using Submodules.Utility.UI.InteractiveElements;
 using UnityEngine;
 
 namespace Submodules.Utility.UI
 {
-    public class MultiplePanelToggle : AbstractToggle
+    public sealed class MultiplePanelToggle : AbstractToggle
     {
-        [SerializeField] protected List<AbstractPanel> panelsToTurnOn;
-        [SerializeField] protected List<AbstractPanel> panelsToTurnOff;
-        [SerializeField] protected List<RadioGroup> groupsToTurnOff;
+        [SerializeField] private List<AbstractPanel> panelsToTurnOn;
+        [SerializeField] private List<AbstractPanel> panelsToTurnOff;
+        [SerializeField] private List<RadioGroup> groupsToTurnOff;
 
-        public override void SetToggle(bool isOn)
+        protected override void ToggleSideEffects()
         {
-            base.SetToggle(isOn);
-
             foreach (var panel in panelsToTurnOn)
             {
                 if (panel == null) continue;
-                if (isOn)
+                if (IsOn)
                     panel.FadeIn();
                 else
                     panel.FadeOut();
@@ -25,7 +24,7 @@ namespace Submodules.Utility.UI
             foreach (var panel in panelsToTurnOff)
             {
                 if (panel == null) continue;
-                if (isOn)
+                if (IsOn)
                     panel.FadeOut();
                 else
                     panel.FadeIn();
@@ -34,9 +33,9 @@ namespace Submodules.Utility.UI
             foreach (var rg in groupsToTurnOff)
             {
                 if (rg == null) continue;
-                if (isOn && rg.ActivatedToggle != null)
+                if (IsOn && rg.ActivatedToggle != null)
                     rg.ActivatedToggle.SetToggle(false);
-                else if (!isOn && rg.PreviouslyActivatedToggle != null)
+                else if (!IsOn && rg.PreviouslyActivatedToggle != null)
                         rg.PreviouslyActivatedToggle.SetToggle(true);
             }
         }

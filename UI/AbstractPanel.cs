@@ -24,6 +24,7 @@ namespace Submodules.Utility.UI
 
         [field: SerializeField, Range(0, 1)] public float FadeDuration { get; } = .2f;
 
+        // TODO: this should be its own component - barely used!
         [Tooltip("The timespan to pass after fading in before automatically fading out again. \n0 means no autoFadeOut.")]
         [SerializeField, Range(0, 10)] private float fadeOutDelay = 0f;
 
@@ -44,6 +45,11 @@ namespace Submodules.Utility.UI
             startPosition = Transform.anchoredPosition;
 
             FadeOut(0);
+        }
+
+        void OnValidate()
+        {
+            transform.localScale = Vector3.one;
         }
 
         protected virtual void OnDestroy() => KillTweens();
