@@ -63,13 +63,26 @@ namespace Submodules.Utility.Tests.EditMode
         [Test]
         public void SetToggle_False_WhenItWasTheActiveOne_EmptiesTheGroup()
         {
-            var group = scene.Group();
+            var group = scene.Group(isDeselectable: true);
             var toggle = scene.Toggle(group);
             toggle.SetToggle(true);
 
             toggle.SetToggle(false);
 
             Assert.That(group.SelectedToggle, Is.Null);
+        }
+
+        [Test]
+        public void SetToggle_False_WhenItWasTheActiveOne_NotDeselectable_IsRefused()
+        {
+            var group = scene.Group();
+            var toggle = scene.Toggle(group);
+            toggle.SetToggle(true);
+
+            toggle.SetToggle(false);
+
+            Assert.That(toggle.IsOn, Is.True);
+            Assert.That(group.SelectedToggle, Is.SameAs(toggle));
         }
 
         [Test]
@@ -95,7 +108,7 @@ namespace Submodules.Utility.Tests.EditMode
         [Test]
         public void ClickingTheActiveToggle_WhenTheGroupCannotBeEmptied_IsRefused()
         {
-            var group = scene.Group(canDeactivateAll: false);
+            var group = scene.Group(isDeselectable: false);
             var toggle = scene.Toggle(group);
             toggle.SetToggle(true);
 
@@ -108,7 +121,7 @@ namespace Submodules.Utility.Tests.EditMode
         [Test]
         public void ClickingTheActiveToggle_WhenTheGroupCanBeEmptied_TurnsItOff()
         {
-            var group = scene.Group(canDeactivateAll: true);
+            var group = scene.Group(isDeselectable: true);
             var toggle = scene.Toggle(group);
             toggle.SetToggle(true);
 

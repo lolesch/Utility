@@ -19,6 +19,12 @@ namespace Submodules.Utility.UI
 
         protected RectTransform _transform = null;
         public RectTransform Transform => _transform != null ? _transform : _transform = GetComponentInParent<RectTransform>();
+
+        /// <summary>A panel's group is wherever it sits in the hierarchy — the nearest
+        /// <see cref="PanelGroup"/> ancestor — never assigned directly, the same rule
+        /// <see cref="AbstractToggle.RadioGroup"/> follows for toggles.</summary>
+        private PanelGroup _panelGroup = null;
+        public PanelGroup PanelGroup => _panelGroup != null ? _panelGroup : _panelGroup = GetComponentInParent<PanelGroup>();
         #endregion COMPONENT REFERENCES
 
         [field: SerializeField, Range(0, 1)] public float FadeDuration { get; } = .2f;

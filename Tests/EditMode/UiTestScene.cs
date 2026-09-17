@@ -56,15 +56,31 @@ namespace Submodules.Utility.Tests.EditMode
         }
 
         /// <summary>A <see cref="RadioGroup"/> whose children are the toggles it owns.</summary>
-        public RadioGroup Group(bool canDeactivateAll = false)
+        public RadioGroup Group(bool isDeselectable = false)
         {
             var go = new GameObject("radio-group", typeof(RectTransform));
             go.transform.SetParent(root.transform, false);
 
             var group = go.AddComponent<RadioGroup>();
 
-            if (canDeactivateAll)
-                SetBool(group, "<CanDeactivateAll>k__BackingField", true);
+            if (isDeselectable)
+                SetBool(group, "<IsDeselectable>k__BackingField", true);
+
+            spawned.Add(go);
+
+            return group;
+        }
+
+        /// <summary>A <see cref="PanelGroup"/> whose children are the panels it owns.</summary>
+        public PanelGroup PanelGroup(bool isClearable = false)
+        {
+            var go = new GameObject("panel-group", typeof(RectTransform));
+            go.transform.SetParent(root.transform, false);
+
+            var group = go.AddComponent<PanelGroup>();
+
+            if (isClearable)
+                SetBool(group, "<IsClearable>k__BackingField", true);
 
             spawned.Add(go);
 
@@ -115,10 +131,10 @@ namespace Submodules.Utility.Tests.EditMode
         /// <c>FadeIn</c>/<c>FadeOut</c> are exercised exactly as a caller like
         /// <see cref="MultiplePanelToggle"/> would, with none of the panel's own startup
         /// side effects in the way.</summary>
-        public SpyPanel Panel()
+        public SpyPanel Panel(PanelGroup group = null)
         {
             var go = new GameObject("panel", typeof(RectTransform), typeof(CanvasGroup), typeof(GraphicRaycaster));
-            go.transform.SetParent(root.transform, false);
+            go.transform.SetParent(group != null ? group.transform : root.transform, false);
 
             var panel = go.AddComponent<SpyPanel>();
             spawned.Add(go);

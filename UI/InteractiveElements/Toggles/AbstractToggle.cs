@@ -63,7 +63,7 @@ namespace Submodules.Utility.UI
         
         public void SetToggle(bool toggleOn)
         {
-            if (IsOn && RadioGroup && !RadioGroup.IsDeselectable)
+            if (!toggleOn && IsOn && RadioGroup && RadioGroup.SelectedToggle == this && !RadioGroup.IsDeselectable)
             {
                 Debug.Log("SetToggle(false) prevented. To allow un-toggle, enable 'IsDeselectable' in the RadioGroup," +
                           $" or re-parent {name} out of any RadioGroup.", RadioGroup);

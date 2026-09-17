@@ -114,12 +114,24 @@ namespace Submodules.Utility.Tests.EditMode
         [Test]
         public void Deactivate_ClearsTheActiveToggle()
         {
+            var deselectable = scene.Group(isDeselectable: true);
+            var toggle = scene.Toggle(deselectable);
+            deselectable.Select(toggle);
+
+            deselectable.Deselect(toggle);
+
+            Assert.That(deselectable.SelectedToggle, Is.Null);
+        }
+
+        [Test]
+        public void Deactivate_NotDeselectable_IsANoOp()
+        {
             var toggle = scene.Toggle(group);
             group.Select(toggle);
 
             group.Deselect(toggle);
 
-            Assert.That(group.SelectedToggle, Is.Null);
+            Assert.That(group.SelectedToggle, Is.SameAs(toggle), "a group must keep its selection unless it opted into being deselectable");
         }
 
         [Test]
@@ -141,13 +153,14 @@ namespace Submodules.Utility.Tests.EditMode
         [Test]
         public void Deactivate_AnnouncesTheChange()
         {
-            var toggle = scene.Toggle(group);
-            group.Select(toggle);
+            var deselectable = scene.Group(isDeselectable: true);
+            var toggle = scene.Toggle(deselectable);
+            deselectable.Select(toggle);
 
             var changes = 0;
-            group.OnGroupChanged += () => changes++;
+            deselectable.OnGroupChanged += () => changes++;
 
-            group.Deselect(toggle);
+            deselectable.Deselect(toggle);
 
             Assert.That(changes, Is.EqualTo(1));
         }
@@ -155,17 +168,17 @@ namespace Submodules.Utility.Tests.EditMode
         [Test]
         public void Deactivate_RemembersTheToggleItCleared()
         {
-            var first = scene.Toggle(group);
-            var second = scene.Toggle(group);
+            var deselectable = scene.Group(isDeselectable: true);
+            var first = scene.Toggle(deselectable);
+            var second = scene.Toggle(deselectable);
 
-            group.Select(first);
-            group.Select(second);
+            deselectable.Select(first);
+            deselectable.Select(second);
 
-            group.Deselect(second);
+            deselectable.Deselect(second);
 
-            Assert.That(group.PreviouslySelectedToggle, Is.SameAs(second),
-                "the toggle that just went off is the one a restore has to bring back — "
-                + "MultiplePanelToggle reads PreviouslyActivatedToggle to undo itself");
+            Assert.That(deselectable.PreviouslySelectedToggle, Is.SameAs(second),
+                "the toggle that just went off is the one a restore has to bring back");
         }
 
         [Test]
@@ -195,17 +208,18 @@ namespace Submodules.Utility.Tests.EditMode
         [Test]
         public void SetToggle_False_OnTheActiveToggle_AnnouncesTheChange()
         {
-            var toggle = scene.Toggle(group);
+            var deselectable = scene.Group(isDeselectable: true);
+            var toggle = scene.Toggle(deselectable);
             toggle.SetToggle(true);
 
             var changes = 0;
-            group.OnGroupChanged += () => changes++;
+            deselectable.OnGroupChanged += () => changes++;
 
             toggle.SetToggle(false);
 
             Assert.That(changes, Is.EqualTo(1),
                 "the toggle switching itself off is a real 'no panel open' state change, "
-                + "whichever of click / hotkey / script routed it through SetToggle");
+                + "whichever of click / hotkey / script routed it through SetToggle, as long as the group is deselectable");
         }
 
         /// <summary>The self-heal counterpart to the membership guard: a reference that was
@@ -217,7 +231,7 @@ namespace Submodules.Utility.Tests.EditMode
         {
             var otherGroup = scene.Group();
             var foreign = scene.Toggle(otherGroup);
-            UiTestScene.SetObject(group, "<ActivatedToggle>k__BackingField", foreign);
+            UiTestScene.SetObject(group, "<SelectedToggle>k__BackingField", foreign);
 
             InvokeOnValidate(group);
 
@@ -229,7 +243,7 @@ namespace Submodules.Utility.Tests.EditMode
         {
             var otherGroup = scene.Group();
             var foreign = scene.Toggle(otherGroup);
-            UiTestScene.SetObject(group, "<PreviouslyActivatedToggle>k__BackingField", foreign);
+            UiTestScene.SetObject(group, "<PreviouslySelectedToggle>k__BackingField", foreign);
 
             InvokeOnValidate(group);
 
