@@ -9,7 +9,7 @@ namespace Submodules.Utility.Tests.EditMode
     /// active, and which one a caller should restore if the group empties. Both are read
     /// by <c>MultiplePanelToggle</c> and by <c>MapPanel</c>, so both are pinned here.
     ///
-    /// Driven through <see cref="RadioGroup.Activate"/> / <see cref="RadioGroup.Deactivate"/>
+    /// Driven through <see cref="RadioGroup.Select"/> / <see cref="RadioGroup.Deselect"/>
     /// — the whole public surface since the membership list was removed and
     /// <c>Adopt</c> retired: a toggle's group is exactly its nearest <see cref="RadioGroup"/>
     /// ancestor, so <see cref="UiTestScene.Toggle"/> parents a toggle under the group the same
@@ -34,8 +34,8 @@ namespace Submodules.Utility.Tests.EditMode
         [Test]
         public void ANewGroup_HasNothingActive()
         {
-            Assert.That(group.ActivatedToggle, Is.Null);
-            Assert.That(group.PreviouslyActivatedToggle, Is.Null);
+            Assert.That(group.SelectedToggle, Is.Null);
+            Assert.That(group.PreviouslySelectedToggle, Is.Null);
         }
 
         [Test]
@@ -43,20 +43,20 @@ namespace Submodules.Utility.Tests.EditMode
         {
             var toggle = scene.Toggle(group);
 
-            group.Activate(toggle);
+            group.Select(toggle);
 
-            Assert.That(group.ActivatedToggle, Is.SameAs(toggle));
+            Assert.That(group.SelectedToggle, Is.SameAs(toggle));
         }
 
         [Test]
         public void Activate_Null_LeavesTheGroupAlone()
         {
             var toggle = scene.Toggle(group);
-            group.Activate(toggle);
+            group.Select(toggle);
 
-            group.Activate(null);
+            group.Select(null);
 
-            Assert.That(group.ActivatedToggle, Is.SameAs(toggle));
+            Assert.That(group.SelectedToggle, Is.SameAs(toggle));
         }
 
         [Test]
@@ -65,11 +65,11 @@ namespace Submodules.Utility.Tests.EditMode
             var first = scene.Toggle(group);
             var second = scene.Toggle(group);
 
-            group.Activate(first);
-            group.Activate(second);
+            group.Select(first);
+            group.Select(second);
 
-            Assert.That(group.ActivatedToggle, Is.SameAs(second));
-            Assert.That(group.PreviouslyActivatedToggle, Is.SameAs(first));
+            Assert.That(group.SelectedToggle, Is.SameAs(second));
+            Assert.That(group.PreviouslySelectedToggle, Is.SameAs(first));
         }
 
         [Test]
@@ -89,12 +89,12 @@ namespace Submodules.Utility.Tests.EditMode
         public void Activate_TheAlreadyActiveToggle_ChangesNothing()
         {
             var toggle = scene.Toggle(group);
-            group.Activate(toggle);
+            group.Select(toggle);
 
             var changes = 0;
             group.OnGroupChanged += () => changes++;
 
-            group.Activate(toggle);
+            group.Select(toggle);
 
             Assert.That(changes, Is.Zero);
         }
@@ -106,7 +106,7 @@ namespace Submodules.Utility.Tests.EditMode
             var changes = 0;
             group.OnGroupChanged += () => changes++;
 
-            group.Activate(toggle);
+            group.Select(toggle);
 
             Assert.That(changes, Is.EqualTo(1));
         }
@@ -115,11 +115,11 @@ namespace Submodules.Utility.Tests.EditMode
         public void Deactivate_ClearsTheActiveToggle()
         {
             var toggle = scene.Toggle(group);
-            group.Activate(toggle);
+            group.Select(toggle);
 
-            group.Deactivate(toggle);
+            group.Deselect(toggle);
 
-            Assert.That(group.ActivatedToggle, Is.Null);
+            Assert.That(group.SelectedToggle, Is.Null);
         }
 
         [Test]
@@ -127,14 +127,14 @@ namespace Submodules.Utility.Tests.EditMode
         {
             var active = scene.Toggle(group);
             var other = scene.Toggle(group);
-            group.Activate(active);
+            group.Select(active);
 
             var changes = 0;
             group.OnGroupChanged += () => changes++;
 
-            group.Deactivate(other);
+            group.Deselect(other);
 
-            Assert.That(group.ActivatedToggle, Is.SameAs(active));
+            Assert.That(group.SelectedToggle, Is.SameAs(active));
             Assert.That(changes, Is.Zero);
         }
 
@@ -142,12 +142,12 @@ namespace Submodules.Utility.Tests.EditMode
         public void Deactivate_AnnouncesTheChange()
         {
             var toggle = scene.Toggle(group);
-            group.Activate(toggle);
+            group.Select(toggle);
 
             var changes = 0;
             group.OnGroupChanged += () => changes++;
 
-            group.Deactivate(toggle);
+            group.Deselect(toggle);
 
             Assert.That(changes, Is.EqualTo(1));
         }
@@ -158,12 +158,12 @@ namespace Submodules.Utility.Tests.EditMode
             var first = scene.Toggle(group);
             var second = scene.Toggle(group);
 
-            group.Activate(first);
-            group.Activate(second);
+            group.Select(first);
+            group.Select(second);
 
-            group.Deactivate(second);
+            group.Deselect(second);
 
-            Assert.That(group.PreviouslyActivatedToggle, Is.SameAs(second),
+            Assert.That(group.PreviouslySelectedToggle, Is.SameAs(second),
                 "the toggle that just went off is the one a restore has to bring back — "
                 + "MultiplePanelToggle reads PreviouslyActivatedToggle to undo itself");
         }
@@ -174,7 +174,7 @@ namespace Submodules.Utility.Tests.EditMode
             var changes = 0;
             group.OnGroupChanged += () => changes++;
 
-            Assert.That(() => group.Deactivate(null), Throws.Nothing);
+            Assert.That(() => group.Deselect(null), Throws.Nothing);
             Assert.That(changes, Is.Zero, "a null toggle must not be read as 'the (null) active toggle switched off'");
         }
 
@@ -187,9 +187,9 @@ namespace Submodules.Utility.Tests.EditMode
             var otherGroup = scene.Group();
             var foreign = scene.Toggle(otherGroup);
 
-            group.Activate(foreign);
+            group.Select(foreign);
 
-            Assert.That(group.ActivatedToggle, Is.Null, "a group can only activate its own members");
+            Assert.That(group.SelectedToggle, Is.Null, "a group can only activate its own members");
         }
 
         [Test]
@@ -209,7 +209,7 @@ namespace Submodules.Utility.Tests.EditMode
         }
 
         /// <summary>The self-heal counterpart to the membership guard: a reference that was
-        /// never produced by <see cref="RadioGroup.Activate"/> — e.g. a stale value left over
+        /// never produced by <see cref="RadioGroup.Select"/> — e.g. a stale value left over
         /// from a reparent, or hand-edited directly in the Inspector — is cleared the next
         /// time the Editor validates the group, rather than persisting indefinitely.</summary>
         [Test]
@@ -221,7 +221,7 @@ namespace Submodules.Utility.Tests.EditMode
 
             InvokeOnValidate(group);
 
-            Assert.That(group.ActivatedToggle, Is.Null);
+            Assert.That(group.SelectedToggle, Is.Null);
         }
 
         [Test]
@@ -233,18 +233,18 @@ namespace Submodules.Utility.Tests.EditMode
 
             InvokeOnValidate(group);
 
-            Assert.That(group.PreviouslyActivatedToggle, Is.Null);
+            Assert.That(group.PreviouslySelectedToggle, Is.Null);
         }
 
         [Test]
         public void OnValidate_DoesNotClearAGenuineMember()
         {
             var toggle = scene.Toggle(group);
-            group.Activate(toggle);
+            group.Select(toggle);
 
             InvokeOnValidate(group);
 
-            Assert.That(group.ActivatedToggle, Is.SameAs(toggle));
+            Assert.That(group.SelectedToggle, Is.SameAs(toggle));
         }
 
         private static void InvokeOnValidate(RadioGroup target) =>

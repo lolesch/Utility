@@ -10,8 +10,8 @@ namespace Submodules.Utility.Tests.EditMode
     /// issue #30, up to N sibling <see cref="RadioGroup"/>s it clears while it is on and
     /// restores when it turns back off. Driven through <see cref="AbstractToggle.SetToggle"/>
     /// (what code calls), observed through <see cref="Submodules.Utility.Tests.TestSupport.SpyPanel"/>'s
-    /// fade counters and the groups' own <see cref="RadioGroup.ActivatedToggle"/> /
-    /// <see cref="RadioGroup.PreviouslyActivatedToggle"/> state.
+    /// fade counters and the groups' own <see cref="RadioGroup.SelectedToggle"/> /
+    /// <see cref="RadioGroup.PreviouslySelectedToggle"/> state.
     /// </summary>
     [TestFixture]
     public sealed class MultiplePanelToggleTests
@@ -86,7 +86,7 @@ namespace Submodules.Utility.Tests.EditMode
             toggle.SetToggle(true);
 
             Assert.That(active.IsOn, Is.False);
-            Assert.That(group.ActivatedToggle, Is.Null);
+            Assert.That(group.SelectedToggle, Is.Null);
         }
 
         [Test]
@@ -110,7 +110,7 @@ namespace Submodules.Utility.Tests.EditMode
             toggle.SetToggle(false);
 
             Assert.That(previous.IsOn, Is.True);
-            Assert.That(group.ActivatedToggle, Is.SameAs(previous));
+            Assert.That(group.SelectedToggle, Is.SameAs(previous));
         }
 
         [Test]

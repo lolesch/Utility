@@ -152,7 +152,7 @@ namespace Submodules.Utility.UI
 
         private void KillTweens()
         {
-            if (CanvasGroup == null)
+            if (CanvasGroup)
                 return;
 
             Tween.Kill(CanvasGroup);

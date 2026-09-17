@@ -26,10 +26,10 @@ namespace Submodules.Utility.UI
             foreach (var rg in groupsToTurnOff)
             {
                 if (rg == null) continue;
-                if (IsOn && rg.ActivatedToggle != null)
-                    rg.ActivatedToggle.SetToggle(false);
-                else if (!IsOn && rg.PreviouslyActivatedToggle != null)
-                        rg.PreviouslyActivatedToggle.SetToggle(true);
+                if (IsOn && rg.SelectedToggle != null)
+                    rg.SelectedToggle.SetToggle(false);
+                else if (!IsOn && rg.PreviouslySelectedToggle != null)
+                        rg.PreviouslySelectedToggle.SetToggle(true);
             }
         }
     }

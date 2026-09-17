@@ -10,8 +10,8 @@ namespace Submodules.Utility.Tests.EditMode
     /// <c>Selectable</c>: an element that is <c>interactable</c> receives pointer events,
     /// and one that is not, does not. The refactor bound
     /// <see cref="UnityEngine.UI.Graphic.raycastTarget"/> to <c>interactable</c>, so the two
-    /// have to stay in step for the lifetime of the component — `MapPanel`,
-    /// `MinimapPanel` and `StoreStashPhaseBinding` all flip <c>interactable</c> at runtime.
+    /// have to stay in step for the lifetime of the component — `LocationToggle` (driven by
+    /// `MinimapController`) flips <c>interactable</c> at runtime.
     ///
     /// Scale and colour feedback is deliberately not tested: <c>Scale</c> discards its tween
     /// handle and the tween pump is installed by <c>[RuntimeInitializeOnLoadMethod]</c>, so

@@ -57,7 +57,7 @@ namespace Submodules.Utility.Tests.EditMode
 
             toggle.SetToggle(true);
 
-            Assert.That(group.ActivatedToggle, Is.SameAs(toggle));
+            Assert.That(group.SelectedToggle, Is.SameAs(toggle));
         }
 
         [Test]
@@ -69,7 +69,7 @@ namespace Submodules.Utility.Tests.EditMode
 
             toggle.SetToggle(false);
 
-            Assert.That(group.ActivatedToggle, Is.Null);
+            Assert.That(group.SelectedToggle, Is.Null);
         }
 
         [Test]
@@ -102,7 +102,7 @@ namespace Submodules.Utility.Tests.EditMode
             toggle.OnPointerClick(UiTestScene.LeftClick());
 
             Assert.That(toggle.IsOn, Is.True, "the group must keep exactly one selection");
-            Assert.That(group.ActivatedToggle, Is.SameAs(toggle));
+            Assert.That(group.SelectedToggle, Is.SameAs(toggle));
         }
 
         [Test]
@@ -115,7 +115,7 @@ namespace Submodules.Utility.Tests.EditMode
             toggle.OnPointerClick(UiTestScene.LeftClick());
 
             Assert.That(toggle.IsOn, Is.False);
-            Assert.That(group.ActivatedToggle, Is.Null);
+            Assert.That(group.SelectedToggle, Is.Null);
         }
 
         [Test]
