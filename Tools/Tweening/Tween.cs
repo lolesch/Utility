@@ -32,15 +32,15 @@ namespace Submodules.Utility.Tools.Tweening
         private UnityEngine.Object link;
         private bool linked;
 
-        private Tween() { }
-
         public bool IsRunning { get; private set; }
 
         /// <summary>The linear (un-eased) progress, 0..1.</summary>
-        public float Progress => duration <= 0f ? 1f : Mathf.Clamp01( elapsed / duration );
+        public float Progress => duration <= 0f ? 1f : Mathf.Clamp01(elapsed / duration);
 
         /// <summary>Count of running tweens, across every target.</summary>
         public static int ActiveCount => TimerTicker.Tweens.Count;
+
+        private Tween() { }
 
         /// <summary>
         /// Starts a tween. <paramref name="onUpdate"/> is handed the eased fraction
@@ -48,11 +48,11 @@ namespace Submodules.Utility.Tools.Tweening
         /// finishes on exactly 1. A non-positive <paramref name="duration"/> completes on
         /// the next tick.
         /// </summary>
-        public static Tween Play( float duration, Ease ease, Action<float> onUpdate )
+        public static Tween Play(float duration, Ease ease, Action<float> onUpdate)
         {
             var tween = pool.Count > 0 ? pool.Pop() : new Tween();
 
-            tween.duration = Mathf.Max( 0f, duration );
+            tween.duration = Mathf.Max(0f, duration);
             tween.elapsed = 0f;
             tween.ease = ease;
             tween.apply = onUpdate;
@@ -62,13 +62,13 @@ namespace Submodules.Utility.Tools.Tweening
             tween.linked = false;
             tween.IsRunning = true;
 
-            TimerTicker.RegisterTween( tween );
+            TimerTicker.RegisterTween(tween);
 
             return tween;
         }
 
         /// <summary>A callback for natural completion. Not called on <see cref="Kill()"/>.</summary>
-        public Tween OnComplete( Action callback )
+        public Tween OnComplete(Action callback)
         {
             onComplete = callback;
             return this;
@@ -78,7 +78,7 @@ namespace Submodules.Utility.Tools.Tweening
         /// Tags the tween so <see cref="Kill(object)"/> and <see cref="IsTweening(object)"/>
         /// can find it — the <c>DOTween.Kill(transform)</c> replacement.
         /// </summary>
-        public Tween SetTarget( object owner )
+        public Tween SetTarget(object owner)
         {
             target = owner;
             return this;
@@ -88,7 +88,7 @@ namespace Submodules.Utility.Tools.Tweening
         /// Binds the tween to a Unity object: once that object is destroyed the tween
         /// cancels silently on its next tick instead of the applier throwing.
         /// </summary>
-        public Tween LinkTo( UnityEngine.Object unityObject )
+        public Tween LinkTo(UnityEngine.Object unityObject)
         {
             link = unityObject;
             linked = true;
@@ -98,18 +98,18 @@ namespace Submodules.Utility.Tools.Tweening
         /// <summary>Cancels the tween. Silent by contract — does not fire <see cref="OnComplete"/>.</summary>
         public void Kill()
         {
-            if ( !IsRunning )
+            if (!IsRunning)
                 return;
 
             Release();
         }
 
-        public void Tick( float deltaTime )
+        public void Tick(float deltaTime)
         {
-            if ( !IsRunning )
+            if (!IsRunning)
                 return;
 
-            if ( linked && link == null )
+            if (linked && link == null)
             {
                 Release();
                 return;
@@ -117,14 +117,48 @@ namespace Submodules.Utility.Tools.Tweening
 
             elapsed += deltaTime;
 
-            apply?.Invoke( Easing.Evaluate( ease, Progress ) );
+            apply?.Invoke(Easing.Evaluate(ease, Progress));
 
-            if ( elapsed < duration )
+            if (elapsed < duration)
                 return;
 
             var callback = onComplete;
             Release();
             callback?.Invoke();
+        }
+
+        /// <summary>Cancels every running tween tagged with <paramref name="target"/>. Silent.</summary>
+        public static void Kill(object target)
+        {
+            if (target == null)
+                return;
+
+            var tweens = TimerTicker.Tweens;
+            for (var i = tweens.Count - 1; i >= 0; i--)
+                if (Equals(tweens[i].target, target))
+                    tweens[i].Kill();
+        }
+
+        /// <summary>True while a running tween is tagged with <paramref name="target"/>.</summary>
+        public static bool IsTweening(object target)
+        {
+            if (target == null)
+                return false;
+
+            var tweens = TimerTicker.Tweens;
+            for (var i = 0; i < tweens.Count; i++)
+                if (Equals(tweens[i].target, target))
+                    return true;
+
+            return false;
+        }
+
+        /// <summary>Cancels every running tween. Silent. For play-mode exit and between test cases.</summary>
+        public static void KillAll()
+        {
+            var tweens = TimerTicker.Tweens;
+            for (var i = tweens.Count - 1; i >= 0; i--)
+                tweens[i].Kill();
         }
 
         private void Release()
@@ -136,42 +170,8 @@ namespace Submodules.Utility.Tools.Tweening
             link = null;
             linked = false;
 
-            TimerTicker.DeregisterTween( this );
-            pool.Push( this );
-        }
-
-        /// <summary>Cancels every running tween tagged with <paramref name="target"/>. Silent.</summary>
-        public static void Kill( object target )
-        {
-            if ( target == null )
-                return;
-
-            var tweens = TimerTicker.Tweens;
-            for ( var i = tweens.Count - 1; i >= 0; i-- )
-                if ( Equals( tweens[i].target, target ) )
-                    tweens[i].Kill();
-        }
-
-        /// <summary>True while a running tween is tagged with <paramref name="target"/>.</summary>
-        public static bool IsTweening( object target )
-        {
-            if ( target == null )
-                return false;
-
-            var tweens = TimerTicker.Tweens;
-            for ( var i = 0; i < tweens.Count; i++ )
-                if ( Equals( tweens[i].target, target ) )
-                    return true;
-
-            return false;
-        }
-
-        /// <summary>Cancels every running tween. Silent. For play-mode exit and between test cases.</summary>
-        public static void KillAll()
-        {
-            var tweens = TimerTicker.Tweens;
-            for ( var i = tweens.Count - 1; i >= 0; i-- )
-                tweens[i].Kill();
+            TimerTicker.DeregisterTween(this);
+            pool.Push(this);
         }
     }
 }

@@ -1,3 +1,4 @@
+#if UNITY_EDITOR
 using System;
 using System.Diagnostics;
 using Submodules.Utility.Extensions;
@@ -57,20 +58,20 @@ namespace Submodules.Utility.Tools
         public static string GetVersion()
         {
             SplitBundleVersion(out var major, out var minor, out var patch, out var releaseType);
-            
+
             var versionNumber = $"{major:0}.{minor:0}.{patch}";
-            
+
             if (releaseType is not ReleaseType.None and < ReleaseType.Release)
                 versionNumber = $"{versionNumber}_{releaseType}";
-            
+
             return versionNumber;
         }
 
-        private static string IncrementBundleVersion( IncrementType increment )
+        private static string IncrementBundleVersion(IncrementType increment)
         {
             SplitBundleVersion(out var major, out var minor, out var patch, out var releaseType);
 
-            switch ( increment )
+            switch (increment)
             {
                 case IncrementType.GitHash:
                     break;
@@ -87,9 +88,9 @@ namespace Submodules.Utility.Tools
                     minor = 0;
                     break;
                 default:
-                    throw new ArgumentOutOfRangeException( nameof(increment), increment, null );
+                    throw new ArgumentOutOfRangeException(nameof(increment), increment, null);
             }
-            
+
             patch = GetShortCommitHash();
 
             var versionNumber = $"{major:0}.{minor:0}.{patch}";
@@ -97,21 +98,21 @@ namespace Submodules.Utility.Tools
             if (releaseType is not ReleaseType.None and < ReleaseType.Release)
                 versionNumber = $"{versionNumber}_{releaseType}";
 
-            if( PlayerSettings.bundleVersion != versionNumber )
+            if (PlayerSettings.bundleVersion != versionNumber)
             {
                 PlayerSettings.bundleVersion = versionNumber;
                 AssetDatabase.SaveAssets();
             }
-            
+
             Debug.LogWarning($"bundleVersion: {PlayerSettings.bundleVersion.Colored(ColorExtensions.Orange)}");
             return versionNumber;
         }
-        
+
         private static string GetShortCommitHash()
         {
             ProcessStartInfo startInfo = new ProcessStartInfo("git")
             {
-                Arguments = "rev-parse --short HEAD", 
+                Arguments = "rev-parse --short HEAD",
                 RedirectStandardOutput = true,
                 UseShellExecute = false,
                 CreateNoWindow = true
@@ -120,21 +121,21 @@ namespace Submodules.Utility.Tools
             using Process process = Process.Start(startInfo);
             string result = process.StandardOutput.ReadToEnd();
             result = result.Trim(); // returns something like "734713b"
-            
-            return string.IsNullOrEmpty( result ) ? "N/A" : result;
+
+            return string.IsNullOrEmpty(result) ? "N/A" : result;
         }
 
-
         [MenuItem("ToolSmiths/Version/GitHash Update", false, 800)]
-        private static string UpdateGitHash() => IncrementBundleVersion( IncrementType.GitHash);
+        private static string UpdateGitHash() => IncrementBundleVersion(IncrementType.GitHash);
 
         [MenuItem("ToolSmiths/Version/Minor Update", false, 801)]
-        private static string IncreaseMinorNumber() => IncrementBundleVersion( IncrementType.Minor);
+        private static string IncreaseMinorNumber() => IncrementBundleVersion(IncrementType.Minor);
 
         [MenuItem("ToolSmiths/Version/Major Update", false, 802)]
-        private static string IncreaseMajorNumber() => IncrementBundleVersion( IncrementType.Major);
+        private static string IncreaseMajorNumber() => IncrementBundleVersion(IncrementType.Major);
 
         [MenuItem("ToolSmiths/Version/Increase ReleaseType", false, 803)]
-        private static string IncreaseReleaseType() => IncrementBundleVersion( IncrementType.ReleaseType);
+        private static string IncreaseReleaseType() => IncrementBundleVersion(IncrementType.ReleaseType);
     }
 }
+#endif

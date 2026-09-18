@@ -12,41 +12,41 @@ namespace Submodules.Utility.Tools.Timer
         [SerializeField, ReadOnly, AllowNesting] private bool repeat;
         [SerializeField] private Stopwatch stopwatch;
 
-        public Timer( float duration ) : this( duration, false ) { }
-        
-        public Timer( float duration, bool repeat )
+        public float Duration
         {
-            Assert.IsTrue( 0 < duration, $"Duration {duration} must be positive" );
+            get => duration;
+            set { if (!Mathf.Approximately(duration, value)) duration = value; }
+        }
+
+        public float remaining => Mathf.Clamp(duration - stopwatch, 0, duration);
+        public float progress01 => 1 - Mathf.Clamp01(remaining / duration);
+        public bool IsRunning { get; private set; }
+
+        public event Action OnRewind;
+        public event Action OnComplete;
+        //public event Action<float> OnTick;
+
+        public static implicit operator float(Timer timer) => timer.duration;
+
+        public Timer(float duration) : this(duration, false) { }
+
+        public Timer(float duration, bool repeat)
+        {
+            Assert.IsTrue(0 < duration, $"Duration {duration} must be positive");
 
             this.duration = duration;
             this.repeat = repeat;
             stopwatch = new Stopwatch();
         }
 
-        public static implicit operator float( Timer timer ) => timer.duration;
-        
-        public float Duration
-        {
-            get => duration;
-            set { if (!Mathf.Approximately(duration, value)) duration = value; }
-        }
-        
-        public event Action OnRewind;
-        public event Action OnComplete;
-        //public event Action<float> OnTick;
-        
-        public float remaining => Mathf.Clamp( duration - stopwatch, 0, duration );
-        public float progress01 => 1 - Mathf.Clamp01( remaining / duration );
-        public bool IsRunning { get; private set; }
-
         public void Start()
         {
             stopwatch?.Reset();
-            if( IsRunning ) 
+            if (IsRunning)
                 return;
-            
+
             IsRunning = true;
-            TimerTicker.RegisterTimer( this );
+            TimerTicker.RegisterTimer(this);
         }
 
         public void Resume() => IsRunning = true;
@@ -55,39 +55,25 @@ namespace Submodules.Utility.Tools.Timer
         /// <summary>Cancels the timer. Silent by contract — does NOT fire OnComplete.</summary>
         public void Stop()
         {
-            if( !IsRunning )
+            if (!IsRunning)
                 return;
 
             IsRunning = false;
-            TimerTicker.DeregisterTimer( this );
+            TimerTicker.DeregisterTimer(this);
         }
 
-        /// <summary>Natural elapse of a non-repeat timer: deregister, then notify listeners.</summary>
-        private void Complete()
+        public void Tick(float tickInterval)
         {
-            IsRunning = false;
-            TimerTicker.DeregisterTimer( this );
-            OnComplete?.Invoke();
-        }
-
-        private void Rewind()
-        {
-            stopwatch?.Tick( -duration );
-            OnRewind?.Invoke();
-        }
-
-        public void Tick( float tickInterval )
-        {
-            if( !IsRunning)
+            if (!IsRunning)
                 return;
-            
-            stopwatch?.Tick( tickInterval );
+
+            stopwatch?.Tick(tickInterval);
             //OnTick?.Invoke( progress01 );
-            
-            if( 0 < remaining )
+
+            if (0 < remaining)
                 return;
-            
-            if( repeat )
+
+            if (repeat)
                 Rewind();
             else
                 Complete();
@@ -95,7 +81,21 @@ namespace Submodules.Utility.Tools.Timer
 
         public void Dispose()
         {
-            TimerTicker.DeregisterTimer( this );
+            TimerTicker.DeregisterTimer(this);
+        }
+
+        /// <summary>Natural elapse of a non-repeat timer: deregister, then notify listeners.</summary>
+        private void Complete()
+        {
+            IsRunning = false;
+            TimerTicker.DeregisterTimer(this);
+            OnComplete?.Invoke();
+        }
+
+        private void Rewind()
+        {
+            stopwatch?.Tick(-duration);
+            OnRewind?.Invoke();
         }
     }
 
@@ -104,7 +104,7 @@ namespace Submodules.Utility.Tools.Timer
         float remaining { get; }
         float progress01 { get; }
         bool IsRunning { get; }
-        void Tick( float tickInterval );
+        void Tick(float tickInterval);
         void Start();
         void Pause();
         void Resume();

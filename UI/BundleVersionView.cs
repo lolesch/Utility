@@ -15,7 +15,14 @@ namespace Submodules.Utility.UI
         [SerializeField, ReadOnly] private TextMeshProUGUI versionText;
 
         [ContextMenu("Refresh")]
-        private void Start() => RefreshVersionText(BundleVersionSetter.GetVersion());
+        private void Start()
+        {
+#if UNITY_EDITOR
+            RefreshVersionText(BundleVersionSetter.GetVersion());
+#else
+            RefreshVersionText(Application.version);
+#endif
+        }
 
         private void RefreshVersionText(string versionNumber)
         {
