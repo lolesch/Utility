@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Reflection;
 using NUnit.Framework;
 using Submodules.Utility.UI;
@@ -80,6 +81,34 @@ namespace Submodules.Utility.Tests.EditMode
             Assert.That(first.FadeOutCalls, Is.EqualTo(1));
             Assert.That(second.FadeInCalls, Is.EqualTo(1));
             Assert.That(group.ActivePanel, Is.SameAs(second));
+        }
+
+        /// <summary>
+        /// The ordering <see cref="PanelGroup.Show"/> exists to provide — the reason a group is
+        /// not merely "one panel in, one panel out": the replaced panel publishes its disappear
+        /// <i>before</i> the replacement publishes its appear.
+        ///
+        /// <para>Game code relies on that gap. A Side Panel announces its
+        /// <c>SidePanelContext</c> from these same two hooks, and the Sell Basket cancels a
+        /// staged sale on the <c>None</c> published between them — so a swap that announced the
+        /// two the other way round would reopen what it had just closed. Counters cannot see
+        /// the difference; only a shared record can.</para>
+        /// </summary>
+        [Test]
+        public void Show_ReplacedPanelDisappears_BeforeTheReplacementAppears()
+        {
+            var log = new List<string>();
+            var first = scene.Panel(group);
+            var second = scene.Panel(group);
+            first.Label = "first";
+            second.Label = "second";
+            first.Log = log;
+            second.Log = log;
+
+            group.Show(first);
+            group.Show(second);
+
+            Assert.That(log, Is.EqualTo(new[] { "first+", "first-", "second+" }));
         }
 
         [Test]
