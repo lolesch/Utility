@@ -19,10 +19,10 @@ namespace Submodules.Utility.UI
         {
             base.Awake();
 
-            if (!targetGraphic)
+            if (targetGraphic)
+                    targetGraphic.raycastTarget = true;
+            else
                 LogExtensions.MissingComponent(nameof(Graphic), gameObject);
-
-            SyncRaycastTarget();
         }
 
         protected override void OnDisable()
@@ -36,8 +36,6 @@ namespace Submodules.Utility.UI
         protected override void DoStateTransition(SelectionState state, bool instant)
         {
             base.DoStateTransition(state, instant);
-
-            SyncRaycastTarget();
 
             Interact(state, instant);
         }
@@ -69,19 +67,6 @@ namespace Submodules.Utility.UI
             
             if (EventSystem.current.currentSelectedGameObject == gameObject && !staySelected)
                 EventSystem.current.SetSelectedGameObject(null);
-        }
-
-        /// <summary>
-        /// Keeps raycast reception in step with <see cref="Selectable.interactable"/> for the
-        /// life of the component. Setting <c>interactable</c> routes through
-        /// <see cref="DoStateTransition"/>, so this is the one place that sees every change —
-        /// syncing only in <c>Awake</c> freezes the flag at its authored value and leaves an
-        /// element that is re-enabled at runtime permanently unclickable.
-        /// </summary>
-        private void SyncRaycastTarget()
-        {
-            if (targetGraphic)
-                targetGraphic.raycastTarget = interactable;
         }
 
         protected void ResetScale() => Scale(1f);

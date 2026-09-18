@@ -64,7 +64,7 @@ namespace Submodules.Utility.Tests.EditMode
             var group = go.AddComponent<RadioGroup>();
 
             if (isDeselectable)
-                SetBool(group, "<IsDeselectable>k__BackingField", true);
+                SetBool(group, "<IsClearable>k__BackingField", true);
 
             spawned.Add(go);
 

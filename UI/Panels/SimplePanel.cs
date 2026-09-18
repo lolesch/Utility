@@ -1,3 +1,4 @@
+using NaughtyAttributes;
 using Submodules.Utility.Extensions;
 using Submodules.Utility.Tools.Tweening;
 using UnityEngine;
@@ -14,17 +15,15 @@ namespace Submodules.Utility.UI
     public class SimplePanel : MonoBehaviour
     {
         #region COMPONENT REFERENCES
-        protected CanvasGroup _canvasGroup = null;
-        public CanvasGroup CanvasGroup => _canvasGroup != null ? _canvasGroup : _canvasGroup = GetComponentInParent<CanvasGroup>();
+        
+        private CanvasGroup canvasGroup = null;
+        private CanvasGroup CanvasGroup => canvasGroup ? canvasGroup : canvasGroup = GetComponent<CanvasGroup>();
 
-        protected RectTransform _transform = null;
-        public RectTransform Transform => _transform != null ? _transform : _transform = GetComponentInParent<RectTransform>();
-
-        /// <summary>A panel's group is wherever it sits in the hierarchy — the nearest
-        /// <see cref="PanelGroup"/> ancestor — never assigned directly, the same rule
-        /// <see cref="AbstractToggle.RadioGroup"/> follows for toggles.</summary>
-        private PanelGroup _panelGroup = null;
-        public PanelGroup PanelGroup => _panelGroup != null ? _panelGroup : _panelGroup = GetComponentInParent<PanelGroup>();
+        private RectTransform Transform => transform as RectTransform;
+        
+        /// <summary>A panel's <see cref="PanelGroup"/> is automatically assigned if present on the panel's parent.</summary>
+        [field: SerializeField, ReadOnly] public PanelGroup PanelGroup { get; private set; }
+        
         #endregion COMPONENT REFERENCES
 
         [field: SerializeField, Range(0, 1)] public float FadeDuration { get; } = .2f;
@@ -34,39 +33,79 @@ namespace Submodules.Utility.UI
 
         private Vector2 startPosition;
 
-        protected bool IsScaling => scaleFrom != 1f;
-        protected bool IsMoving => moveFrom != Vector2.zero;
+        private bool IsScaling => !Mathf.Approximately(scaleFrom, 1f);
+        private bool IsMoving => moveFrom != Vector2.zero;
+
+#if UNITY_EDITOR
+        protected void OnValidate()
+        {
+            var resolved = transform.parent.GetComponent<PanelGroup>();
+            
+            if (PanelGroup && PanelGroup != resolved)
+                PanelGroup.Hide(this);
+            
+            PanelGroup = resolved;
+        }
+#endif //UNITY_EDITOR
 
         protected virtual void Awake()
         {
             startPosition = Transform.anchoredPosition;
 
-            FadeOut(true);
+            if(!PanelGroup)
+               PanelGroup = transform.parent.GetComponent<PanelGroup>();
         }
+        
+        protected void Start() => Disappear(true);
 
-        private void OnDisable()
+        protected virtual void OnDisable() => KillTweens();
+
+        public void Toggle(bool toggleOn)
         {
-            KillTweens();
-
-            OnPanelDisable();
+            if (toggleOn)
+                FadeIn();
+            else
+                FadeOut();
         }
 
-        /// <summary>
-        /// Called whenever the panel is disabled or destroyed. Override this instead of
-        /// declaring <c>OnDisable</c>/<c>OnDestroy</c> directly — those are Unity magic
-        /// methods, so a subclass declaring its own <c>OnDisable</c> would silently hide this
-        /// class's cleanup instead of extending it (Unity dispatches to the most-derived
-        /// declaration only, with no compiler error for the missing <c>override</c>).
-        /// May run twice on a normal destroy of an enabled panel (once via <c>OnDisable</c>,
-        /// once via <c>OnDestroy</c>) — keep overrides idempotent, the way <c>KillTweens</c> is.
-        /// </summary>
-        //TODO: keep this or move overrides into OnDisappear?
-        protected virtual void OnPanelDisable() { }
-
+        /// <summary>The group-aware entry point: a caller (toggle, button, key handler) calls
+        /// this exactly as it always has, and — if this panel sits under a
+        /// <see cref="PanelGroup"/> — the group takes over and drives <see cref="Appear"/>
+        /// itself, hiding whichever sibling was up first. Ungrouped, it just appears.</summary>
         [ContextMenu("FadeIn")]
-        public virtual void FadeIn() => FadeIn(false);
+        public virtual void FadeIn()
+        {
+            if (PanelGroup)
+                PanelGroup.Show(this);
+            else
+                Appear(false);
+        }
 
-        private void FadeIn(bool instant)
+        /// <summary>The group-aware entry point, mirroring <see cref="FadeIn()"/>. Prevented
+        /// outright on the sole active panel of a group that is neither Clearable nor
+        /// Restorable — the same guard <see cref="AbstractToggle.SetToggle"/> has for
+        /// un-toggling the active one.</summary>
+        [ContextMenu("FadeOut")]
+        public void FadeOut()
+        {
+            if (PanelGroup && PanelGroup.ActivePanel == this && !PanelGroup.IsClearable && !PanelGroup.IsRestorable)
+            {
+                Debug.Log("FadeOut() prevented. Enable 'IsClearable' or 'IsRestorable' in the " +
+                          $"PanelGroup, or re-parent {name} out of any PanelGroup.", PanelGroup);
+                return;
+            }
+
+            if (PanelGroup && PanelGroup.ActivePanel == this)
+                PanelGroup.Hide(this);
+            else
+                Disappear(false);
+        }
+
+        /// <summary>The actual appear primitive, named to match <see cref="AbstractToggle.SetToggle"/>'s
+        /// on/off vocabulary. Internal so <see cref="PanelGroup.Show"/> can drive it directly
+        /// without looping back through the group-aware <see cref="FadeIn()"/> — that loop is
+        /// what silently double-fired <see cref="BeforeAppear"/> before.</summary>
+        internal void Appear(bool instant)
         {
             KillTweens();
             BeforeAppear();
@@ -89,24 +128,11 @@ namespace Submodules.Utility.UI
             }
         }
 
-        /// <summary>
-        /// Called right before the CanvasGroup fades in.
+        /// <summary> Called right before the CanvasGroup fades in.
         /// </summary>
-        protected virtual void BeforeAppear()
-        {
-            // refresh data -> IView? 
-        }
+        protected virtual void BeforeAppear() { } // refresh data -> IView?
 
-        /// <summary>
-        /// Called right before the CanvasGroup fades out.
-        /// </summary>
-        protected virtual void BeforeDisappear()
-        {
-            CanvasGroup.blocksRaycasts = false;
-        }
-
-        /// <summary>
-        /// Called after the CanvasGroup completed fading in.
+        /// <summary> Called after the CanvasGroup completed fading in.
         /// </summary>
         protected virtual void OnAppear()
         {
@@ -114,18 +140,11 @@ namespace Submodules.Utility.UI
             CanvasGroup.blocksRaycasts = true;
         }
 
-        /// <summary>
-        /// Called after the CanvasGroup completed fading out.
-        /// </summary>
-        protected virtual void OnDisappear()
-        {
-            CanvasGroup.alpha = 0;
-        }
-
-        [ContextMenu("FadeOut")]
-        public void FadeOut() => FadeOut( false );
-
-        private void FadeOut(bool instant)
+        /// <summary>The actual disappear primitive, named to match <see cref="AbstractToggle.SetToggle"/>'s
+        /// on/off vocabulary. Internal so <see cref="PanelGroup.Show"/> (fading out the replaced
+        /// panel) and <see cref="PanelGroup.Hide"/> can drive it directly without looping back
+        /// through the group-aware <see cref="FadeOut()"/>.</summary>
+        internal void Disappear(bool instant)
         {
             KillTweens();
             BeforeDisappear();
@@ -145,16 +164,13 @@ namespace Submodules.Utility.UI
                 _ = Transform.TweenScale(scaleFrom, FadeDuration, Ease.InQuad);
         }
 
-        //[ContextMenu("Toggle Visibility")]
-        //private void Toggle() => Toggle(CanvasGroup.alpha < 1);
+        /// <summary> Called right before the CanvasGroup fades out.
+        /// </summary>
+        protected virtual void BeforeDisappear() => CanvasGroup.blocksRaycasts = false;
 
-        public void Toggle(bool toggleOn)
-        {
-            if (toggleOn)
-                FadeIn();
-            else
-                FadeOut();
-        }
+        /// <summary> Called after the CanvasGroup completed fading out.
+        /// </summary>
+        protected virtual void OnDisappear() => CanvasGroup.alpha = 0;
 
         private void KillTweens()
         {

@@ -11,26 +11,18 @@ namespace Submodules.Utility.Extensions
         /// <summary>
         ///     An inline richtext color converter
         /// </summary>
-        public static string Colored( this string text, Color color )
-        {
-            return $"<color=#{ColorUtility.ToHtmlStringRGBA( color )}>{text}</color>";
-        }
+        public static string Colored( this string text, Color color ) => 
+            $"<color=#{ColorUtility.ToHtmlStringRGBA( color )}>{text}</color>";
 
-        public static string ColoredComponent( this string text )
-        {
-            return Colored( text, ColorExtensions.Prefab );
-        }
+        public static string ColoredComponent( this string text ) => Colored( text, ColorExtensions.Component );
 
-        public static string ColoredComponent( this GameObject gameObject )
-        {
-            return ColoredComponent( gameObject.name );
-        }
+        public static string ColoredComponent( this GameObject gameObject ) => ColoredComponent( gameObject.name );
 
-        private static string SplitCamelCase( this object obj )
-        {
-            return Regex.Replace( obj.ToString(), "([A-Z])", " $1",
+        public static string ColoredComponent( this Transform transform ) => ColoredComponent( transform.name );
+
+        private static string SplitCamelCase( this object obj ) =>
+            Regex.Replace( obj.ToString(), "([A-Z])", " $1",
                 RegexOptions.Compiled ).Trim();
-        }
 
         /// <param name="obj"></param>
         /// <returns>
@@ -50,10 +42,8 @@ namespace Submodules.Utility.Extensions
         /// <typeparam name="T">The type of the attribute you want to retrieve</typeparam>
         /// <param name="obj">The object value</param>
         /// <returns>The attribute of type T that exists on the object value</returns>
-        public static T GetAttributeOfType<T>( this object obj ) where T : Attribute
-        {
-            return (T) obj.GetType()?.GetField( obj.ToString() )?.GetCustomAttribute( typeof(T), false );
-        }
+        public static T GetAttributeOfType<T>( this object obj ) where T : Attribute => 
+            (T) obj.GetType()?.GetField( obj.ToString() )?.GetCustomAttribute( typeof(T), false );
 
         public static Enum ToEnum<T>( this string enumDescription ) where T : Enum
         {

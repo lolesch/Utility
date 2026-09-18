@@ -92,7 +92,7 @@ namespace Submodules.Utility.Tests.EditMode
             group.Select(toggle);
 
             var changes = 0;
-            group.OnGroupChanged += () => changes++;
+            group.OnGroupChanged += _ => changes++;
 
             group.Select(toggle);
 
@@ -104,7 +104,7 @@ namespace Submodules.Utility.Tests.EditMode
         {
             var toggle = scene.Toggle(group);
             var changes = 0;
-            group.OnGroupChanged += () => changes++;
+            group.OnGroupChanged += _ => changes++;
 
             group.Select(toggle);
 
@@ -142,7 +142,7 @@ namespace Submodules.Utility.Tests.EditMode
             group.Select(active);
 
             var changes = 0;
-            group.OnGroupChanged += () => changes++;
+            group.OnGroupChanged += _ => changes++;
 
             group.Deselect(other);
 
@@ -158,7 +158,7 @@ namespace Submodules.Utility.Tests.EditMode
             deselectable.Select(toggle);
 
             var changes = 0;
-            deselectable.OnGroupChanged += () => changes++;
+            deselectable.OnGroupChanged += _ => changes++;
 
             deselectable.Deselect(toggle);
 
@@ -185,7 +185,7 @@ namespace Submodules.Utility.Tests.EditMode
         public void Deactivate_Null_LeavesTheGroupAlone_EvenWhenNothingIsActive()
         {
             var changes = 0;
-            group.OnGroupChanged += () => changes++;
+            group.OnGroupChanged += _ => changes++;
 
             Assert.That(() => group.Deselect(null), Throws.Nothing);
             Assert.That(changes, Is.Zero, "a null toggle must not be read as 'the (null) active toggle switched off'");
@@ -213,7 +213,7 @@ namespace Submodules.Utility.Tests.EditMode
             toggle.SetToggle(true);
 
             var changes = 0;
-            deselectable.OnGroupChanged += () => changes++;
+            deselectable.OnGroupChanged += _ => changes++;
 
             toggle.SetToggle(false);
 

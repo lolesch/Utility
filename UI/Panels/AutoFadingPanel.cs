@@ -61,10 +61,9 @@ namespace Submodules.Utility.UI
             StopTimers();
         }
 
-        protected override void OnPanelDisable()
+        protected override void OnDisable()
         {
-            base.OnPanelDisable();
-        
+            base.OnDisable();
             StopTimers();
         }
         

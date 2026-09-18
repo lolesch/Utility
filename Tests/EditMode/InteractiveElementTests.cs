@@ -7,11 +7,11 @@ namespace Submodules.Utility.Tests.EditMode
 {
     /// <summary>
     /// Pins the one thing <see cref="InteractiveElement"/> promises beyond stock
-    /// <c>Selectable</c>: an element that is <c>interactable</c> receives pointer events,
-    /// and one that is not, does not. The refactor bound
-    /// <see cref="UnityEngine.UI.Graphic.raycastTarget"/> to <c>interactable</c>, so the two
-    /// have to stay in step for the lifetime of the component — `LocationToggle` (driven by
-    /// `MinimapController`) flips <c>interactable</c> at runtime.
+    /// <c>Selectable</c>: <see cref="UnityEngine.UI.Graphic.raycastTarget"/> is always on,
+    /// regardless of <c>interactable</c> — a disabled element still blocks the raycast so
+    /// clicks meant for it don't fall through to whatever sits behind it. It's on the
+    /// individual button/toggle to no-op in its handler when <c>!interactable</c> (see
+    /// <see cref="AbstractButton.OnPointerClick"/>).
     ///
     /// Scale and colour feedback is deliberately not tested: <c>Scale</c> discards its tween
     /// handle and the tween pump is installed by <c>[RuntimeInitializeOnLoadMethod]</c>, so
@@ -37,33 +37,33 @@ namespace Submodules.Utility.Tests.EditMode
         }
 
         [Test]
-        public void AnElementThatStartsNonInteractable_IsNotARaycastTarget()
+        public void AnElementThatStartsNonInteractable_IsStillARaycastTarget()
         {
             var element = scene.Element<InteractiveElement>(interactable: false);
 
-            Assert.That(element.targetGraphic.raycastTarget, Is.False);
+            Assert.That(element.targetGraphic.raycastTarget, Is.True,
+                "a disabled element must still block the raycast so clicks don't fall through to what's behind it");
         }
 
         [Test]
-        public void TurningInteractableOnAfterAwake_MakesTheGraphicARaycastTargetAgain()
+        public void TurningInteractableOnAfterAwake_LeavesTheGraphicARaycastTarget()
         {
             var element = scene.Element<InteractiveElement>(interactable: false);
 
             element.interactable = true;
 
-            Assert.That(element.targetGraphic.raycastTarget, Is.True,
-                "an element re-enabled at runtime has to receive pointer events again");
+            Assert.That(element.targetGraphic.raycastTarget, Is.True);
         }
 
         [Test]
-        public void TurningInteractableOff_StopsTheGraphicBeingARaycastTarget()
+        public void TurningInteractableOff_LeavesTheGraphicARaycastTarget()
         {
             var element = scene.Element<InteractiveElement>(interactable: true);
 
             element.interactable = false;
 
-            Assert.That(element.targetGraphic.raycastTarget, Is.False,
-                "a disabled element must not swallow pointer events meant for what is behind it");
+            Assert.That(element.targetGraphic.raycastTarget, Is.True,
+                "a disabled element must still block the raycast so clicks don't fall through to what's behind it");
         }
 
         [Test]

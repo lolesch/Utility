@@ -8,7 +8,7 @@ namespace Submodules.Utility.Tests.EditMode
     /// <see cref="PanelGroup"/> is <see cref="RadioGroup"/>'s counterpart for content rather
     /// than input: panels occupying the same screen space, where showing one hides whichever
     /// else is up. Deliberately driven the same way — <see cref="PanelGroup.Show"/> /
-    /// <see cref="PanelGroup.Clear"/>, membership by hierarchy, an
+    /// <see cref="PanelGroup.Hide"/>, membership by hierarchy, an
     /// <see cref="PanelGroup.OnGroupChanged"/> announcement — so a caller who already knows
     /// <see cref="RadioGroup"/> reads this for free. The difference is what drives it: a
     /// toggle asking the group to show its panel is one caller, but not the only one —
@@ -89,7 +89,7 @@ namespace Submodules.Utility.Tests.EditMode
             group.Show(panel);
 
             var changes = 0;
-            group.OnGroupChanged += () => changes++;
+            group.OnGroupChanged += _ => changes++;
 
             group.Show(panel);
 
@@ -102,7 +102,7 @@ namespace Submodules.Utility.Tests.EditMode
         {
             var panel = scene.Panel(group);
             var changes = 0;
-            group.OnGroupChanged += () => changes++;
+            group.OnGroupChanged += _ => changes++;
 
             group.Show(panel);
 
@@ -128,7 +128,7 @@ namespace Submodules.Utility.Tests.EditMode
             var panel = scene.Panel(group);
             group.Show(panel);
 
-            group.Clear(panel);
+            group.Hide(panel);
 
             Assert.That(group.ActivePanel, Is.SameAs(panel), "the group must always keep a panel shown unless it opted into being clearable");
         }
@@ -140,7 +140,7 @@ namespace Submodules.Utility.Tests.EditMode
             var panel = scene.Panel(clearable);
             clearable.Show(panel);
 
-            clearable.Clear(panel);
+            clearable.Hide(panel);
 
             Assert.That(clearable.ActivePanel, Is.Null);
         }
@@ -152,7 +152,7 @@ namespace Submodules.Utility.Tests.EditMode
             var panel = scene.Panel(clearable);
             clearable.Show(panel);
 
-            clearable.Clear(panel);
+            clearable.Hide(panel);
 
             Assert.That(panel.FadeOutCalls, Is.EqualTo(1));
         }
@@ -166,9 +166,9 @@ namespace Submodules.Utility.Tests.EditMode
             clearable.Show(active);
 
             var changes = 0;
-            clearable.OnGroupChanged += () => changes++;
+            clearable.OnGroupChanged += _ => changes++;
 
-            clearable.Clear(other);
+            clearable.Hide(other);
 
             Assert.That(clearable.ActivePanel, Is.SameAs(active));
             Assert.That(changes, Is.Zero);
@@ -182,9 +182,9 @@ namespace Submodules.Utility.Tests.EditMode
             clearable.Show(panel);
 
             var changes = 0;
-            clearable.OnGroupChanged += () => changes++;
+            clearable.OnGroupChanged += _ => changes++;
 
-            clearable.Clear(panel);
+            clearable.Hide(panel);
 
             Assert.That(changes, Is.EqualTo(1));
         }
@@ -194,9 +194,9 @@ namespace Submodules.Utility.Tests.EditMode
         {
             var clearable = scene.PanelGroup(isClearable: true);
             var changes = 0;
-            clearable.OnGroupChanged += () => changes++;
+            clearable.OnGroupChanged += _ => changes++;
 
-            Assert.That(() => clearable.Clear(null), Throws.Nothing);
+            Assert.That(() => clearable.Hide(null), Throws.Nothing);
             Assert.That(changes, Is.Zero);
         }
 
@@ -219,7 +219,7 @@ namespace Submodules.Utility.Tests.EditMode
         {
             var clearable = scene.PanelGroup(isClearable: true);
             var changes = 0;
-            clearable.OnGroupChanged += () => changes++;
+            clearable.OnGroupChanged += _ => changes++;
 
             Assert.That(() => clearable.ClearActive(), Throws.Nothing);
             Assert.That(changes, Is.Zero);

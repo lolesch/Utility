@@ -9,32 +9,42 @@ namespace Submodules.Utility.UI
         
         [field: SerializeField] public bool IsOn { get; private set; } = false;
 
-        /// <summary>A toggle's group is wherever it sits in the hierarchy — the nearest
-        /// <see cref="RadioGroup"/> ancestor — never assigned directly. A toggle that needs a
-        /// different group belongs under a different parent, not pointed at a group that sits
-        /// elsewhere.</summary>
-        [SerializeField, ReadOnly] protected RadioGroup radioGroup = null;
-        public RadioGroup RadioGroup => radioGroup != null ? radioGroup : radioGroup = GetComponentInParent<RadioGroup>();
+        /// <summary>A toggle's <see cref="RadioGroup"/> is automatically assigned if present on the toggle's parent.</summary>
+        [field: SerializeField, ReadOnly] public RadioGroup RadioGroup { get; private set; }
 
         [SerializeField] private Sprite toggledOffSprite;
         [SerializeField] private Sprite toggledOnSprite;
 
-
 #if UNITY_EDITOR
         protected override void OnValidate()
         {
-            if (RadioGroup && RadioGroup.transform != transform.parent)
-            {
+            base.OnValidate();
+            var resolved = transform.parent.GetComponent<RadioGroup>();
+
+            if (RadioGroup && RadioGroup != resolved)
                 RadioGroup.Deselect(this);
-                radioGroup = null;
-            }
+
+            RadioGroup = resolved;
 
             if (IsOn && RadioGroup)
                 RadioGroup.Select(this);
         }
 #endif //UNITY_EDITOR
 
-        protected override void Start() => SetToggle(IsOn);
+        protected override void Awake()
+        {
+            base.Awake();
+
+            if (!RadioGroup)
+                RadioGroup = transform.parent.GetComponent<RadioGroup>();
+        }
+
+        /// <summary>Bypasses the group-aware <see cref="SetToggle"/> — mirrors
+        /// <c>SimplePanel.Start</c> calling its internal primitive directly. A toggle authored
+        /// as the group's selection already has <see cref="RadioGroup.SelectedToggle"/> pointing
+        /// at it (via <see cref="OnValidate"/>), so routing through <see cref="RadioGroup.Select"/>
+        /// here would see "no change" and skip this toggle's own visual setup entirely.</summary>
+        protected override void Start() => ToggleState(IsOn);
         
         protected override void Interact(SelectionState state, bool instant)
         {
@@ -61,37 +71,47 @@ namespace Submodules.Utility.UI
         [ContextMenu("Toggle")]
         protected override void OnClick() => SetToggle(!IsOn);
         
+        /// <summary>The group-aware entry point: a caller (click, hotkey, script) calls this
+        /// exactly as it always has, and — if this toggle sits under a <see cref="RadioGroup"/>
+        /// — the group takes over and drives <see cref="ToggleState"/> itself, deselecting
+        /// whichever sibling was on. Ungrouped, it just applies.</summary>
         public void SetToggle(bool toggleOn)
         {
-            if (!toggleOn && IsOn && RadioGroup && RadioGroup.SelectedToggle == this && !RadioGroup.IsDeselectable)
+            if (!toggleOn && IsOn && RadioGroup && RadioGroup.SelectedToggle == this
+                && !RadioGroup.IsClearable && !RadioGroup.IsRestorable)
             {
-                Debug.Log("SetToggle(false) prevented. To allow un-toggle, enable 'IsDeselectable' in the RadioGroup," +
-                          $" or re-parent {name} out of any RadioGroup.", RadioGroup);
+                Debug.Log("SetToggle(false) prevented. To allow un-toggle, enable 'IsClearable' or " +
+                          $"'IsRestorable' in the RadioGroup, or re-parent {name} out of any RadioGroup.", RadioGroup);
                 return;
             }
-            
+
+            if (RadioGroup)
+            {
+                if (toggleOn)
+                    RadioGroup.Select(this);
+                else
+                    RadioGroup.Deselect(this);
+            }
+            else
+            {
+                ToggleState(toggleOn);
+            }
+        }
+
+        /// <summary>The actual state-change primitive. Internal so <see cref="RadioGroup.Select"/>
+        /// / <see cref="RadioGroup.Deselect"/> can drive it directly on either side of a switch
+        /// without looping back through the group-aware <see cref="SetToggle"/> — that loop is
+        /// what would double-fire <see cref="OnToggle"/> on the toggle being replaced.</summary>
+        internal void ToggleState(bool toggleOn)
+        {
             IsOn = toggleOn;
 
-            Interact( SelectionState.Selected, true);
-            
+            Interact(SelectionState.Selected, true);
+
             if (image && toggledOffSprite && toggledOnSprite)
                 image.sprite = IsOn ? toggledOnSprite : toggledOffSprite;
 
             OnToggle();
-
-            if (RadioGroup)
-            {
-                if (RadioGroup.SelectedToggle == this)
-                {
-                    if (!IsOn)
-                        RadioGroup.Deselect(this);
-                }
-                else
-                {
-                    if (IsOn)
-                        RadioGroup.Select(this);
-                }
-            }
         }
 
         protected abstract void OnToggle();
