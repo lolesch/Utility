@@ -72,7 +72,7 @@ namespace Submodules.Utility.Tests.EditMode
         }
 
         /// <summary>A <see cref="PanelGroup"/> whose children are the panels it owns.</summary>
-        public PanelGroup PanelGroup(bool isClearable = false)
+        public PanelGroup PanelGroup(bool isClearable = false, bool isRestorable = false)
         {
             var go = new GameObject("panel-group", typeof(RectTransform));
             go.transform.SetParent(root.transform, false);
@@ -81,6 +81,9 @@ namespace Submodules.Utility.Tests.EditMode
 
             if (isClearable)
                 SetBool(group, "<IsClearable>k__BackingField", true);
+
+            if (isRestorable)
+                SetBool(group, "<IsRestorable>k__BackingField", true);
 
             spawned.Add(go);
 

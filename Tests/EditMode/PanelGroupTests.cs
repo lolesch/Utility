@@ -200,6 +200,84 @@ namespace Submodules.Utility.Tests.EditMode
             Assert.That(changes, Is.Zero);
         }
 
+        /// <summary><see cref="PanelGroup.IsRestorable"/> is the fallback checked when a group
+        /// is not <see cref="PanelGroup.IsClearable"/>: instead of ending up with nothing
+        /// shown, hiding the active panel re-shows whichever one was up before it.</summary>
+        [Test]
+        public void Hide_NotClearable_Restorable_RestoresThePreviouslyActivePanel()
+        {
+            var restorable = scene.PanelGroup(isRestorable: true);
+            var first = scene.Panel(restorable);
+            var second = scene.Panel(restorable);
+            restorable.Show(first);
+            restorable.Show(second);
+
+            restorable.Hide(second);
+
+            Assert.That(restorable.ActivePanel, Is.SameAs(first));
+        }
+
+        [Test]
+        public void Hide_NotClearable_Restorable_FadesTheHiddenPanelOutAndTheRestoredPanelIn()
+        {
+            var restorable = scene.PanelGroup(isRestorable: true);
+            var first = scene.Panel(restorable);
+            var second = scene.Panel(restorable);
+            restorable.Show(first);
+            restorable.Show(second);
+
+            restorable.Hide(second);
+
+            Assert.That(second.FadeOutCalls, Is.EqualTo(1));
+            Assert.That(first.FadeInCalls, Is.EqualTo(2), "shown once by the initial Show, once by the restore");
+        }
+
+        [Test]
+        public void Hide_NotClearable_Restorable_AnnouncesTheChange_WithTheRestoredPanel()
+        {
+            var restorable = scene.PanelGroup(isRestorable: true);
+            var first = scene.Panel(restorable);
+            var second = scene.Panel(restorable);
+            restorable.Show(first);
+            restorable.Show(second);
+            SimplePanel announced = null;
+            restorable.OnGroupChanged += p => announced = p;
+
+            restorable.Hide(second);
+
+            Assert.That(announced, Is.SameAs(first));
+        }
+
+        [Test]
+        public void Hide_NotClearable_Restorable_RemembersTheToggleItReplaced()
+        {
+            var restorable = scene.PanelGroup(isRestorable: true);
+            var first = scene.Panel(restorable);
+            var second = scene.Panel(restorable);
+            restorable.Show(first);
+            restorable.Show(second);
+
+            restorable.Hide(second);
+
+            Assert.That(restorable.PreviouslyActivePanel, Is.SameAs(second),
+                "the panel that just went off is the one a second Hide would need to restore back to");
+        }
+
+        [Test]
+        public void Hide_NotClearable_Restorable_WithNoPreviouslyActivePanel_IsANoOp()
+        {
+            var restorable = scene.PanelGroup(isRestorable: true);
+            var panel = scene.Panel(restorable);
+            restorable.Show(panel);
+            var changes = 0;
+            restorable.OnGroupChanged += _ => changes++;
+
+            restorable.Hide(panel);
+
+            Assert.That(restorable.ActivePanel, Is.SameAs(panel), "nothing to restore to, so the group keeps what it has");
+            Assert.That(changes, Is.Zero);
+        }
+
         /// <summary>The convenience a caller like Go Venture needs: close whichever panel is
         /// open without first asking the group which one that is.</summary>
         [Test]
