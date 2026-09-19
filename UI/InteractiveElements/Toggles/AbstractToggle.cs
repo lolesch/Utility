@@ -22,12 +22,12 @@ namespace Submodules.Utility.UI
             var resolved = transform.parent.GetComponent<RadioGroup>();
 
             if (RadioGroup && RadioGroup != resolved)
-                RadioGroup.Deselect(this);
+                RadioGroup.Deactivate(this);
 
             RadioGroup = resolved;
 
             if (IsOn && RadioGroup)
-                RadioGroup.Select(this);
+                RadioGroup.Activate(this);
         }
 #endif //UNITY_EDITOR
 
@@ -41,8 +41,8 @@ namespace Submodules.Utility.UI
 
         /// <summary>Bypasses the group-aware <see cref="SetToggle"/> — mirrors
         /// <c>SimplePanel.Start</c> calling its internal primitive directly. A toggle authored
-        /// as the group's selection already has <see cref="RadioGroup.SelectedToggle"/> pointing
-        /// at it (via <see cref="OnValidate"/>), so routing through <see cref="RadioGroup.Select"/>
+        /// as the group's selection already has <see cref="RadioGroup.ActiveMember"/> pointing
+        /// at it (via <see cref="OnValidate"/>), so routing through <see cref="RadioGroup.Activate"/>
         /// here would see "no change" and skip this toggle's own visual setup entirely.</summary>
         protected override void Start() => ToggleState(IsOn);
         
@@ -77,7 +77,7 @@ namespace Submodules.Utility.UI
         /// whichever sibling was on. Ungrouped, it just applies.</summary>
         public void SetToggle(bool toggleOn)
         {
-            if (!toggleOn && IsOn && RadioGroup && RadioGroup.SelectedToggle == this
+            if (!toggleOn && IsOn && RadioGroup && RadioGroup.ActiveMember == this
                 && !RadioGroup.IsClearable && !RadioGroup.IsRestorable)
             {
                 Debug.Log("SetToggle(false) prevented. To allow un-toggle, enable 'IsClearable' or " +
@@ -88,9 +88,9 @@ namespace Submodules.Utility.UI
             if (RadioGroup)
             {
                 if (toggleOn)
-                    RadioGroup.Select(this);
+                    RadioGroup.Activate(this);
                 else
-                    RadioGroup.Deselect(this);
+                    RadioGroup.Deactivate(this);
             }
             else
             {
@@ -98,8 +98,8 @@ namespace Submodules.Utility.UI
             }
         }
 
-        /// <summary>The actual state-change primitive. Internal so <see cref="RadioGroup.Select"/>
-        /// / <see cref="RadioGroup.Deselect"/> can drive it directly on either side of a switch
+        /// <summary>The actual state-change primitive. Internal so <see cref="RadioGroup.Activate"/>
+        /// / <see cref="RadioGroup.Deactivate"/> can drive it directly on either side of a switch
         /// without looping back through the group-aware <see cref="SetToggle"/> — that loop is
         /// what would double-fire <see cref="OnToggle"/> on the toggle being replaced.</summary>
         internal void ToggleState(bool toggleOn)

@@ -56,15 +56,18 @@ namespace Submodules.Utility.Tests.EditMode
         }
 
         /// <summary>A <see cref="RadioGroup"/> whose children are the toggles it owns.</summary>
-        public RadioGroup Group(bool isDeselectable = false)
+        public RadioGroup Group(bool isClearable = false, bool isRestorable = false)
         {
             var go = new GameObject("radio-group", typeof(RectTransform));
             go.transform.SetParent(root.transform, false);
 
             var group = go.AddComponent<RadioGroup>();
 
-            if (isDeselectable)
+            if (isClearable)
                 SetBool(group, "<IsClearable>k__BackingField", true);
+
+            if (isRestorable)
+                SetBool(group, "<IsRestorable>k__BackingField", true);
 
             spawned.Add(go);
 

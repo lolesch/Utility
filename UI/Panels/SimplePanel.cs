@@ -42,7 +42,7 @@ namespace Submodules.Utility.UI
             var resolved = transform.parent.GetComponent<PanelGroup>();
             
             if (PanelGroup && PanelGroup != resolved)
-                PanelGroup.Hide(this);
+                PanelGroup.Deactivate(this);
             
             PanelGroup = resolved;
         }
@@ -76,9 +76,9 @@ namespace Submodules.Utility.UI
         public virtual void FadeIn()
         {
             if (PanelGroup)
-                PanelGroup.Show(this);
+                PanelGroup.Activate(this);
             else
-                Appear(false);
+                Appear();
         }
 
         /// <summary>The group-aware entry point, mirroring <see cref="FadeIn()"/>. Prevented
@@ -88,24 +88,24 @@ namespace Submodules.Utility.UI
         [ContextMenu("FadeOut")]
         public void FadeOut()
         {
-            if (PanelGroup && PanelGroup.ActivePanel == this && !PanelGroup.IsClearable && !PanelGroup.IsRestorable)
+            if (PanelGroup && PanelGroup.ActiveMember == this && !PanelGroup.IsClearable && !PanelGroup.IsRestorable)
             {
                 Debug.Log("FadeOut() prevented. Enable 'IsClearable' or 'IsRestorable' in the " +
                           $"PanelGroup, or re-parent {name} out of any PanelGroup.", PanelGroup);
                 return;
             }
 
-            if (PanelGroup && PanelGroup.ActivePanel == this)
-                PanelGroup.Hide(this);
+            if (PanelGroup && PanelGroup.ActiveMember == this)
+                PanelGroup.Deactivate(this);
             else
-                Disappear(false);
+                Disappear();
         }
 
         /// <summary>The actual appear primitive, named to match <see cref="AbstractToggle.SetToggle"/>'s
-        /// on/off vocabulary. Internal so <see cref="PanelGroup.Show"/> can drive it directly
+        /// on/off vocabulary. Internal so <see cref="PanelGroup.Activate"/> can drive it directly
         /// without looping back through the group-aware <see cref="FadeIn()"/> — that loop is
         /// what silently double-fired <see cref="BeforeAppear"/> before.</summary>
-        internal void Appear(bool instant)
+        internal void Appear(bool instant = false)
         {
             KillTweens();
             BeforeAppear();
@@ -141,10 +141,10 @@ namespace Submodules.Utility.UI
         }
 
         /// <summary>The actual disappear primitive, named to match <see cref="AbstractToggle.SetToggle"/>'s
-        /// on/off vocabulary. Internal so <see cref="PanelGroup.Show"/> (fading out the replaced
-        /// panel) and <see cref="PanelGroup.Hide"/> can drive it directly without looping back
+        /// on/off vocabulary. Internal so <see cref="PanelGroup.Activate"/> (fading out the replaced
+        /// panel) and <see cref="PanelGroup.Deactivate"/> can drive it directly without looping back
         /// through the group-aware <see cref="FadeOut()"/>.</summary>
-        internal void Disappear(bool instant)
+        internal void Disappear(bool instant = false)
         {
             KillTweens();
             BeforeDisappear();
@@ -172,11 +172,14 @@ namespace Submodules.Utility.UI
         /// </summary>
         protected virtual void OnDisappear() => CanvasGroup.alpha = 0;
 
+        /// <summary>Stops whatever fade is in flight so the one about to start — or the
+        /// disable that is about to strand it — is not raced by the old tween's
+        /// <see cref="OnAppear"/>/<see cref="OnDisappear"/> landing on state that has since
+        /// moved. No null guard: <see cref="CanvasGroup"/> is <c>[RequireComponent]</c>d and
+        /// resolved lazily, so it cannot be null here, and <see cref="Tween.Kill(object)"/>
+        /// already no-ops on null.</summary>
         private void KillTweens()
         {
-            if (CanvasGroup)
-                return;
-
             Tween.Kill(CanvasGroup);
             Tween.Kill(Transform);
         }
