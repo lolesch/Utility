@@ -7,7 +7,7 @@ namespace Submodules.Utility.Tests.EditMode
     /// <summary>
     /// <see cref="RadioGroup"/> answers two questions and nothing else: which toggle is
     /// active, and which one a caller should restore if the group empties. Both are read
-    /// by <c>MultiplePanelToggle</c> and by <c>MapPanel</c>, so both are pinned here.
+    /// by <c>SidePanelToggle</c> and by <c>MinimapController</c>, so both are pinned here.
     ///
     /// Driven through <see cref="RadioGroup.Activate"/> / <see cref="RadioGroup.Deactivate"/>
     /// — the whole public surface since the membership list was removed and
