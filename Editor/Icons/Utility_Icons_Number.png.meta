@@ -1,16 +1,13 @@
 fileFormatVersion: 2
-guid: e7ea96dc59debd2428521e181f53948c
+guid: ea61a7e8e9c6f7a48bedf151250fb7bf
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -1740851183853542701
-    second: UI_Icon_EllipsisVertical_0
+      213: -6609267090377428632
+    second: Utility_Icons_Number_0
   - first:
-      213: -7996093272696150210
-    second: UI_Icon_EllipsisVertical_1
-  - first:
-      213: -3970125669437931485
-    second: UI_Icon_EllipsisVertical_2
+      213: 5622970059846616941
+    second: Utility_Icons_Number_1
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -108,13 +105,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: UI_Icon_EllipsisVertical_0
+      name: Utility_Icons_Number_0
       rect:
         serializedVersion: 2
-        x: 51
-        y: 91
-        width: 26
-        height: 26
+        x: 1
+        y: 3
+        width: 9
+        height: 10
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -123,20 +120,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 3d2679b521147d7e0800000000000000
-      internalID: -1740851183853542701
+      spriteID: 861bf54499a2744a0800000000000000
+      internalID: -6609267090377428632
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: UI_Icon_EllipsisVertical_1
+      name: Utility_Icons_Number_1
       rect:
         serializedVersion: 2
-        x: 50
-        y: 52
-        width: 27
-        height: 26
+        x: 9
+        y: 3
+        width: 6
+        height: 10
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -145,30 +142,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: e372e0a988b280190800000000000000
-      internalID: -7996093272696150210
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: UI_Icon_EllipsisVertical_2
-      rect:
-        serializedVersion: 2
-        x: 50
-        y: 12
-        width: 26
-        height: 26
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 3200e7ffcb747e8c0800000000000000
-      internalID: -3970125669437931485
+      spriteID: d6780d74a7dc80e40800000000000000
+      internalID: 5622970059846616941
       vertices: []
       indices: 
       edges: []
@@ -187,9 +162,8 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      UI_Icon_EllipsisVertical_0: -1740851183853542701
-      UI_Icon_EllipsisVertical_1: -7996093272696150210
-      UI_Icon_EllipsisVertical_2: -3970125669437931485
+      Utility_Icons_Number_0: -6609267090377428632
+      Utility_Icons_Number_1: 5622970059846616941
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
