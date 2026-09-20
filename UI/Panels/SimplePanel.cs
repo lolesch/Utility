@@ -54,9 +54,14 @@ namespace Submodules.Utility.UI
 
             if(!PanelGroup)
                PanelGroup = transform.parent.GetComponent<PanelGroup>();
+
+            // In Awake, not Start: Awake finishes for every object in the scene before any
+            // OnEnable runs, so a controller that decides which panel to show from its own
+            // OnEnable (MinimapController.SyncToPhase) is guaranteed to run after this reset,
+            // not before it. It used to sit in Start (46d488c), where it instead ran after
+            // OnEnable and silently clobbered whatever that controller had just shown.
+            Disappear(true);
         }
-        
-        protected void Start() => Disappear(true);
 
         protected virtual void OnDisable() => KillTweens();
 

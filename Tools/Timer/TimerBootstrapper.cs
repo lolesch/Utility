@@ -11,7 +11,13 @@ namespace Submodules.Utility.Tools.Timer
     {
         static PlayerLoopSystem timerSystem;
         
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterAssembliesLoaded)]
+        // AfterAssembliesLoaded ties this to assembly loading, which does not happen again on
+        // Play re-entry once domain reload is disabled (ProjectSettings/EditorSettings.asset,
+        // 2026-09-18) — see docs/agents/codebase-notes.md. AfterSceneLoad, like
+        // SimulationProvider's own [RuntimeInitializeOnLoadMethod], re-fires on every Play
+        // entry regardless, so the tween pump is reinstalled instead of staying torn down
+        // after the first Stop.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         internal static void Initialize()
         {
             PlayerLoopSystem currentPlayerLoop = PlayerLoop.GetCurrentPlayerLoop();
