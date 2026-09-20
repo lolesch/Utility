@@ -151,6 +151,11 @@ namespace Submodules.Utility.UI
 
             if (instant)
             {
+                if (IsMoving)
+                    Transform.anchoredPosition = startPosition + moveFrom;
+                if (IsScaling)
+                    Transform.localScale = new Vector3(scaleFrom, scaleFrom, 1f);
+                
                 OnDisappear();
                 return;
             }
