@@ -8,19 +8,30 @@ using UnityEditor;
 namespace Submodules.Utility.Editor
 {
     /// <summary>
-    /// <see cref="AbstractProvider{T}"/> sets a static <c>_isQuitting</c> flag on
+    /// <see cref="AbstractSceneSingleton{T}"/> sets a static <c>_isQuitting</c> flag on
     /// <c>OnApplicationQuit</c> and never clears it — harmless in a build, where the process
     /// exits right after quitting and there is no "next session" to leak into. But with this
     /// project's domain reload disabled (<c>ProjectSettings/EditorSettings.asset</c>,
     /// 2026-09-18) that static state survives Stop: the next Play entry inherits
-    /// <c>_isQuitting == true</c>, and every <see cref="AbstractProvider{T}.Instance"/> across
-    /// the project then returns null for the rest of the Editor session (see
+    /// <c>_isQuitting == true</c>, and every <see cref="AbstractSceneSingleton{T}.Instance"/>
+    /// across the project then returns null for the rest of the Editor session (see
     /// <c>docs/agents/codebase-notes.md</c>).
     ///
-    /// Editor-only fix for an editor-only problem: reset each provider's flag the moment Play
+    /// Editor-only fix for an editor-only problem: reset each singleton's flag the moment Play
     /// is pressed, mirroring what a fresh process would do. Reflection is fine here — only the
     /// AI-assistant's dynamic RunCommand scripts choke on <c>System.Reflection</c>, not a
     /// compiled editor assembly (see <see cref="SceneSavePromptGuard"/>).
+    ///
+    /// Targets the closed <see cref="AbstractSceneSingleton{T}"/>, not
+    /// <see cref="AbstractProvider{T}"/>: <c>_isQuitting</c> is declared on the former, and a
+    /// private field declared on a base type is never visible through <c>GetField</c> on a
+    /// derived type — <c>BindingFlags.FlattenHierarchy</c> only surfaces inherited public/
+    /// protected static members, never private ones. An earlier version of this guard targeted
+    /// <c>AbstractProvider&lt;&gt;</c> (the only subclass that existed at the time); the later
+    /// split that introduced <see cref="AbstractSceneSingleton{T}"/> as a separate base moved
+    /// the field out from under it, so the reset silently stopped firing for every provider,
+    /// and never reached direct <see cref="AbstractSceneSingleton{T}"/> consumers
+    /// (<c>DragProvider</c>, <c>PreviewProvider</c>) at all.
     /// </summary>
     [InitializeOnLoad]
     internal static class ProviderQuittingResetGuard
@@ -32,18 +43,18 @@ namespace Submodules.Utility.Editor
             if (state != PlayModeStateChange.ExitingEditMode)
                 return;
 
-            foreach (var providerBase in AppDomain.CurrentDomain.GetAssemblies()
+            foreach (var singletonBase in AppDomain.CurrentDomain.GetAssemblies()
                          .SelectMany(SafeGetTypes)
-                         .Select(ClosedAbstractProviderBaseOf)
+                         .Select(ClosedAbstractSceneSingletonBaseOf)
                          .Where(t => t != null && !t.ContainsGenericParameters)
                          .Distinct())
-                providerBase.GetField("_isQuitting", BindingFlags.NonPublic | BindingFlags.Static)?.SetValue(null, false);
+                singletonBase.GetField("_isQuitting", BindingFlags.NonPublic | BindingFlags.Static)?.SetValue(null, false);
         }
 
-        private static Type ClosedAbstractProviderBaseOf(Type type)
+        private static Type ClosedAbstractSceneSingletonBaseOf(Type type)
         {
             for (var t = type; t != null; t = t.BaseType)
-                if (t.IsGenericType && t.GetGenericTypeDefinition() == typeof(AbstractProvider<>))
+                if (t.IsGenericType && t.GetGenericTypeDefinition() == typeof(AbstractSceneSingleton<>))
                     return t;
             return null;
         }
