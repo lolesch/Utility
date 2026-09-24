@@ -11,7 +11,7 @@ namespace Submodules.Utility.Tools
 {
     public sealed class BundleVersionSetter : IPreprocessBuildWithReport
     {
-        private enum ReleaseType
+        internal enum ReleaseType
         {
             None = 0,
             PreAlpha = 1, // Prototype
@@ -23,7 +23,7 @@ namespace Submodules.Utility.Tools
 
         private enum IncrementType
         {
-            GitHash,
+            Patch,
             Minor,
             Major,
             ReleaseType,
@@ -31,18 +31,19 @@ namespace Submodules.Utility.Tools
 
         public int callbackOrder => 0;
 
-        public void OnPreprocessBuild(BuildReport report) => UpdateGitHash();
+        public void OnPreprocessBuild(BuildReport report) => IncreasePatchNumber();
 
-        private static void SplitBundleVersion(out int major, out int minor, out string patch, out ReleaseType release)
+        // major.minor.patch[_releaseType][+gitHash[-dirty]] — patch orders builds, the
+        // +gitHash suffix pins the exact source; strip it before parsing the ordered core.
+        internal static void SplitBundleVersion(string bundleVersion, out int major, out int minor, out int patch, out ReleaseType release)
         {
-            var bundleVersion = PlayerSettings.bundleVersion;
-
             bundleVersion = bundleVersion.Trim(); //clean up whitespace if necessary
-            var parts = bundleVersion.Split('.', '-', '_');
+            var core = bundleVersion.Split('+')[0];
+            var parts = core.Split('.', '-', '_');
 
             major = 0;
             minor = 0;
-            patch = "N/A";
+            patch = 0;
             release = ReleaseType.None;
 
             if (parts.Length > 0)
@@ -50,53 +51,76 @@ namespace Submodules.Utility.Tools
             if (parts.Length > 1)
                 int.TryParse(parts[1], out minor);
             if (parts.Length > 2)
-                patch = parts[2];
+                int.TryParse(parts[2], out patch);
             if (parts.Length > 3)
                 Enum.TryParse(parts[3], out release);
         }
 
+        internal static string FormatVersion(int major, int minor, int patch, ReleaseType release, string gitHash)
+        {
+            var versionNumber = $"{major:0}.{minor:0}.{patch:0}";
+
+            if (release is not ReleaseType.None and < ReleaseType.Release)
+                versionNumber = $"{versionNumber}_{release}";
+
+            if (!string.IsNullOrEmpty(gitHash))
+                versionNumber = $"{versionNumber}+{gitHash}";
+
+            return versionNumber;
+        }
+
         public static string GetVersion()
         {
-            SplitBundleVersion(out var major, out var minor, out var patch, out var releaseType);
+            SplitBundleVersion(PlayerSettings.bundleVersion, out var major, out var minor, out var patch, out var releaseType);
 
-            var versionNumber = $"{major:0}.{minor:0}.{patch}";
+            var gitHash = PlayerSettings.bundleVersion.Contains('+')
+                ? PlayerSettings.bundleVersion[(PlayerSettings.bundleVersion.IndexOf('+') + 1)..]
+                : string.Empty;
 
-            if (releaseType is not ReleaseType.None and < ReleaseType.Release)
-                versionNumber = $"{versionNumber}_{releaseType}";
+            return FormatVersion(major, minor, patch, releaseType, gitHash);
+        }
 
+        // Shows what the next build would stamp — live git hash/dirty state — without
+        // touching patch or PlayerSettings.bundleVersion.
+        [MenuItem("ToolSmiths/Version/Preview", false, 800)]
+        private static string PreviewVersion()
+        {
+            SplitBundleVersion(PlayerSettings.bundleVersion, out var major, out var minor, out var patch, out var releaseType);
+
+            var versionNumber = FormatVersion(major, minor, patch, releaseType, GetShortCommitHash());
+            Debug.LogWarning($"bundleVersion preview: {versionNumber.Colored(ColorExtensions.Orange)}");
             return versionNumber;
         }
 
         private static string IncrementBundleVersion(IncrementType increment)
         {
-            SplitBundleVersion(out var major, out var minor, out var patch, out var releaseType);
+            SplitBundleVersion(PlayerSettings.bundleVersion, out var major, out var minor, out var patch, out var releaseType);
 
             switch (increment)
             {
-                case IncrementType.GitHash:
+                case IncrementType.Patch:
+                    patch++;
                     break;
                 case IncrementType.Minor:
                     minor++;
+                    patch = 0;
                     break;
                 case IncrementType.Major:
                     major++;
                     minor = 0;
+                    patch = 0;
                     break;
                 case IncrementType.ReleaseType:
                     releaseType++;
                     major = 0;
                     minor = 0;
+                    patch = 0;
                     break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(increment), increment, null);
             }
 
-            patch = GetShortCommitHash();
-
-            var versionNumber = $"{major:0}.{minor:0}.{patch}";
-
-            if (releaseType is not ReleaseType.None and < ReleaseType.Release)
-                versionNumber = $"{versionNumber}_{releaseType}";
+            var versionNumber = FormatVersion(major, minor, patch, releaseType, GetShortCommitHash());
 
             if (PlayerSettings.bundleVersion != versionNumber)
             {
@@ -104,15 +128,30 @@ namespace Submodules.Utility.Tools
                 AssetDatabase.SaveAssets();
             }
 
+            // Labels the commit the build was made from — the same commit +gitHash
+            // already points to, just as a human-readable ref instead of a raw hash.
+            RunGit($"tag {versionNumber} HEAD");
+
             Debug.LogWarning($"bundleVersion: {PlayerSettings.bundleVersion.Colored(ColorExtensions.Orange)}");
             return versionNumber;
         }
 
         private static string GetShortCommitHash()
         {
+            var hash = RunGit("rev-parse --short HEAD");
+
+            if (string.IsNullOrEmpty(hash))
+                return "N/A";
+
+            var isDirty = !string.IsNullOrEmpty(RunGit("status --porcelain"));
+            return isDirty ? $"{hash}-dirty" : hash;
+        }
+
+        private static string RunGit(string arguments)
+        {
             ProcessStartInfo startInfo = new ProcessStartInfo("git")
             {
-                Arguments = "rev-parse --short HEAD",
+                Arguments = arguments,
                 RedirectStandardOutput = true,
                 UseShellExecute = false,
                 CreateNoWindow = true
@@ -120,13 +159,12 @@ namespace Submodules.Utility.Tools
 
             using Process process = Process.Start(startInfo);
             string result = process.StandardOutput.ReadToEnd();
-            result = result.Trim(); // returns something like "734713b"
-
-            return string.IsNullOrEmpty(result) ? "N/A" : result;
+            return result.Trim();
         }
 
-        [MenuItem("ToolSmiths/Version/GitHash Update", false, 800)]
-        private static string UpdateGitHash() => IncrementBundleVersion(IncrementType.GitHash);
+        // Not a menu item: patch is a build concern (bumped from OnPreprocessBuild), not
+        // manual editor input. See Preview for a non-mutating look at the next version.
+        private static string IncreasePatchNumber() => IncrementBundleVersion(IncrementType.Patch);
 
         [MenuItem("ToolSmiths/Version/Minor Update", false, 801)]
         private static string IncreaseMinorNumber() => IncrementBundleVersion(IncrementType.Minor);
