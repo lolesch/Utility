@@ -30,6 +30,8 @@ namespace Submodules.Utility.Tests.TestSupport
 
         protected override void BeforeAppear()
         {
+            base.BeforeAppear();
+            
             FadeInCalls++;
             Log?.Add($"{Label ?? name}+");
         }

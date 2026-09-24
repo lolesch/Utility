@@ -30,6 +30,10 @@ namespace Submodules.Utility.UI
 
         [SerializeField, Range(0f, 2f)] protected float scaleFrom = 1f;
         [SerializeField] protected Vector2 moveFrom = Vector2.zero;
+        
+        public bool IsVisible => CanvasGroup.alpha > 0f;
+        public bool IsInteractive => CanvasGroup.blocksRaycasts;
+        public bool IsActive => Mathf.Approximately(CanvasGroup.alpha, 1);
 
         private Vector2 startPosition;
 
@@ -135,14 +139,17 @@ namespace Submodules.Utility.UI
 
         /// <summary> Called right before the CanvasGroup fades in.
         /// </summary>
-        protected virtual void BeforeAppear() { } // refresh data -> IView?
+        protected virtual void BeforeAppear()
+        {
+            // refresh data -> IView?
+            CanvasGroup.blocksRaycasts = true;
+        } 
 
         /// <summary> Called after the CanvasGroup completed fading in.
         /// </summary>
         protected virtual void OnAppear()
         {
             CanvasGroup.alpha = 1;
-            CanvasGroup.blocksRaycasts = true;
         }
 
         /// <summary>The actual disappear primitive, named to match <see cref="AbstractToggle.SetToggle"/>'s

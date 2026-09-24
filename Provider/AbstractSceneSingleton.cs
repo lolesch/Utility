@@ -1,3 +1,4 @@
+using System;
 using System.Text.RegularExpressions;
 using Submodules.Utility.Extensions;
 using UnityEngine;
@@ -29,13 +30,13 @@ namespace Submodules.Utility.Provider
                 if (_isQuitting)
                     return _instance;
 
-                if (_instance == null)
-                {
-                    if (!InstanceExists())
-                        CreateNewInstance();
+                if (_instance != null) 
+                    return _instance;
+                
+                if (!InstanceExists())
+                    CreateNewInstance();
 
-                    (_instance as AbstractSceneSingleton<T>)?.OnResolved();
-                }
+                (_instance as AbstractSceneSingleton<T>)?.OnResolved();
 
                 return _instance;
 
@@ -80,10 +81,11 @@ namespace Submodules.Utility.Provider
 
         private void Start()
         {
-            if (Instance == this) return;
-
-            DisableCandidate(this as T);
+            if (Instance != this)
+                DisableCandidate(this as T);
         }
+
+        private void Reset() => name = GetProviderName();
 
         private static string GetProviderName() => Regex.Replace(typeof(T).Name, "(?<=[a-z])([A-Z])", "_$1", RegexOptions.Compiled).ToUpper();
 
