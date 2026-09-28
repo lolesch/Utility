@@ -43,7 +43,7 @@ namespace Submodules.Utility.UI
 #if UNITY_EDITOR
         protected void OnValidate()
         {
-            var resolved = transform.parent.GetComponent<PanelGroup>();
+            var resolved = transform.parent?.GetComponent<PanelGroup>();
             
             if (PanelGroup && PanelGroup != resolved)
                 PanelGroup.Deactivate(this);
@@ -57,7 +57,7 @@ namespace Submodules.Utility.UI
             startPosition = Transform.anchoredPosition;
 
             if(!PanelGroup)
-               PanelGroup = transform.parent.GetComponent<PanelGroup>();
+               PanelGroup = transform.parent?.GetComponent<PanelGroup>();
 
             // In Awake, not Start: Awake finishes for every object in the scene before any
             // OnEnable runs, so a controller that decides which panel to show from its own
