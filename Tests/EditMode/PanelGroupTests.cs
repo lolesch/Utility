@@ -91,11 +91,10 @@ namespace Submodules.Utility.Tests.EditMode
         /// not merely "one panel in, one panel out": the replaced panel publishes its disappear
         /// <i>before</i> the replacement publishes its appear.
         ///
-        /// <para>Game code relies on that gap. A Side Panel announces its
-        /// <c>SidePanelContext</c> from these same two hooks, and the Sell Basket cancels a
-        /// staged sale on the <c>None</c> published between them — so a swap that announced the
-        /// two the other way round would reopen what it had just closed. Counters cannot see
-        /// the difference; only a shared record can.</para>
+        /// <para>A caller can reasonably depend on that gap: anything reacting to the swap as one
+        /// event must see the outgoing panel's disappear first, or a state it clears on the way
+        /// in gets re-established by the outgoing side on its way out. Counters cannot see the
+        /// difference; only a shared record can.</para>
         /// </summary>
         [Test]
         public void Activate_ReplacedPanelDisappears_BeforeTheReplacementAppears()
