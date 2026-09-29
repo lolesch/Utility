@@ -6,7 +6,7 @@ namespace Submodules.Utility.UI
     /// <see cref="AbstractToggle.ToggleState"/> — the state-change primitive, not the
     /// group-aware <see cref="AbstractToggle.SetToggle"/> that would loop back here.
     /// </summary>
-    public sealed class RadioGroup : ExclusiveGroup<AbstractToggle>
+    public sealed class ToggleGroup : ExclusiveGroup<AbstractToggle>
     {
         protected override bool IsMember(AbstractToggle toggle) => toggle.RadioGroup == this;
 

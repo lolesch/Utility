@@ -21,8 +21,8 @@ namespace Submodules.Utility.UI
 
         private RectTransform Transform => transform as RectTransform;
         
-        /// <summary>A panel's <see cref="PanelGroup"/> is automatically assigned if present on the panel's parent.</summary>
-        [field: SerializeField, ReadOnly] public PanelGroup PanelGroup { get; private set; }
+        /// <summary>A panel's <see cref="RadioGroup"/> is automatically assigned if present on the panel's parent.</summary>
+        [field: SerializeField, ReadOnly] public PanelGroup RadioGroup { get; private set; }
         
         #endregion COMPONENT REFERENCES
 
@@ -45,10 +45,10 @@ namespace Submodules.Utility.UI
         {
             var resolved = transform.parent?.GetComponent<PanelGroup>();
             
-            if (PanelGroup && PanelGroup != resolved)
-                PanelGroup.Deactivate(this);
+            if (RadioGroup && RadioGroup != resolved)
+                RadioGroup.Deactivate(this);
             
-            PanelGroup = resolved;
+            RadioGroup = resolved;
         }
 #endif //UNITY_EDITOR
 
@@ -56,8 +56,8 @@ namespace Submodules.Utility.UI
         {
             startPosition = Transform.anchoredPosition;
 
-            if(!PanelGroup)
-               PanelGroup = transform.parent?.GetComponent<PanelGroup>();
+            if(!RadioGroup)
+               RadioGroup = transform.parent?.GetComponent<PanelGroup>();
 
             // In Awake, not Start: Awake finishes for every object in the scene before any
             // OnEnable runs, so a controller that decides which panel to show from its own
@@ -69,7 +69,7 @@ namespace Submodules.Utility.UI
 
         protected virtual void OnDisable() => KillTweens();
 
-        public void Toggle(bool toggleOn)
+        public void ToggleState(bool toggleOn)
         {
             if (toggleOn)
                 FadeIn();
@@ -79,13 +79,13 @@ namespace Submodules.Utility.UI
 
         /// <summary>The group-aware entry point: a caller (toggle, button, key handler) calls
         /// this exactly as it always has, and — if this panel sits under a
-        /// <see cref="PanelGroup"/> — the group takes over and drives <see cref="Appear"/>
+        /// <see cref="RadioGroup"/> — the group takes over and drives <see cref="Appear"/>
         /// itself, hiding whichever sibling was up first. Ungrouped, it just appears.</summary>
         [ContextMenu("FadeIn")]
         public virtual void FadeIn()
         {
-            if (PanelGroup)
-                PanelGroup.Activate(this);
+            if (RadioGroup)
+                RadioGroup.Activate(this);
             else
                 Appear();
         }
@@ -97,15 +97,15 @@ namespace Submodules.Utility.UI
         [ContextMenu("FadeOut")]
         public void FadeOut()
         {
-            if (PanelGroup && PanelGroup.ActiveMember == this && !PanelGroup.IsClearable && !PanelGroup.IsRestorable)
+            if (RadioGroup && RadioGroup.ActiveMember == this && !RadioGroup.IsClearable && !RadioGroup.IsRestorable)
             {
                 Debug.Log("FadeOut() prevented. Enable 'IsClearable' or 'IsRestorable' in the " +
-                          $"PanelGroup, or re-parent {name} out of any PanelGroup.", PanelGroup);
+                          $"RadioGroup, or re-parent {name} out of any RadioGroup.", RadioGroup);
                 return;
             }
 
-            if (PanelGroup && PanelGroup.ActiveMember == this)
-                PanelGroup.Deactivate(this);
+            if (RadioGroup && RadioGroup.ActiveMember == this)
+                RadioGroup.Deactivate(this);
             else
                 Disappear();
         }

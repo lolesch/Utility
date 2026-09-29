@@ -1,5 +1,6 @@
 using NaughtyAttributes;
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 namespace Submodules.Utility.UI
 {
@@ -10,7 +11,7 @@ namespace Submodules.Utility.UI
         [field: SerializeField] public bool IsOn { get; private set; } = false;
 
         /// <summary>A toggle's <see cref="RadioGroup"/> is automatically assigned if present on the toggle's parent.</summary>
-        [field: SerializeField, ReadOnly] public RadioGroup RadioGroup { get; private set; }
+        [field: SerializeField, ReadOnly] public ToggleGroup RadioGroup { get; private set; }
 
         [SerializeField] private Sprite toggledOffSprite;
         [SerializeField] private Sprite toggledOnSprite;
@@ -19,7 +20,7 @@ namespace Submodules.Utility.UI
         protected override void OnValidate()
         {
             base.OnValidate();
-            var resolved = transform.parent.GetComponent<RadioGroup>();
+            var resolved = transform.parent?.GetComponent<ToggleGroup>();
 
             if (RadioGroup && RadioGroup != resolved)
                 RadioGroup.Deactivate(this);
@@ -36,13 +37,13 @@ namespace Submodules.Utility.UI
             base.Awake();
 
             if (!RadioGroup)
-                RadioGroup = transform.parent.GetComponent<RadioGroup>();
+                RadioGroup = transform.parent?.GetComponent<ToggleGroup>();
         }
 
         /// <summary>Bypasses the group-aware <see cref="SetToggle"/> — mirrors
         /// <c>SimplePanel.Start</c> calling its internal primitive directly. A toggle authored
-        /// as the group's selection already has <see cref="RadioGroup.ActiveMember"/> pointing
-        /// at it (via <see cref="OnValidate"/>), so routing through <see cref="RadioGroup.Activate"/>
+        /// as the group's selection already has <see cref="ToggleGroup.ActiveMember"/> pointing
+        /// at it (via <see cref="OnValidate"/>), so routing through <see cref="ToggleGroup.Activate"/>
         /// here would see "no change" and skip this toggle's own visual setup entirely.</summary>
         protected override void Start() => ToggleState(IsOn);
         
@@ -68,7 +69,14 @@ namespace Submodules.Utility.UI
             }
         }
 
-        [ContextMenu("Toggle")]
+        protected override void DoStateTransition(SelectionState state, bool instant)
+        {
+            if (IsOn && state == SelectionState.Normal)
+                state = SelectionState.Selected;
+            base.DoStateTransition(state, instant);
+        }
+
+        [ContextMenu("ToggleState")]
         protected override void OnClick() => SetToggle(!IsOn);
         
         /// <summary>The group-aware entry point: a caller (click, hotkey, script) calls this
@@ -98,16 +106,17 @@ namespace Submodules.Utility.UI
             }
         }
 
-        /// <summary>The actual state-change primitive. Internal so <see cref="RadioGroup.Activate"/>
-        /// / <see cref="RadioGroup.Deactivate"/> can drive it directly on either side of a switch
+        /// <summary>The actual state-change primitive. Internal so <see cref="ToggleGroup.Activate"/>
+        /// / <see cref="ToggleGroup.Deactivate"/> can drive it directly on either side of a switch
         /// without looping back through the group-aware <see cref="SetToggle"/> — that loop is
         /// what would double-fire <see cref="OnToggle"/> on the toggle being replaced.</summary>
         internal void ToggleState(bool toggleOn)
         {
             IsOn = toggleOn;
 
-            Interact(SelectionState.Selected, true);
-
+            //Interact(SelectionState.Selected, true);
+            DoStateTransition(currentSelectionState, false);
+            
             if (image && toggledOffSprite && toggledOnSprite)
                 image.sprite = IsOn ? toggledOnSprite : toggledOffSprite;
 

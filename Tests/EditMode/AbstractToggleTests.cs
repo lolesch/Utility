@@ -98,7 +98,7 @@ namespace Submodules.Utility.Tests.EditMode
         }
 
         /// <summary>The other half of that refusal guard: it reads
-        /// <see cref="RadioGroup.IsRestorable"/> as well as <see cref="RadioGroup.IsClearable"/>,
+        /// <see cref="UI.ToggleGroup.IsRestorable"/> as well as <see cref="UI.ToggleGroup.IsClearable"/>,
         /// so a restorable group lets the un-toggle through — the group then restores rather
         /// than empties, which is the whole point of the setting.</summary>
         [Test]

@@ -5,6 +5,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using ToggleGroup = Submodules.Utility.UI.ToggleGroup;
 
 namespace Submodules.Utility.Tests.EditMode
 {
@@ -55,13 +56,13 @@ namespace Submodules.Utility.Tests.EditMode
             return element;
         }
 
-        /// <summary>A <see cref="RadioGroup"/> whose children are the toggles it owns.</summary>
-        public RadioGroup Group(bool isClearable = false, bool isRestorable = false)
+        /// <summary>A <see cref="UI.ToggleGroup"/> whose children are the toggles it owns.</summary>
+        public ToggleGroup Group(bool isClearable = false, bool isRestorable = false)
         {
             var go = new GameObject("radio-group", typeof(RectTransform));
             go.transform.SetParent(root.transform, false);
 
-            var group = go.AddComponent<RadioGroup>();
+            var group = go.AddComponent<ToggleGroup>();
 
             if (isClearable)
                 SetBool(group, "<IsClearable>k__BackingField", true);
@@ -128,7 +129,7 @@ namespace Submodules.Utility.Tests.EditMode
 
         /// <summary>A toggle that belongs to <paramref name="group"/> by being its child —
         /// the same way <c>GetComponentInParent</c> resolves it in a real scene.</summary>
-        public SpyToggle Toggle(RadioGroup group = null, bool interactable = true, System.Type graphicType = null) =>
+        public SpyToggle Toggle(ToggleGroup group = null, bool interactable = true, System.Type graphicType = null) =>
             Element<SpyToggle>(interactable, parent: group != null ? group.transform : null, graphicType: graphicType);
 
         /// <summary>A panel with the components <see cref="SimplePanel"/> requires

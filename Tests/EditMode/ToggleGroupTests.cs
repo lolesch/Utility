@@ -5,21 +5,21 @@ using Submodules.Utility.UI;
 namespace Submodules.Utility.Tests.EditMode
 {
     /// <summary>
-    /// <see cref="RadioGroup"/> answers two questions and nothing else: which toggle is
+    /// <see cref="ToggleGroup"/> answers two questions and nothing else: which toggle is
     /// active, and which one a caller should restore if the group empties. Both are read
     /// by <c>SidePanelToggle</c> and by <c>MinimapController</c>, so both are pinned here.
     ///
-    /// Driven through <see cref="RadioGroup.Activate"/> / <see cref="RadioGroup.Deactivate"/>
+    /// Driven through <see cref="ToggleGroup.Activate"/> / <see cref="ToggleGroup.Deactivate"/>
     /// — the whole public surface since the membership list was removed and
-    /// <c>Adopt</c> retired: a toggle's group is exactly its nearest <see cref="RadioGroup"/>
+    /// <c>Adopt</c> retired: a toggle's group is exactly its nearest <see cref="ToggleGroup"/>
     /// ancestor, so <see cref="UiTestScene.Toggle"/> parents a toggle under the group the same
     /// way a real scene would.
     /// </summary>
     [TestFixture]
-    public sealed class RadioGroupTests
+    public sealed class ToggleGroupTests
     {
         private UiTestScene scene;
-        private RadioGroup group;
+        private ToggleGroup group;
 
         [SetUp]
         public void SetUp()
@@ -191,8 +191,8 @@ namespace Submodules.Utility.Tests.EditMode
             Assert.That(changes, Is.Zero, "a null toggle must not be read as 'the (null) active toggle switched off'");
         }
 
-        /// <summary><see cref="RadioGroup.IsRestorable"/> is the fallback checked when a group
-        /// is not <see cref="RadioGroup.IsClearable"/>: instead of ending up with nothing
+        /// <summary><see cref="ToggleGroup.IsRestorable"/> is the fallback checked when a group
+        /// is not <see cref="ToggleGroup.IsClearable"/>: instead of ending up with nothing
         /// selected, switching the active toggle off re-selects whichever one was on before it.
         /// The panel-side counterpart is <c>PanelGroupTests.Deactivate_NotClearable_Restorable_*</c>;
         /// both run the one implementation in <see cref="ExclusiveGroup{TMember}"/>, but only
@@ -289,7 +289,7 @@ namespace Submodules.Utility.Tests.EditMode
         }
 
         /// <summary>The self-heal counterpart to the membership guard: a reference that was
-        /// never produced by <see cref="RadioGroup.Activate"/> — e.g. a stale value left over
+        /// never produced by <see cref="ToggleGroup.Activate"/> — e.g. a stale value left over
         /// from a reparent, or hand-edited directly in the Inspector — is cleared the next
         /// time the Editor validates the group, rather than persisting indefinitely.</summary>
         [Test]
@@ -327,8 +327,8 @@ namespace Submodules.Utility.Tests.EditMode
             Assert.That(group.ActiveMember, Is.SameAs(toggle));
         }
 
-        private static void InvokeOnValidate(RadioGroup target) =>
-            typeof(RadioGroup)
+        private static void InvokeOnValidate(ToggleGroup target) =>
+            typeof(ToggleGroup)
                 .GetMethod("OnValidate", BindingFlags.NonPublic | BindingFlags.Instance)
                 ?.Invoke(target, null);
     }

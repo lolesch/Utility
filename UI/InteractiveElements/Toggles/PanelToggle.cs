@@ -11,7 +11,7 @@ namespace Submodules.Utility.UI
             if (!panel)
                 return;
 
-            panel.Toggle(IsOn);
+            panel.ToggleState(IsOn);
         }
     }
 }

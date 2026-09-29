@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace Submodules.Utility.UI
 {
-    /// <summary>The exclusivity rule shared by <see cref="RadioGroup"/>
+    /// <summary>The exclusivity rule shared by <see cref="ToggleGroup"/>
     /// (input) and <see cref="PanelGroup"/> (content): a collection of mutually exclusive
     /// <typeparamref name="TMember"/>s of which at most one is active at a time.
     /// <see cref="Activate"/> deactivates whichever sibling held the slot. Deactivating the
@@ -98,9 +98,9 @@ namespace Submodules.Utility.UI
                 return;
             }
 
-            PreviousMember = member;
+            PreviousMember = ActiveMember;
             ActiveMember = null;
-            SetMemberActive(member, false);
+            SetMemberActive(PreviousMember, false);
 
             OnGroupChanged?.Invoke(null);
         }

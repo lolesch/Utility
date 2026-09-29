@@ -9,12 +9,12 @@ using UnityEngine.TestTools;
 namespace Submodules.Utility.Tests.EditMode
 {
     /// <summary>
-    /// <see cref="PanelGroup"/> is <see cref="RadioGroup"/>'s counterpart for content rather
+    /// <see cref="PanelGroup"/> is <see cref="ToggleGroup"/>'s counterpart for content rather
     /// than input: panels occupying the same screen space, where showing one hides whichever
     /// else is up. Deliberately driven the same way — <see cref="PanelGroup.Activate"/> /
     /// <see cref="PanelGroup.Deactivate"/>, membership by hierarchy, an
     /// <see cref="PanelGroup.OnGroupChanged"/> announcement — so a caller who already knows
-    /// <see cref="RadioGroup"/> reads this for free. The difference is what drives it: a
+    /// <see cref="ToggleGroup"/> reads this for free. The difference is what drives it: a
     /// toggle asking the group to show its panel is one caller, but not the only one —
     /// phase-change code can call <see cref="PanelGroup.Activate"/> directly, with no toggle
     /// involved at all.

@@ -19,9 +19,7 @@ namespace Submodules.Utility.UI
         {
             base.Awake();
 
-            if (targetGraphic)
-                    targetGraphic.raycastTarget = true;
-            else
+            if (!targetGraphic)
                 LogExtensions.MissingComponent(nameof(Graphic), gameObject);
         }
 
