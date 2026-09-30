@@ -17,7 +17,7 @@ namespace Submodules.Utility.UI
     /// membership (<see cref="IsMember"/>) and how a member is switched on or off
     /// (<see cref="SetMemberActive"/>).
     /// </summary>
-    public abstract class ExclusiveGroup<TMember> : MonoBehaviour where TMember : Component
+    public abstract class AbstractGroup<TMember> : MonoBehaviour where TMember : Component
     {
         [field: SerializeField, ReadOnly] public TMember ActiveMember { get; private set; }
         [field: SerializeField, ReadOnly] public TMember PreviousMember { get; private set; }

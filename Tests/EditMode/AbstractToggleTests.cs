@@ -78,7 +78,7 @@ namespace Submodules.Utility.Tests.EditMode
         /// <summary><see cref="AbstractToggle.SetToggle"/>'s refusal guard.
         ///
         /// <para>The toggle staying on is <em>not</em> enough to pin this — delete the guard and
-        /// <see cref="ExclusiveGroup{TMember}.Deactivate"/> no-ops on exactly the same
+        /// <see cref="AbstractGroup{TMember}.Deactivate"/> no-ops on exactly the same
         /// configuration, so the outcome is identical (verified by removing it: the suite stayed
         /// green). The guard's one unique effect is the author-facing log naming the two settings
         /// that would allow the un-toggle, so that is what this expects — same reasoning as

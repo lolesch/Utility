@@ -314,7 +314,7 @@ namespace Submodules.Utility.Tests.EditMode
         /// the sole panel of a group that is neither Clearable nor Restorable.
         ///
         /// <para>The panel staying up is <em>not</em> enough to pin this — delete the guard and
-        /// <see cref="ExclusiveGroup{TMember}.Deactivate"/> no-ops on exactly the same
+        /// <see cref="AbstractGroup{TMember}.Deactivate"/> no-ops on exactly the same
         /// configuration, so the outcome is identical (verified by removing it: the suite stayed
         /// green). The guard's one unique effect is the author-facing log telling you which two
         /// settings would allow the fade-out, so that is what this expects.</para></summary>

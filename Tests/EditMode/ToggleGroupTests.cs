@@ -195,7 +195,7 @@ namespace Submodules.Utility.Tests.EditMode
         /// is not <see cref="ToggleGroup.IsClearable"/>: instead of ending up with nothing
         /// selected, switching the active toggle off re-selects whichever one was on before it.
         /// The panel-side counterpart is <c>PanelGroupTests.Deactivate_NotClearable_Restorable_*</c>;
-        /// both run the one implementation in <see cref="ExclusiveGroup{TMember}"/>, but only
+        /// both run the one implementation in <see cref="AbstractGroup{TMember}"/>, but only
         /// this side proves the toggle's own on/off primitive is what the restore drives.</summary>
         [Test]
         public void Deactivate_NotClearable_Restorable_RestoresThePreviousMember()

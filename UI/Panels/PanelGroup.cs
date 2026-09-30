@@ -1,13 +1,13 @@
 namespace Submodules.Utility.UI
 {
-    /// <summary><see cref="ExclusiveGroup{TMember}"/> over content rather than input: a
+    /// <summary><see cref="AbstractGroup{TMember}"/> over content rather than input: a
     /// collection of mutually exclusive <see cref="SimplePanel"/>s, of which at most one is up
     /// at a time. Membership is <see cref="SimplePanel.RadioGroup"/>, and switching a member is
     /// <see cref="SimplePanel.Appear"/> / <see cref="SimplePanel.Disappear"/> — the primitives,
     /// not the group-aware <see cref="SimplePanel.FadeIn"/> / <see cref="SimplePanel.FadeOut"/>
     /// that would loop back here.
     /// </summary>
-    public sealed class PanelGroup : ExclusiveGroup<SimplePanel>
+    public sealed class PanelGroup : AbstractGroup<SimplePanel>
     {
         protected override bool IsMember(SimplePanel panel) => panel.RadioGroup == this;
 
