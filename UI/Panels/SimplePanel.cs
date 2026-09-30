@@ -141,7 +141,7 @@ namespace Submodules.Utility.UI
         /// </summary>
         protected virtual void BeforeAppear()
         {
-            // refresh data -> IView?
+            // refresh data -> IDisplay?
             CanvasGroup.blocksRaycasts = true;
         } 
 

@@ -1,6 +1,6 @@
 namespace Submodules.Utility.UI
 {
-    public interface IView<T>
+    public interface IDisplay<in T>
     {
         void Refresh(T data);
     }

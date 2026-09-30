@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace Submodules.Utility.Tools
 {
-    //TODO: extend prefabPool to support IView<T> that update the Refresh(newData) before activating the object
+    //TODO: extend prefabPool to support IDisplay<T> that update the Refresh(newData) before activating the object
 
     public class PrefabPool<T> : IObjectPool<T> where T : MonoBehaviour
     {
