@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace Submodules.Utility.UI
 {
-    public class QuitGameButton : AbstractButton
+    public sealed class QuitGameButton : AbstractButton
     {
         protected override void OnClick()
         {

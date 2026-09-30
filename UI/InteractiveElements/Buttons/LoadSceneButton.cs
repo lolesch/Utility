@@ -3,10 +3,10 @@ using UnityEngine;
 
 namespace Submodules.Utility.UI
 {
-    public class LoadSceneButton : AbstractButton
+    public sealed class LoadSceneButton : AbstractButton
     {
         [Space]
-        [SerializeField, SceneRef] protected string sceneToLoad;
+        [SerializeField, SceneRef] private string sceneToLoad;
 
         protected override void OnClick() => SceneProvider.Instance.LoadScene(sceneToLoad);
     }

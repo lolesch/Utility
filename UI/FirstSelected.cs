@@ -3,7 +3,7 @@ using UnityEngine.EventSystems;
 
 namespace Submodules.Utility.UI
 {
-    public class FirstSelected : MonoBehaviour
+    public sealed class FirstSelected : MonoBehaviour
     {
         private void OnEnable()
         {

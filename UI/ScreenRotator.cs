@@ -2,19 +2,18 @@ using UnityEngine;
 
 namespace Submodules.Utility.UI
 {
-    public class ScreenRotator : RootCanvas
+    public sealed class ScreenRotator : RootCanvas
     {
         private void Update()
         {
-            if (Screen.orientation != orientation)
-            {
-                orientation = Screen.orientation;
+            if (Screen.orientation == orientation) 
+                return;
+            
+            orientation = Screen.orientation;
 
-                if (Screen.width < Screen.height)
-                    Screen.orientation = ScreenOrientation.LandscapeRight;
-                else
-                    Screen.orientation = ScreenOrientation.AutoRotation;
-            }
+            Screen.orientation = Screen.width < Screen.height 
+                ? ScreenOrientation.LandscapeRight 
+                : ScreenOrientation.AutoRotation;
         }
     }
 }

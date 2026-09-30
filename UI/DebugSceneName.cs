@@ -6,7 +6,7 @@ using UnityEngine.SceneManagement;
 namespace Submodules.Utility.UI
 {
     [RequireComponent(typeof(TextMeshProUGUI))]
-    public class DebugSceneName : MonoBehaviour
+    public sealed class DebugSceneName : MonoBehaviour
     {
         [SerializeField, ReadOnly] private TextMeshProUGUI sceneText;
         private TextMeshProUGUI SceneText => sceneText != null ? sceneText : sceneText = GetComponent<TextMeshProUGUI>();

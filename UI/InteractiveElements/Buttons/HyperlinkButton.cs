@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace Submodules.Utility.UI
 {
-    public class HyperlinkButton : AbstractButton
+    public sealed class HyperlinkButton : AbstractButton
     {
         [SerializeField] private string linkToOpen;
 
