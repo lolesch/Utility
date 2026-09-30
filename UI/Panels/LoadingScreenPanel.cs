@@ -12,13 +12,11 @@ namespace Submodules.Utility.UI
 
         public void SetLoadingProgression(float progress)
         {
-            if (progressionBar)
-            {
+            if (progressionBar) 
                 progressionBar.fillAmount = progress;
 
-                if (progressionText)
-                    progressionText.text = $"{progress:P0}";
-            }
+            if (progressionText)
+                progressionText.text = $"{progress:P0}";
         }
 
         public void SetLoadingText(string text)
