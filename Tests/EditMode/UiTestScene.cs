@@ -135,7 +135,7 @@ namespace Submodules.Utility.Tests.EditMode
         /// <summary>A panel with the components <see cref="SimplePanel"/> requires
         /// (<c>CanvasGroup</c>, <c>GraphicRaycaster</c>) already attached. Its <c>Awake</c>
         /// never runs — <see cref="SimplePanel"/> is not <c>[ExecuteAlways]</c> — so
-        /// <c>FadeIn</c>/<c>FadeOut</c> are exercised exactly as a caller like
+        /// <c>Expand</c>/<c>Collapse</c> are exercised exactly as a caller like
         /// <see cref="MultiplePanelToggle"/> would, with none of the panel's own startup
         /// side effects in the way.</summary>
         public SpyPanel Panel(PanelGroup group = null)

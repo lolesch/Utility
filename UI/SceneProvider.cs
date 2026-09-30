@@ -14,7 +14,7 @@ namespace Submodules.Utility.UI
         private AsyncOperation loaderOperation = null;
 
         private LoadingScreenPanel display = null;
-        private LoadingScreenPanel Display => display != null ? display : display = GetComponent<LoadingScreenPanel>();
+        private LoadingScreenPanel Display => display ? display : display = GetComponent<LoadingScreenPanel>();
 
         private float delta;
         private float timeStamp;
@@ -32,7 +32,7 @@ namespace Submodules.Utility.UI
             var image = GetComponent<Image>();
             image.color = Color.black;
 
-            Display.FadeOut();
+            Display.Collapse();
         }
 
         public void LoadScene(string sceneToLoad, bool showProgress = true)
@@ -63,17 +63,17 @@ namespace Submodules.Utility.UI
             {
                 Display.SetLoadingProgression(0);
                 Display.SetLoadingText(sceneToLoad);
-                Display.FadeIn();
+                Display.Expand();
 
                 timeStamp = Time.unscaledTime;
 
-                // Wait for FadeIn
+                // Wait for Expand
                 yield return new WaitWhile(() => Time.unscaledTime - timeStamp < Display.FadeDuration);
 
                 if (loaderOperation != null)
                 {
                     Debug.LogError("Can't load a sceneName while another is still loading");
-                    Display.FadeOut();
+                    Display.Collapse();
                     yield break;
                 }
 
@@ -106,7 +106,7 @@ namespace Submodules.Utility.UI
 
                 yield return new WaitForSeconds(.5f);
 
-                Display.FadeOut();
+                Display.Collapse();
 
                 yield return null;
 

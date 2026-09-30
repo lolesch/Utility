@@ -15,12 +15,12 @@ namespace Submodules.Utility.UI
     public class SimplePanel : MonoBehaviour
     {
         #region COMPONENT REFERENCES
-        
+
         private CanvasGroup canvasGroup = null;
         private CanvasGroup CanvasGroup => canvasGroup ? canvasGroup : canvasGroup = GetComponent<CanvasGroup>();
 
         private RectTransform Transform => transform as RectTransform;
-        
+
         /// <summary>A panel's <see cref="RadioGroup"/> is automatically assigned if present on the panel's parent.</summary>
         [field: SerializeField, ReadOnly] public PanelGroup RadioGroup { get; private set; }
         
@@ -31,9 +31,9 @@ namespace Submodules.Utility.UI
         [SerializeField, Range(0f, 2f)] protected float scaleFrom = 1f;
         [SerializeField] protected Vector2 moveFrom = Vector2.zero;
         
-        public bool IsVisible => CanvasGroup.alpha > 0f;
+        public bool IsCollapsed => CanvasGroup.alpha <= 0f;
         public bool IsInteractive => CanvasGroup.blocksRaycasts;
-        public bool IsActive => Mathf.Approximately(CanvasGroup.alpha, 1);
+        public bool IsExtended => CanvasGroup.alpha >= 1;
 
         private Vector2 startPosition;
 
@@ -72,17 +72,17 @@ namespace Submodules.Utility.UI
         public void ToggleState(bool toggleOn)
         {
             if (toggleOn)
-                FadeIn();
+                Expand();
             else
-                FadeOut();
+                Collapse();
         }
 
         /// <summary>The group-aware entry point: a caller (toggle, button, key handler) calls
         /// this exactly as it always has, and — if this panel sits under a
         /// <see cref="RadioGroup"/> — the group takes over and drives <see cref="Appear"/>
         /// itself, hiding whichever sibling was up first. Ungrouped, it just appears.</summary>
-        [ContextMenu("FadeIn")]
-        public virtual void FadeIn()
+        [ContextMenu("Expand")]
+        public virtual void Expand()
         {
             if (RadioGroup)
                 RadioGroup.Activate(this);
@@ -90,16 +90,16 @@ namespace Submodules.Utility.UI
                 Appear();
         }
 
-        /// <summary>The group-aware entry point, mirroring <see cref="FadeIn()"/>. Prevented
+        /// <summary>The group-aware entry point, mirroring <see cref="Expand"/>. Prevented
         /// outright on the sole active panel of a group that is neither Clearable nor
         /// Restorable — the same guard <see cref="AbstractToggle.SetToggle"/> has for
         /// un-toggling the active one.</summary>
-        [ContextMenu("FadeOut")]
-        public void FadeOut()
+        [ContextMenu("Collapse")]
+        public void Collapse()
         {
             if (RadioGroup && RadioGroup.ActiveMember == this && !RadioGroup.IsClearable && !RadioGroup.IsRestorable)
             {
-                Debug.Log("FadeOut() prevented. Enable 'IsClearable' or 'IsRestorable' in the " +
+                Debug.Log("Collapse() prevented. Enable 'IsClearable' or 'IsRestorable' in the " +
                           $"RadioGroup, or re-parent {name} out of any RadioGroup.", RadioGroup);
                 return;
             }
@@ -112,7 +112,7 @@ namespace Submodules.Utility.UI
 
         /// <summary>The actual appear primitive, named to match <see cref="AbstractToggle.SetToggle"/>'s
         /// on/off vocabulary. Internal so <see cref="PanelGroup.Activate"/> can drive it directly
-        /// without looping back through the group-aware <see cref="FadeIn()"/> — that loop is
+        /// without looping back through the group-aware <see cref="Expand"/> — that loop is
         /// what silently double-fired <see cref="BeforeAppear"/> before.</summary>
         internal void Appear(bool instant = false)
         {
@@ -155,7 +155,7 @@ namespace Submodules.Utility.UI
         /// <summary>The actual disappear primitive, named to match <see cref="AbstractToggle.SetToggle"/>'s
         /// on/off vocabulary. Internal so <see cref="PanelGroup.Activate"/> (fading out the replaced
         /// panel) and <see cref="PanelGroup.Deactivate"/> can drive it directly without looping back
-        /// through the group-aware <see cref="FadeOut()"/>.</summary>
+        /// through the group-aware <see cref="Collapse"/>.</summary>
         internal void Disappear(bool instant = false)
         {
             KillTweens();

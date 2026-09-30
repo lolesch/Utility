@@ -4,7 +4,7 @@ namespace Submodules.Utility.UI
     /// collection of mutually exclusive <see cref="SimplePanel"/>s, of which at most one is up
     /// at a time. Membership is <see cref="SimplePanel.RadioGroup"/>, and switching a member is
     /// <see cref="SimplePanel.Appear"/> / <see cref="SimplePanel.Disappear"/> — the primitives,
-    /// not the group-aware <see cref="SimplePanel.FadeIn"/> / <see cref="SimplePanel.FadeOut"/>
+    /// not the group-aware <see cref="SimplePanel.Expand"/> / <see cref="SimplePanel.Collapse"/>
     /// that would loop back here.
     /// </summary>
     public sealed class PanelGroup : AbstractGroup<SimplePanel>

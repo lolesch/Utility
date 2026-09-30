@@ -309,7 +309,7 @@ namespace Submodules.Utility.Tests.EditMode
             Assert.That(changes, Is.Zero);
         }
 
-        /// <summary><see cref="SimplePanel.FadeOut"/>'s own guard, the counterpart to
+        /// <summary><see cref="SimplePanel.Collapse"/>'s own guard, the counterpart to
         /// <c>AbstractToggle.SetToggle</c>'s: the group-aware entry point refuses outright on
         /// the sole panel of a group that is neither Clearable nor Restorable.
         ///
@@ -322,11 +322,11 @@ namespace Submodules.Utility.Tests.EditMode
         public void FadeOut_OnTheActivePanel_NeitherClearableNorRestorable_IsRefused()
         {
             var panel = scene.Panel(group);
-            panel.FadeIn();
+            panel.Expand();
             var fadeOutsBefore = panel.FadeOutCalls;
-            LogAssert.Expect(LogType.Log, new Regex(@"^FadeOut\(\) prevented\."));
+            LogAssert.Expect(LogType.Log, new Regex(@"^Collapse\(\) prevented\."));
 
-            panel.FadeOut();
+            panel.Collapse();
 
             Assert.That(group.ActiveMember, Is.SameAs(panel));
             Assert.That(panel.FadeOutCalls, Is.EqualTo(fadeOutsBefore), "the panel must not fade out behind the group's back");
@@ -338,10 +338,10 @@ namespace Submodules.Utility.Tests.EditMode
             var restorable = scene.PanelGroup(isRestorable: true);
             var first = scene.Panel(restorable);
             var second = scene.Panel(restorable);
-            first.FadeIn();
-            second.FadeIn();
+            first.Expand();
+            second.Expand();
 
-            second.FadeOut();
+            second.Collapse();
 
             Assert.That(restorable.ActiveMember, Is.SameAs(first),
                 "the guard must not refuse a fade-out a restorable group can absorb");

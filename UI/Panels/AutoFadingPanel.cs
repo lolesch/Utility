@@ -5,10 +5,10 @@ namespace Submodules.Utility.UI
 {
     /// <summary>
     /// A <see cref="SimplePanel"/> that can delay its own appearance
-    /// (<see cref="fadeInDelay"/>, via an <see cref="FadeIn"/> override) and automatically
+    /// (<see cref="fadeInDelay"/>, via an <see cref="Expand"/> override) and automatically
     /// fade itself back out a fixed time after appearing (<see cref="fadeOutDelay"/>).
     /// Either pending timer is cancelled the moment the panel actually starts appearing or
-    /// disappearing, so an explicit <see cref="SimplePanel.FadeOut"/> always wins over a
+    /// disappearing, so an explicit <see cref="SimplePanel.Collapse"/> always wins over a
     /// stale scheduled fade-in and vice versa. Split out of <see cref="SimplePanel"/>
     /// because every panel in the project leaves both features unused — they don't belong
     /// on the base every panel pays for.
@@ -23,17 +23,17 @@ namespace Submodules.Utility.UI
         private Timer delayedFadeIn;
         private Timer autoFadeOut;
         
-        public override void FadeIn()
+        public override void Expand()
         {
             if (fadeInDelay <= 0)
             {
-                base.FadeIn();
+                base.Expand();
                 return;
             }
 
             delayedFadeIn?.Stop();
             delayedFadeIn = new Timer(fadeInDelay);
-            delayedFadeIn.OnComplete += base.FadeIn;
+            delayedFadeIn.OnComplete += base.Expand;
             delayedFadeIn.Start();
         }
 
@@ -51,7 +51,7 @@ namespace Submodules.Utility.UI
             
             autoFadeOut?.Stop();
             autoFadeOut = new Timer(fadeOutDelay);
-            autoFadeOut.OnComplete += FadeOut;
+            autoFadeOut.OnComplete += Collapse;
             autoFadeOut.Start();
         }
 
