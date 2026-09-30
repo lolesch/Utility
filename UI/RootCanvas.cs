@@ -15,10 +15,11 @@ namespace Submodules.Utility.UI
         [SerializeField] protected Vector2 referenceResolution = new(1920, 1080);
         [SerializeField, Range(0f, 1f)] protected float matchWidthOrHeight = 1f;
 
-        public Canvas Canvas => canvas != null ? canvas : canvas = GetComponent<Canvas>();
+        public Canvas Canvas => canvas ? canvas : canvas = GetComponent<Canvas>();
 
-        public CanvasScaler Scaler => scaler != null ? scaler : scaler = GetComponent<CanvasScaler>();
+        private CanvasScaler Scaler => scaler ? scaler : scaler = GetComponent<CanvasScaler>();
 
+#if UNITY_EDITOR
         private void OnValidate()
         {
             Canvas.renderMode = RenderMode.ScreenSpaceOverlay;
@@ -27,5 +28,6 @@ namespace Submodules.Utility.UI
             Scaler.matchWidthOrHeight = matchWidthOrHeight;
             Scaler.referenceResolution = referenceResolution;
         }
+#endif //UNITY_EDITOR
     }
 }
