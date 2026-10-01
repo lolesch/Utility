@@ -4,6 +4,7 @@
     "references": [
         "Utility",
         "Utility.UI",
+        "Unity.TextMeshPro",
         "Submodules.Utility.TestSupport",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner"

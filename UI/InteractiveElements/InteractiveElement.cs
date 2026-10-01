@@ -1,5 +1,6 @@
 using Submodules.Utility.Extensions;
 using Submodules.Utility.Tools.Tweening;
+using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -12,9 +13,14 @@ namespace Submodules.Utility.UI
         //TODO: show tooltip on hover -> import and update tooltip from LOCA CSV 
         //TODO: implement audio feedback on hover
 
+        [Space]
         [SerializeField] protected bool staySelected = false;
         [SerializeField, Range(.8f, 1.2f)] protected float hoverScale = 1.06f;
-        
+
+        [Tooltip("Optional: shows a tooltip while it is highlighted (hover or navigation) and hides it otherwise.")]
+        [SerializeField] private string tooltip;
+        [SerializeField] private TextMeshProUGUI tooltipLabel;
+
         protected override void Awake()
         {
             base.Awake();
@@ -27,6 +33,8 @@ namespace Submodules.Utility.UI
         {
             base.OnDisable();
 
+            ShowTooltip(false);
+
             if (targetGraphic && Tween.IsTweening(targetGraphic.transform))
                 Tween.Kill(targetGraphic.transform);
         }
@@ -36,6 +44,24 @@ namespace Submodules.Utility.UI
             base.DoStateTransition(state, instant);
 
             Interact(state, instant);
+            
+            ShowTooltip( state is not (SelectionState.Disabled or SelectionState.Normal) );
+        }
+
+        private void ShowTooltip(bool show)
+        {
+            // A label on this very object would switch the element off with it.
+            if (!tooltipLabel || tooltipLabel.gameObject == gameObject)
+                return;
+
+            if (string.IsNullOrWhiteSpace(tooltip))
+                return;
+            
+            if (show)
+                tooltipLabel.text = tooltip;
+
+            if (tooltipLabel.gameObject.activeSelf != show)
+                tooltipLabel.gameObject.SetActive(show);
         }
 
         protected virtual void Interact(SelectionState state, bool instant)
@@ -65,6 +91,26 @@ namespace Submodules.Utility.UI
             
             if (EventSystem.current.currentSelectedGameObject == gameObject && !staySelected)
                 EventSystem.current.SetSelectedGameObject(null);
+        }
+
+        /// <summary>The click affordance of a button: grows on hover and while selected, returns to size
+        /// on press, so the press reads as a push. <see cref="AbstractButton"/> and
+        /// <see cref="AbstractSlider"/> both use it.</summary>
+        protected void ApplyClickFeedback(SelectionState state)
+        {
+            switch (state)
+            {
+                case SelectionState.Highlighted:
+                case SelectionState.Selected:
+                    Scale(hoverScale);
+                    break;
+                case SelectionState.Normal:
+                case SelectionState.Pressed:
+                case SelectionState.Disabled:
+                default:
+                    ResetScale();
+                    break;
+            }
         }
 
         protected void ResetScale() => Scale(1f);

@@ -7,22 +7,7 @@ namespace Submodules.Utility.UI
         //TODO: disable the button for x seconds to disable button spamming
         //TODO: implement audio feedback on click
         
-        protected override void Interact(SelectionState state, bool instant)
-        {
-            switch (state)
-            {
-                case SelectionState.Highlighted:
-                case SelectionState.Selected:
-                    Scale(hoverScale);
-                    break;
-                case SelectionState.Normal:
-                case SelectionState.Pressed:
-                case SelectionState.Disabled:
-                default:
-                    ResetScale();
-                    break;
-            }
-        }
+        protected override void Interact(SelectionState state, bool instant) => ApplyClickFeedback(state);
 
         public virtual void OnPointerClick(PointerEventData eventData)
         {
