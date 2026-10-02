@@ -1,3 +1,4 @@
+using UnityEngine;
 using UnityEngine.EventSystems;
 
 namespace Submodules.Utility.UI
@@ -20,6 +21,7 @@ namespace Submodules.Utility.UI
             OnClick();
         }
         
+        [ContextMenu("Click")]
         protected abstract void OnClick();
     }
 }

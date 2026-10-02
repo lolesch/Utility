@@ -46,7 +46,7 @@ namespace Submodules.Utility.UI
             var resolved = transform.parent?.GetComponent<PanelGroup>();
             
             if (RadioGroup && RadioGroup != resolved)
-                RadioGroup.Deactivate(this);
+                RadioGroup.Deactivate(this, byUser: false);
             
             RadioGroup = resolved;
         }
@@ -91,15 +91,15 @@ namespace Submodules.Utility.UI
         }
 
         /// <summary>The group-aware entry point, mirroring <see cref="Expand"/>. Prevented
-        /// outright on the sole active panel of a group that is neither Clearable nor
-        /// Restorable — the same guard <see cref="AbstractToggle.SetToggle"/> has for
+        /// outright on the sole active panel of a group the user cannot untoggle
+        /// (<see cref="AbstractGroup{TMember}.UserCanUntoggle"/>) — the same guard <see cref="AbstractToggle.SetToggle"/> has for
         /// un-toggling the active one.</summary>
         [ContextMenu("Collapse")]
         public void Collapse()
         {
-            if (RadioGroup && RadioGroup.ActiveMember == this && !RadioGroup.IsClearable && !RadioGroup.IsRestorable)
+            if (RadioGroup && RadioGroup.ActiveMember == this && !RadioGroup.CanUntoggle(byUser: true))
             {
-                Debug.Log("Collapse() prevented. Enable 'IsClearable' or 'IsRestorable' in the " +
+                Debug.Log("Collapse() prevented. Enable 'UserCanUntoggle' in the " +
                           $"RadioGroup, or re-parent {name} out of any RadioGroup.", RadioGroup);
                 return;
             }

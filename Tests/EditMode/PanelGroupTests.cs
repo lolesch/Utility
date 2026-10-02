@@ -167,7 +167,7 @@ namespace Submodules.Utility.Tests.EditMode
         [Test]
         public void Clear_Clearable_ClearsTheActiveMember()
         {
-            var clearable = scene.PanelGroup(isClearable: true);
+            var clearable = scene.PanelGroup(userCanUntoggle: true);
             var panel = scene.Panel(clearable);
             clearable.Activate(panel);
 
@@ -179,7 +179,7 @@ namespace Submodules.Utility.Tests.EditMode
         [Test]
         public void Clear_Clearable_FadesThePanelOut()
         {
-            var clearable = scene.PanelGroup(isClearable: true);
+            var clearable = scene.PanelGroup(userCanUntoggle: true);
             var panel = scene.Panel(clearable);
             clearable.Activate(panel);
 
@@ -191,7 +191,7 @@ namespace Submodules.Utility.Tests.EditMode
         [Test]
         public void Clear_APanelThatIsNotActive_LeavesTheGroupAlone()
         {
-            var clearable = scene.PanelGroup(isClearable: true);
+            var clearable = scene.PanelGroup(userCanUntoggle: true);
             var active = scene.Panel(clearable);
             var other = scene.Panel(clearable);
             clearable.Activate(active);
@@ -208,7 +208,7 @@ namespace Submodules.Utility.Tests.EditMode
         [Test]
         public void Clear_AnnouncesTheChange()
         {
-            var clearable = scene.PanelGroup(isClearable: true);
+            var clearable = scene.PanelGroup(userCanUntoggle: true);
             var panel = scene.Panel(clearable);
             clearable.Activate(panel);
 
@@ -223,7 +223,7 @@ namespace Submodules.Utility.Tests.EditMode
         [Test]
         public void Clear_Null_LeavesTheGroupAlone_EvenWhenNothingIsActive()
         {
-            var clearable = scene.PanelGroup(isClearable: true);
+            var clearable = scene.PanelGroup(userCanUntoggle: true);
             var changes = 0;
             clearable.OnGroupChanged += _ => changes++;
 
@@ -231,95 +231,17 @@ namespace Submodules.Utility.Tests.EditMode
             Assert.That(changes, Is.Zero);
         }
 
-        /// <summary><see cref="PanelGroup.IsRestorable"/> is the fallback checked when a group
-        /// is not <see cref="PanelGroup.IsClearable"/>: instead of ending up with nothing
-        /// shown, hiding the active panel re-shows whichever one was up before it.</summary>
-        [Test]
-        public void Deactivate_NotClearable_Restorable_RestoresThePreviousMember()
-        {
-            var restorable = scene.PanelGroup(isRestorable: true);
-            var first = scene.Panel(restorable);
-            var second = scene.Panel(restorable);
-            restorable.Activate(first);
-            restorable.Activate(second);
-
-            restorable.Deactivate(second);
-
-            Assert.That(restorable.ActiveMember, Is.SameAs(first));
-        }
-
-        [Test]
-        public void Deactivate_NotClearable_Restorable_FadesTheHiddenPanelOutAndTheRestoredPanelIn()
-        {
-            var restorable = scene.PanelGroup(isRestorable: true);
-            var first = scene.Panel(restorable);
-            var second = scene.Panel(restorable);
-            restorable.Activate(first);
-            restorable.Activate(second);
-
-            restorable.Deactivate(second);
-
-            Assert.That(second.FadeOutCalls, Is.EqualTo(1));
-            Assert.That(first.FadeInCalls, Is.EqualTo(2), "shown once by the initial Show, once by the restore");
-        }
-
-        [Test]
-        public void Deactivate_NotClearable_Restorable_AnnouncesTheChange_WithTheRestoredPanel()
-        {
-            var restorable = scene.PanelGroup(isRestorable: true);
-            var first = scene.Panel(restorable);
-            var second = scene.Panel(restorable);
-            restorable.Activate(first);
-            restorable.Activate(second);
-            SimplePanel announced = null;
-            restorable.OnGroupChanged += p => announced = p;
-
-            restorable.Deactivate(second);
-
-            Assert.That(announced, Is.SameAs(first));
-        }
-
-        [Test]
-        public void Deactivate_NotClearable_Restorable_RemembersTheToggleItReplaced()
-        {
-            var restorable = scene.PanelGroup(isRestorable: true);
-            var first = scene.Panel(restorable);
-            var second = scene.Panel(restorable);
-            restorable.Activate(first);
-            restorable.Activate(second);
-
-            restorable.Deactivate(second);
-
-            Assert.That(restorable.PreviousMember, Is.SameAs(second),
-                "the panel that just went off is the one a second Hide would need to restore back to");
-        }
-
-        [Test]
-        public void Deactivate_NotClearable_Restorable_WithNoPreviousMember_IsANoOp()
-        {
-            var restorable = scene.PanelGroup(isRestorable: true);
-            var panel = scene.Panel(restorable);
-            restorable.Activate(panel);
-            var changes = 0;
-            restorable.OnGroupChanged += _ => changes++;
-
-            restorable.Deactivate(panel);
-
-            Assert.That(restorable.ActiveMember, Is.SameAs(panel), "nothing to restore to, so the group keeps what it has");
-            Assert.That(changes, Is.Zero);
-        }
-
         /// <summary><see cref="SimplePanel.Collapse"/>'s own guard, the counterpart to
         /// <c>AbstractToggle.SetToggle</c>'s: the group-aware entry point refuses outright on
-        /// the sole panel of a group that is neither Clearable nor Restorable.
+        /// the sole panel of a group that cannot be cleared.
         ///
         /// <para>The panel staying up is <em>not</em> enough to pin this — delete the guard and
         /// <see cref="AbstractGroup{TMember}.Deactivate"/> no-ops on exactly the same
         /// configuration, so the outcome is identical (verified by removing it: the suite stayed
-        /// green). The guard's one unique effect is the author-facing log telling you which two
-        /// settings would allow the fade-out, so that is what this expects.</para></summary>
+        /// green). The guard's one unique effect is the author-facing log telling you which
+        /// setting would allow the fade-out, so that is what this expects.</para></summary>
         [Test]
-        public void FadeOut_OnTheActivePanel_NeitherClearableNorRestorable_IsRefused()
+        public void FadeOut_OnTheActivePanel_NotClearable_IsRefused()
         {
             var panel = scene.Panel(group);
             panel.Expand();
@@ -332,27 +254,12 @@ namespace Submodules.Utility.Tests.EditMode
             Assert.That(panel.FadeOutCalls, Is.EqualTo(fadeOutsBefore), "the panel must not fade out behind the group's back");
         }
 
-        [Test]
-        public void FadeOut_OnTheActivePanel_Restorable_RestoresThePreviousPanel()
-        {
-            var restorable = scene.PanelGroup(isRestorable: true);
-            var first = scene.Panel(restorable);
-            var second = scene.Panel(restorable);
-            first.Expand();
-            second.Expand();
-
-            second.Collapse();
-
-            Assert.That(restorable.ActiveMember, Is.SameAs(first),
-                "the guard must not refuse a fade-out a restorable group can absorb");
-        }
-
         /// <summary>The convenience a caller like Go Venture needs: close whichever panel is
         /// open without first asking the group which one that is.</summary>
         [Test]
         public void ClearActive_ClearsWhicheverPanelIsShown()
         {
-            var clearable = scene.PanelGroup(isClearable: true);
+            var clearable = scene.PanelGroup(userCanUntoggle: true);
             var panel = scene.Panel(clearable);
             clearable.Activate(panel);
 
@@ -364,7 +271,7 @@ namespace Submodules.Utility.Tests.EditMode
         [Test]
         public void ClearActive_WhenNothingIsActive_IsANoOp()
         {
-            var clearable = scene.PanelGroup(isClearable: true);
+            var clearable = scene.PanelGroup(userCanUntoggle: true);
             var changes = 0;
             clearable.OnGroupChanged += _ => changes++;
 

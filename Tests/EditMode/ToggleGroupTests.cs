@@ -1,6 +1,9 @@
 using System.Reflection;
+using System.Text.RegularExpressions;
 using NUnit.Framework;
 using Submodules.Utility.UI;
+using UnityEngine;
+using UnityEngine.TestTools;
 
 namespace Submodules.Utility.Tests.EditMode
 {
@@ -114,7 +117,7 @@ namespace Submodules.Utility.Tests.EditMode
         [Test]
         public void Deactivate_ClearsTheActiveToggle()
         {
-            var clearable = scene.Group(isClearable: true);
+            var clearable = scene.Group(userCanUntoggle: true);
             var toggle = scene.Toggle(clearable);
             clearable.Activate(toggle);
 
@@ -153,7 +156,7 @@ namespace Submodules.Utility.Tests.EditMode
         [Test]
         public void Deactivate_AnnouncesTheChange()
         {
-            var clearable = scene.Group(isClearable: true);
+            var clearable = scene.Group(userCanUntoggle: true);
             var toggle = scene.Toggle(clearable);
             clearable.Activate(toggle);
 
@@ -168,7 +171,7 @@ namespace Submodules.Utility.Tests.EditMode
         [Test]
         public void Deactivate_RemembersTheToggleItCleared()
         {
-            var clearable = scene.Group(isClearable: true);
+            var clearable = scene.Group(userCanUntoggle: true);
             var first = scene.Toggle(clearable);
             var second = scene.Toggle(clearable);
 
@@ -191,70 +194,45 @@ namespace Submodules.Utility.Tests.EditMode
             Assert.That(changes, Is.Zero, "a null toggle must not be read as 'the (null) active toggle switched off'");
         }
 
-        /// <summary><see cref="ToggleGroup.IsRestorable"/> is the fallback checked when a group
-        /// is not <see cref="ToggleGroup.IsClearable"/>: instead of ending up with nothing
-        /// selected, switching the active toggle off re-selects whichever one was on before it.
-        /// The panel-side counterpart is <c>PanelGroupTests.Deactivate_NotClearable_Restorable_*</c>;
-        /// both run the one implementation in <see cref="AbstractGroup{TMember}"/>, but only
-        /// this side proves the toggle's own on/off primitive is what the restore drives.</summary>
+        /// <summary>The two initiators of an un-toggle: the user (Deactivate's default) and the
+        /// group (<see cref="UI.AbstractGroup{TMember}.ClearActive"/>). A default group refuses the
+        /// first and allows the second - radio behaviour for a click, but a derived-state sync or
+        /// a phase change can still empty it.</summary>
         [Test]
-        public void Deactivate_NotClearable_Restorable_RestoresThePreviousMember()
+        public void ClearActive_OnADefaultGroup_ClearsIt_WhereTheUserCannot()
         {
-            var restorable = scene.Group(isRestorable: true);
-            var first = scene.Toggle(restorable);
-            var second = scene.Toggle(restorable);
-            restorable.Activate(first);
-            restorable.Activate(second);
+            var toggle = scene.Toggle(group);
+            group.Activate(toggle);
 
-            restorable.Deactivate(second);
+            group.ClearActive();
 
-            Assert.That(restorable.ActiveMember, Is.SameAs(first));
+            Assert.That(group.ActiveMember, Is.Null);
+            Assert.That(toggle.IsOn, Is.False);
         }
 
         [Test]
-        public void Deactivate_NotClearable_Restorable_TurnsTheClearedToggleOff_AndTheRestoredToggleOn()
+        public void ClearActive_WhenTheGroupMayNotUntoggle_IsRefused()
         {
-            var restorable = scene.Group(isRestorable: true);
-            var first = scene.Toggle(restorable);
-            var second = scene.Toggle(restorable);
-            restorable.Activate(first);
-            restorable.Activate(second);
+            var locked = scene.Group(groupCanUntoggle: false);
+            var toggle = scene.Toggle(locked);
+            locked.Activate(toggle);
+            LogAssert.Expect(LogType.Log, new Regex(@"^SetToggle\(false\) prevented\."));
 
-            restorable.Deactivate(second);
+            locked.ClearActive();
 
-            Assert.That(second.IsOn, Is.False);
-            Assert.That(first.IsOn, Is.True, "a restore has to re-run the toggle's own state primitive, not just re-point the group");
+            Assert.That(locked.ActiveMember, Is.SameAs(toggle));
         }
 
         [Test]
-        public void Deactivate_NotClearable_Restorable_AnnouncesTheChange_WithTheRestoredToggle()
+        public void Deactivate_WhenTheUserMayUntoggle_AllowsTheGroupToToo()
         {
-            var restorable = scene.Group(isRestorable: true);
-            var first = scene.Toggle(restorable);
-            var second = scene.Toggle(restorable);
-            restorable.Activate(first);
-            restorable.Activate(second);
-            AbstractToggle announced = null;
-            restorable.OnGroupChanged += t => announced = t;
+            var userGroup = scene.Group(userCanUntoggle: true, groupCanUntoggle: false);
+            var toggle = scene.Toggle(userGroup);
+            userGroup.Activate(toggle);
 
-            restorable.Deactivate(second);
+            userGroup.ClearActive();
 
-            Assert.That(announced, Is.SameAs(first));
-        }
-
-        [Test]
-        public void Deactivate_NotClearable_Restorable_WithNoPreviousMember_IsANoOp()
-        {
-            var restorable = scene.Group(isRestorable: true);
-            var toggle = scene.Toggle(restorable);
-            restorable.Activate(toggle);
-            var changes = 0;
-            restorable.OnGroupChanged += _ => changes++;
-
-            restorable.Deactivate(toggle);
-
-            Assert.That(restorable.ActiveMember, Is.SameAs(toggle), "nothing to restore to, so the group keeps what it has");
-            Assert.That(changes, Is.Zero);
+            Assert.That(userGroup.ActiveMember, Is.Null, "where the user may untoggle, the group may as well");
         }
 
         /// <summary>The membership guard (issue: a hand-edited/reparented toggle left a
@@ -274,7 +252,7 @@ namespace Submodules.Utility.Tests.EditMode
         [Test]
         public void SetToggle_False_OnTheActiveToggle_AnnouncesTheChange()
         {
-            var clearable = scene.Group(isClearable: true);
+            var clearable = scene.Group(userCanUntoggle: true);
             var toggle = scene.Toggle(clearable);
             toggle.SetToggle(true);
 

@@ -57,37 +57,42 @@ namespace Submodules.Utility.Tests.EditMode
         }
 
         /// <summary>A <see cref="UI.ToggleGroup"/> whose children are the toggles it owns.</summary>
-        public ToggleGroup Group(bool isClearable = false, bool isRestorable = false)
+        public ToggleGroup Group(bool userCanUntoggle = false, bool groupCanUntoggle = true)
         {
             var go = new GameObject("radio-group", typeof(RectTransform));
             go.transform.SetParent(root.transform, false);
 
             var group = go.AddComponent<ToggleGroup>();
 
-            if (isClearable)
-                SetBool(group, "<IsClearable>k__BackingField", true);
-
-            if (isRestorable)
-                SetBool(group, "<IsRestorable>k__BackingField", true);
+            ConfigureUntoggling(group, userCanUntoggle, groupCanUntoggle);
 
             spawned.Add(go);
 
             return group;
         }
 
+        /// <summary>A freshly added group takes the real defaults: the user may not untoggle the
+        /// active member, the group may. A test opts in to the user side with
+        /// <paramref name="userCanUntoggle"/>, or opts the group out with
+        /// <paramref name="groupCanUntoggle"/>.</summary>
+        private static void ConfigureUntoggling(Object group, bool userCanUntoggle, bool groupCanUntoggle)
+        {
+            if (userCanUntoggle)
+                SetBool(group, "<UserCanUntoggle>k__BackingField", true);
+
+            if (!groupCanUntoggle)
+                SetBool(group, "<GroupCanUntoggle>k__BackingField", false);
+        }
+
         /// <summary>A <see cref="PanelGroup"/> whose children are the panels it owns.</summary>
-        public PanelGroup PanelGroup(bool isClearable = false, bool isRestorable = false)
+        public PanelGroup PanelGroup(bool userCanUntoggle = false, bool groupCanUntoggle = true)
         {
             var go = new GameObject("panel-group", typeof(RectTransform));
             go.transform.SetParent(root.transform, false);
 
             var group = go.AddComponent<PanelGroup>();
 
-            if (isClearable)
-                SetBool(group, "<IsClearable>k__BackingField", true);
-
-            if (isRestorable)
-                SetBool(group, "<IsRestorable>k__BackingField", true);
+            ConfigureUntoggling(group, userCanUntoggle, groupCanUntoggle);
 
             spawned.Add(go);
 

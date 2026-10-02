@@ -66,7 +66,7 @@ namespace Submodules.Utility.Tests.EditMode
         [Test]
         public void SetToggle_False_WhenItWasTheActiveOne_EmptiesTheGroup()
         {
-            var group = scene.Group(isClearable: true);
+            var group = scene.Group(userCanUntoggle: true);
             var toggle = scene.Toggle(group);
             toggle.SetToggle(true);
 
@@ -82,7 +82,7 @@ namespace Submodules.Utility.Tests.EditMode
         /// configuration, so the outcome is identical (verified by removing it: the suite stayed
         /// green). The guard's one unique effect is the author-facing log naming the two settings
         /// that would allow the un-toggle, so that is what this expects — same reasoning as
-        /// <c>PanelGroupTests.FadeOut_OnTheActivePanel_NeitherClearableNorRestorable_IsRefused</c>.</para></summary>
+        /// <c>PanelGroupTests.FadeOut_OnTheActivePanel_NotClearable_IsRefused</c>.</para></summary>
         [Test]
         public void SetToggle_False_WhenItWasTheActiveOne_NotClearable_IsRefused()
         {
@@ -97,24 +97,39 @@ namespace Submodules.Utility.Tests.EditMode
             Assert.That(group.ActiveMember, Is.SameAs(toggle));
         }
 
-        /// <summary>The other half of that refusal guard: it reads
-        /// <see cref="UI.ToggleGroup.IsRestorable"/> as well as <see cref="UI.ToggleGroup.IsClearable"/>,
-        /// so a restorable group lets the un-toggle through — the group then restores rather
-        /// than empties, which is the whole point of the setting.</summary>
+        /// <summary><see cref="AbstractToggle.SyncToggle"/> is the group side of
+        /// <see cref="AbstractToggle.SetToggle"/>: a toggle mirroring state owned elsewhere can
+        /// always follow it off, in a group where the user may not click it off.</summary>
         [Test]
-        public void SetToggle_False_WhenItWasTheActiveOne_Restorable_RestoresThePreviousToggle()
+        public void SyncToggle_False_WhenItWasTheActiveOne_FollowsTheStateOff_WhereSetToggleIsRefused()
         {
-            var group = scene.Group(isRestorable: true);
-            var first = scene.Toggle(group);
-            var second = scene.Toggle(group);
-            first.SetToggle(true);
-            second.SetToggle(true);
+            var group = scene.Group();
+            var toggle = scene.Toggle(group);
+            toggle.SetToggle(true);
 
-            second.SetToggle(false);
+            toggle.SyncToggle(false);
 
-            Assert.That(second.IsOn, Is.False, "the guard must not refuse an un-toggle a restorable group can absorb");
-            Assert.That(first.IsOn, Is.True);
-            Assert.That(group.ActiveMember, Is.SameAs(first));
+            Assert.That(toggle.IsOn, Is.False);
+            Assert.That(group.ActiveMember, Is.Null);
+        }
+
+        /// <summary>What <c>DoStateTransition</c> keys on to keep a refused un-toggle from
+        /// playing its pressed feedback: on, active in its group, and the user may not untoggle.</summary>
+        [Test]
+        public void IsLockedOn_OnlyForTheActiveToggleOfAGroupTheUserCannotUntoggle()
+        {
+            var locked = scene.Group();
+            var free = scene.Group(userCanUntoggle: true);
+            var inLocked = scene.Toggle(locked);
+            var inFree = scene.Toggle(free);
+            var loose = scene.Toggle();
+            inLocked.SetToggle(true);
+            inFree.SetToggle(true);
+            loose.SetToggle(true);
+
+            Assert.That(inLocked.IsLockedOn, Is.True);
+            Assert.That(inFree.IsLockedOn, Is.False, "the user may click it off");
+            Assert.That(loose.IsLockedOn, Is.False, "no group, nothing refuses it");
         }
 
         [Test]
@@ -143,7 +158,7 @@ namespace Submodules.Utility.Tests.EditMode
         [Test]
         public void ClickingTheActiveToggle_WhenTheGroupCannotBeEmptied_IsRefused()
         {
-            var group = scene.Group(isClearable: false);
+            var group = scene.Group();
             var toggle = scene.Toggle(group);
             toggle.SetToggle(true);
             LogAssert.Expect(LogType.Log, new Regex(@"^SetToggle\(false\) prevented\."));
@@ -157,7 +172,7 @@ namespace Submodules.Utility.Tests.EditMode
         [Test]
         public void ClickingTheActiveToggle_WhenTheGroupCanBeEmptied_TurnsItOff()
         {
-            var group = scene.Group(isClearable: true);
+            var group = scene.Group(userCanUntoggle: true);
             var toggle = scene.Toggle(group);
             toggle.SetToggle(true);
 

@@ -23,7 +23,7 @@ namespace Submodules.Utility.UI
             var resolved = transform.parent?.GetComponent<ToggleGroup>();
 
             if (RadioGroup && RadioGroup != resolved)
-                RadioGroup.Deactivate(this);
+                RadioGroup.Deactivate(this, byUser: false);
 
             RadioGroup = resolved;
 
@@ -69,41 +69,55 @@ namespace Submodules.Utility.UI
             }
         }
 
+        /// <summary>On, and the active member of a group whose <c>UserCanUntoggle</c> is off: a
+        /// click on it is refused by <see cref="SetToggle"/>, so it must not look as if it were
+        /// being switched off.</summary>
+        public bool IsLockedOn => IsOn && RadioGroup && RadioGroup.ActiveMember == this && !RadioGroup.CanUntoggle(byUser: true);
+
         protected override void DoStateTransition(SelectionState state, bool instant)
         {
-            if (IsOn && state == SelectionState.Normal)
+            // Normal is the resting look of an on toggle. Pressed on a locked-on one is the
+            // un-toggle feedback for a click that will be refused, so it stays put instead.
+            if (IsOn && state == SelectionState.Normal || IsLockedOn && state == SelectionState.Pressed)
                 state = SelectionState.Selected;
             base.DoStateTransition(state, instant);
         }
 
-        [ContextMenu("ToggleState")]
         protected override void OnClick() => SetToggle(!IsOn);
         
         /// <summary>The group-aware entry point: a caller (click, hotkey, script) calls this
         /// exactly as it always has, and — if this toggle sits under a <see cref="RadioGroup"/>
         /// — the group takes over and drives <see cref="ToggleState"/> itself, deselecting
-        /// whichever sibling was on. Ungrouped, it just applies.</summary>
-        public void SetToggle(bool toggleOn)
-        {
-            if (!toggleOn && IsOn && RadioGroup && RadioGroup.ActiveMember == this
-                && !RadioGroup.IsClearable && !RadioGroup.IsRestorable)
-            {
-                Debug.Log("SetToggle(false) prevented. To allow un-toggle, enable 'IsClearable' or " +
-                          $"'IsRestorable' in the RadioGroup, or re-parent {name} out of any RadioGroup.", RadioGroup);
-                return;
-            }
+        /// whichever sibling was on. Ungrouped, it just applies.
+        ///
+        /// <para>This is the <b>user</b> side: switching the group's active member off is refused
+        /// unless the group's <c>UserCanUntoggle</c> allows it. State derived from elsewhere
+        /// goes through <see cref="SyncToggle"/> instead.</para></summary>
+        public void SetToggle(bool toggleOn) => Apply(toggleOn, byUser: true);
 
+        /// <summary>The <b>group</b> side of <see cref="SetToggle"/>, for a toggle that mirrors
+        /// state owned elsewhere (a context, a run phase): the group's <c>GroupCanUntoggle</c>
+        /// governs switching its active member off, not <c>UserCanUntoggle</c>, so a mirror can
+        /// always follow the state it reflects without the user being allowed to click it off.</summary>
+        public void SyncToggle(bool toggleOn) => Apply(toggleOn, byUser: false);
+
+        private void Apply(bool toggleOn, bool byUser)
+        {
+            // Already in the requested state - except a grouped toggle that is on without being
+            // the group's ActiveMember (authored on, never registered): it must still reach Activate.
+            if (IsOn == toggleOn && (!toggleOn || !RadioGroup || RadioGroup.ActiveMember == this))
+                return;
+            
             if (RadioGroup)
             {
                 if (toggleOn)
                     RadioGroup.Activate(this);
                 else
-                    RadioGroup.Deactivate(this);
+                    RadioGroup.Deactivate(this, byUser);
+                return;
             }
-            else
-            {
-                ToggleState(toggleOn);
-            }
+
+            ToggleState(toggleOn);
         }
 
         /// <summary>The actual state-change primitive. Internal so <see cref="ToggleGroup.Activate"/>

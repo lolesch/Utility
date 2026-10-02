@@ -1,6 +1,7 @@
 using System;
 using NaughtyAttributes;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace Submodules.Utility.UI
 {
@@ -8,10 +9,12 @@ namespace Submodules.Utility.UI
     /// (input) and <see cref="PanelGroup"/> (content): a collection of mutually exclusive
     /// <typeparamref name="TMember"/>s of which at most one is active at a time.
     /// <see cref="Activate"/> deactivates whichever sibling held the slot. Deactivating the
-    /// active member with no replacement is governed by two mutually exclusive settings,
-    /// checked in this order: <see cref="IsClearable"/> lets the group end up with nothing
-    /// active; otherwise <see cref="IsRestorable"/> falls back to <see cref="PreviousMember"/>
-    /// instead. With both off (the default), deactivating the active member is prevented.
+    /// active member with no replacement leaves the group with nothing active. Whether that is
+    /// allowed depends on who asks (<see cref="CanUntoggle"/>): the <b>user</b> (a click or hotkey
+    /// on the active member) needs <see cref="UserCanUntoggle"/>, off by default - radio
+    /// behaviour; the <b>group</b> (<see cref="ClearActive"/>, or state derived from elsewhere,
+    /// such as a context closing) needs <see cref="GroupCanUntoggle"/>, on by default, and is
+    /// also allowed wherever the user is.
     ///
     /// A subclass supplies only the two things that differ per member kind: what counts as
     /// membership (<see cref="IsMember"/>) and how a member is switched on or off
@@ -20,14 +23,22 @@ namespace Submodules.Utility.UI
     public abstract class AbstractGroup<TMember> : MonoBehaviour where TMember : Component
     {
         [field: SerializeField, ReadOnly] public TMember ActiveMember { get; private set; }
-        [field: SerializeField, ReadOnly] public TMember PreviousMember { get; private set; }
-        [field: SerializeField] public bool IsClearable { get; private set; }
+        [field: SerializeField, ReadOnly] internal TMember PreviousMember { get; private set; }
+        [field: SerializeField, FormerlySerializedAs("<IsClearable>k__BackingField")]
+        [field: Tooltip("The user may switch the active member off by clicking it, leaving the group " +
+                        "with nothing active. Off keeps the radio-button rule: one member always stays on.")]
+        public bool UserCanUntoggle { get; private set; }
 
-        [field: SerializeField, HideIf(nameof(IsClearable)), Tooltip(
-            "Deactivating the active member with no replacement falls back to whichever one " +
-            "was active before it, instead of being prevented. Only consulted while the " +
-            "group is not Clearable.")]
-        public bool IsRestorable { get; private set; }
+        [field: SerializeField, FormerlySerializedAs("<IsClearableByGroup>k__BackingField")]
+        [field: Tooltip("The group itself may switch the active member off (ClearActive, or state " +
+                        "derived from elsewhere such as a closing context) even where the user may not.")]
+        public bool GroupCanUntoggle { get; private set; } = true;
+
+        /// <summary>The one statement of whether the active member may be deactivated with no
+        /// replacement - asked by <see cref="Deactivate"/> and by <c>SimplePanel.Collapse</c>
+        /// alike, so a panel and a toggle in the same group cannot disagree. Where the user may
+        /// untoggle the group may too.</summary>
+        public bool CanUntoggle(bool byUser) => byUser ? UserCanUntoggle : GroupCanUntoggle || UserCanUntoggle;
 
         public event Action<TMember> OnGroupChanged;
 
@@ -55,7 +66,7 @@ namespace Submodules.Utility.UI
         }
 #endif
 
-        public void ClearActive() => Deactivate(ActiveMember);
+        public void ClearActive() => Deactivate(ActiveMember, byUser: false);
 
         internal void Activate(TMember member)
         {
@@ -73,35 +84,25 @@ namespace Submodules.Utility.UI
             OnGroupChanged?.Invoke(ActiveMember);
         }
 
-        internal void Deactivate(TMember member)
+        /// <param name="byUser">Whether the un-toggle is the user's own (a click, a hotkey, a
+        /// panel's Collapse) rather than the group's (<see cref="ClearActive"/>, a derived-state
+        /// sync, a member leaving). Defaults to the strict, user side.</param>
+        internal void Deactivate(TMember member, bool byUser = true)
         {
             if (!Exists(member) || !IsMember(member) || !Same(ActiveMember, member))
                 return;
 
-            if (!IsClearable)
+            if (!CanUntoggle(byUser))
             {
-                // Restoring re-activates PreviousMember directly rather than routing through
-                // Activate(), which would try to switch `member` off a second time — it is
-                // already going off, mid-way through the call that got us here.
-                if (!IsRestorable || !Exists(PreviousMember) || Same(PreviousMember, member))
-                    return;
-
-                var restored = PreviousMember;
-                PreviousMember = member;
-                ActiveMember = restored;
-
-                SetMemberActive(member, false);
-                SetMemberActive(restored, true);
-
-                OnGroupChanged?.Invoke(restored);
-
+                Debug.Log("SetToggle(false) prevented. To allow un-toggle, enable 'UserCanUntoggle' in the " +
+                          $"RadioGroup, or re-parent {member.name} out of any RadioGroup.", this);
                 return;
             }
-
-            PreviousMember = ActiveMember;
-            ActiveMember = null;
+            
+            PreviousMember = ActiveMember; 
+            ActiveMember = null; 
             SetMemberActive(PreviousMember, false);
-
+            
             OnGroupChanged?.Invoke(null);
         }
     }
