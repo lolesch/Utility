@@ -79,7 +79,7 @@ namespace Submodules.Utility.UI
             if (Exists(PreviousMember))
                 SetMemberActive(PreviousMember, false);
 
-            SetMemberActive(member, true);
+            SetMemberActive(ActiveMember, true);
 
             OnGroupChanged?.Invoke(ActiveMember);
         }

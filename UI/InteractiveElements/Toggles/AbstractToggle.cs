@@ -1,6 +1,5 @@
 using NaughtyAttributes;
 using UnityEngine;
-using UnityEngine.EventSystems;
 
 namespace Submodules.Utility.UI
 {

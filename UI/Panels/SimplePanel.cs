@@ -26,7 +26,7 @@ namespace Submodules.Utility.UI
         
         #endregion COMPONENT REFERENCES
 
-        [field: SerializeField, Range(0, 1)] public float FadeDuration { get; } = .2f;
+        [field: SerializeField, Range(0, 1)] public float FadeDuration { get; private set; } = .2f;
 
         [SerializeField, Range(0f, 2f)] protected float scaleFrom = 1f;
         [SerializeField] protected Vector2 moveFrom = Vector2.zero;
@@ -55,16 +55,17 @@ namespace Submodules.Utility.UI
         protected virtual void Awake()
         {
             startPosition = Transform.anchoredPosition;
+            
+            CanvasGroup.blocksRaycasts = true;
+            CanvasGroup.alpha = 1;
 
             if(!RadioGroup)
                RadioGroup = transform.parent?.GetComponent<PanelGroup>();
-
-            // In Awake, not Start: Awake finishes for every object in the scene before any
-            // OnEnable runs, so a controller that decides which panel to show from its own
-            // OnEnable (MinimapController.SyncToPhase) is guaranteed to run after this reset,
-            // not before it. It used to sit in Start (46d488c), where it instead ran after
-            // OnEnable and silently clobbered whatever that controller had just shown.
-            Disappear(true);
+            
+            if (RadioGroup && RadioGroup.ActiveMember == this)
+                RadioGroup.Deactivate(this);
+            else
+                Disappear(true);
         }
 
         protected virtual void OnDisable() => KillTweens();
