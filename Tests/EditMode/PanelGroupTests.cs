@@ -257,25 +257,25 @@ namespace Submodules.Utility.Tests.EditMode
         /// <summary>The convenience a caller like Go Venture needs: close whichever panel is
         /// open without first asking the group which one that is.</summary>
         [Test]
-        public void ClearActive_ClearsWhicheverPanelIsShown()
+        public void ResetGroup_ClearsWhicheverPanelIsShown()
         {
             var clearable = scene.PanelGroup(userCanUntoggle: true);
             var panel = scene.Panel(clearable);
             clearable.Activate(panel);
 
-            clearable.ClearActive();
+            clearable.ResetGroup();
 
             Assert.That(clearable.ActiveMember, Is.Null);
         }
 
         [Test]
-        public void ClearActive_WhenNothingIsActive_IsANoOp()
+        public void ResetGroup_WhenNothingIsActive_IsANoOp()
         {
             var clearable = scene.PanelGroup(userCanUntoggle: true);
             var changes = 0;
             clearable.OnGroupChanged += _ => changes++;
 
-            Assert.That(() => clearable.ClearActive(), Throws.Nothing);
+            Assert.That(() => clearable.ResetGroup(), Throws.Nothing);
             Assert.That(changes, Is.Zero);
         }
 

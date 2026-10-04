@@ -12,14 +12,14 @@ namespace Submodules.Utility.UI
     /// active member with no replacement leaves the group with nothing active. Whether that is
     /// allowed depends on who asks (<see cref="CanUntoggle"/>): the <b>user</b> (a click or hotkey
     /// on the active member) needs <see cref="UserCanUntoggle"/>, off by default - radio
-    /// behaviour; the <b>group</b> (<see cref="ClearActive"/>, or state derived from elsewhere,
+    /// behaviour; the <b>group</b> (<see cref="ResetGroup"/>, or state derived from elsewhere,
     /// such as a context closing) needs <see cref="GroupCanUntoggle"/>, on by default, and is
     /// also allowed wherever the user is.
     ///
     /// <para>A group that can never be empty (neither flag set) also goes home: the first member
-    /// to become active is remembered as <see cref="FirstMember"/>, and clearing the group
-    /// (<see cref="ClearActive"/>, state derived from elsewhere) switches back to it instead of
-    /// being refused. With <see cref="ResetWithParentPanel"/> on, the group does the same once the
+    /// to become active is remembered as <see cref="FirstMember"/>, and resetting the group
+    /// (<see cref="ResetGroup"/>, state derived from elsewhere) switches back to it instead of
+    /// emptying it. With <see cref="ResetWithParentPanel"/> on, the group does the same once the
     /// <see cref="SimplePanel"/> it lives in has finished closing, so a tabbed panel reopens on its
     /// first tab without the panel knowing its tabs exist.</para>
     ///
@@ -47,7 +47,7 @@ namespace Submodules.Utility.UI
         public bool UserCanUntoggle { get; private set; }
 
         [field: SerializeField, FormerlySerializedAs("<IsClearableByGroup>k__BackingField")]
-        [field: Tooltip("The group itself may switch the active member off (ClearActive, or state " +
+        [field: Tooltip("The group itself may switch the active member off (ResetGroup, or state " +
                         "derived from elsewhere such as a closing context) even where the user may not.")]
         public bool GroupCanUntoggle { get; private set; } = true;
 
@@ -63,7 +63,7 @@ namespace Submodules.Utility.UI
         /// untoggle the group may too.</summary>
         public bool CanUntoggle(bool byUser) => byUser ? UserCanUntoggle : GroupCanUntoggle || UserCanUntoggle;
 
-        /// <summary>A group that can never be empty, neither by the user nor by itself: clearing it
+        /// <summary>A group that can never be empty, neither by the user nor by itself: resetting it
         /// means going back to <see cref="FirstMember"/>.</summary>
         private bool ReturnsToFirst => !CanUntoggle(byUser: false);
 
@@ -122,9 +122,11 @@ namespace Submodules.Utility.UI
             Activate(FirstMember);
         }
 
-        /// <summary>Clears the group from the group's side. A group that can never be empty goes
-        /// back to <see cref="FirstMember"/> instead (<see cref="Deactivate"/>).</summary>
-        public void ClearActive() => Deactivate(ActiveMember, byUser: false);
+        /// <summary>Puts the group back to its resting state from the group's side: empty where it may
+        /// be emptied, on <see cref="FirstMember"/> where it can never be empty
+        /// (<see cref="Deactivate"/>). The one call for "the state this group is derived from is
+        /// gone", whichever kind of group it is.</summary>
+        public void ResetGroup() => Deactivate(ActiveMember, byUser: false);
 
         internal void Activate(TMember member)
         {
@@ -146,7 +148,7 @@ namespace Submodules.Utility.UI
         }
 
         /// <param name="byUser">Whether the un-toggle is the user's own (a click, a hotkey, a
-        /// panel's Collapse) rather than the group's (<see cref="ClearActive"/>, a derived-state
+        /// panel's Collapse) rather than the group's (<see cref="ResetGroup"/>, a derived-state
         /// sync, a member leaving). Defaults to the strict, user side. The group's own un-toggle of
         /// a group that can never be empty is a <see cref="ResetToFirst"/>; the user's own is
         /// refused, so clicking the active tab never switches to another.</param>

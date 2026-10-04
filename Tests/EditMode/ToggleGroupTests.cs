@@ -195,23 +195,23 @@ namespace Submodules.Utility.Tests.EditMode
         }
 
         /// <summary>The two initiators of an un-toggle: the user (Deactivate's default) and the
-        /// group (<see cref="UI.AbstractGroup{TMember}.ClearActive"/>). A default group refuses the
+        /// group (<see cref="UI.AbstractGroup{TMember}.ResetGroup"/>). A default group refuses the
         /// first and allows the second - radio behaviour for a click, but a derived-state sync or
         /// a phase change can still empty it.</summary>
         [Test]
-        public void ClearActive_OnADefaultGroup_ClearsIt_WhereTheUserCannot()
+        public void ResetGroup_OnADefaultGroup_ClearsIt_WhereTheUserCannot()
         {
             var toggle = scene.Toggle(group);
             group.Activate(toggle);
 
-            group.ClearActive();
+            group.ResetGroup();
 
             Assert.That(group.ActiveMember, Is.Null);
             Assert.That(toggle.IsOn, Is.False);
         }
 
         [Test]
-        public void ClearActive_WhenTheGroupMayNotUntoggle_GoesBackToTheFirstToggle()
+        public void ResetGroup_WhenTheGroupMayNotUntoggle_GoesBackToTheFirstToggle()
         {
             var locked = scene.Group(groupCanUntoggle: false);
             var first = scene.Toggle(locked);
@@ -219,7 +219,7 @@ namespace Submodules.Utility.Tests.EditMode
             locked.Activate(first);
             locked.Activate(second);
 
-            locked.ClearActive();
+            locked.ResetGroup();
 
             Assert.That(locked.ActiveMember, Is.SameAs(first), "never empty: cleared means back to the first");
             Assert.That(first.IsOn, Is.True);
@@ -227,13 +227,13 @@ namespace Submodules.Utility.Tests.EditMode
         }
 
         [Test]
-        public void ClearActive_WhenTheFirstToggleIsAlreadyActive_ChangesNothing()
+        public void ResetGroup_WhenTheFirstToggleIsAlreadyActive_ChangesNothing()
         {
             var locked = scene.Group(groupCanUntoggle: false);
             var first = scene.Toggle(locked);
             locked.Activate(first);
 
-            locked.ClearActive();
+            locked.ResetGroup();
 
             Assert.That(locked.ActiveMember, Is.SameAs(first));
             Assert.That(first.IsOn, Is.True);
@@ -261,7 +261,7 @@ namespace Submodules.Utility.Tests.EditMode
             var toggle = scene.Toggle(userGroup);
             userGroup.Activate(toggle);
 
-            userGroup.ClearActive();
+            userGroup.ResetGroup();
 
             Assert.That(userGroup.ActiveMember, Is.Null, "where the user may untoggle, the group may as well");
         }
