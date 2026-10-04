@@ -211,16 +211,47 @@ namespace Submodules.Utility.Tests.EditMode
         }
 
         [Test]
-        public void ClearActive_WhenTheGroupMayNotUntoggle_IsRefused()
+        public void ClearActive_WhenTheGroupMayNotUntoggle_GoesBackToTheFirstToggle()
         {
             var locked = scene.Group(groupCanUntoggle: false);
-            var toggle = scene.Toggle(locked);
-            locked.Activate(toggle);
-            LogAssert.Expect(LogType.Log, new Regex(@"^SetToggle\(false\) prevented\."));
+            var first = scene.Toggle(locked);
+            var second = scene.Toggle(locked);
+            locked.Activate(first);
+            locked.Activate(second);
 
             locked.ClearActive();
 
-            Assert.That(locked.ActiveMember, Is.SameAs(toggle));
+            Assert.That(locked.ActiveMember, Is.SameAs(first), "never empty: cleared means back to the first");
+            Assert.That(first.IsOn, Is.True);
+            Assert.That(second.IsOn, Is.False);
+        }
+
+        [Test]
+        public void ClearActive_WhenTheFirstToggleIsAlreadyActive_ChangesNothing()
+        {
+            var locked = scene.Group(groupCanUntoggle: false);
+            var first = scene.Toggle(locked);
+            locked.Activate(first);
+
+            locked.ClearActive();
+
+            Assert.That(locked.ActiveMember, Is.SameAs(first));
+            Assert.That(first.IsOn, Is.True);
+        }
+
+        [Test]
+        public void TheUsersUntoggleOfAGroupThatCannotBeEmpty_IsStillRefused_NotAReset()
+        {
+            var locked = scene.Group(groupCanUntoggle: false);
+            var first = scene.Toggle(locked);
+            var second = scene.Toggle(locked);
+            locked.Activate(first);
+            locked.Activate(second);
+            LogAssert.Expect(LogType.Log, new Regex(@"^SetToggle\(false\) prevented\."));
+
+            second.SetToggle(false);
+
+            Assert.That(locked.ActiveMember, Is.SameAs(second), "a click on the active tab must not switch tabs");
         }
 
         [Test]
@@ -236,15 +267,26 @@ namespace Submodules.Utility.Tests.EditMode
         }
 
         [Test]
-        public void FirstMember_IsTheFirstToggleThatBecameActive_AndStaysSo()
+        public void FirstMember_IsTheFirstToggleThatBecameActive_AndStaysSo_OnAGroupThatCannotBeEmpty()
         {
-            var first = scene.Toggle(group);
-            var second = scene.Toggle(group);
+            var locked = scene.Group(groupCanUntoggle: false);
+            var first = scene.Toggle(locked);
+            var second = scene.Toggle(locked);
 
-            group.Activate(first);
-            group.Activate(second);
+            locked.Activate(first);
+            locked.Activate(second);
 
-            Assert.That(group.FirstMember, Is.SameAs(first));
+            Assert.That(locked.FirstMember, Is.SameAs(first));
+        }
+
+        [Test]
+        public void FirstMember_IsNotKept_OnAGroupThatMayBeEmptied()
+        {
+            var toggle = scene.Toggle(group);
+
+            group.Activate(toggle);
+
+            Assert.That(group.FirstMember, Is.Null);
         }
 
         [Test]
