@@ -1,6 +1,7 @@
 using NUnit.Framework;
 using Submodules.Utility.Services;
 using System;
+using UnityEditor;
 using UnityEngine;
 
 namespace Submodules.Utility.Tests.EditMode
@@ -68,6 +69,18 @@ namespace Submodules.Utility.Tests.EditMode
             ServiceLocator.Install(second);
             Assert.That(ServiceLocator.Current, Is.SameAs(second));
             Assert.That(ServiceLocator.Current.Contains<FakeCounter>(), Is.False);
+        }
+
+        [Test]
+        public void LeavingPlayMode_DisarmsIt_SoEditModeNeverSeesTheLastSessionsServices()
+        {
+            ServiceLocator.Install(new ServiceRegistry());
+
+            ServiceLocator.OnPlayModeStateChanged(PlayModeStateChange.EnteredPlayMode);
+            Assert.That(ServiceLocator.IsArmed, Is.True);
+
+            ServiceLocator.OnPlayModeStateChanged(PlayModeStateChange.ExitingPlayMode);
+            Assert.That(ServiceLocator.IsArmed, Is.False);
         }
 
         [Test]

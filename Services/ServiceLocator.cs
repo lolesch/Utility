@@ -1,5 +1,8 @@
 using System;
 using UnityEngine;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 namespace Submodules.Utility.Services
 {
@@ -10,7 +13,7 @@ namespace Submodules.Utility.Services
     /// or dirty anything, so an EditMode test or an <c>[InitializeOnLoad]</c> hook can ask
     /// <see cref="IsArmed"/> safely.
     ///
-    /// Armed once by the boot (<see cref="Install"/>) and cleared in
+    /// Armed once by the boot (<see cref="Install"/>), cleared on leaving Play Mode and in
     /// <see cref="RuntimeInitializeLoadType.SubsystemRegistration"/>, which fires on every Play
     /// entry even with domain reload disabled, so a second Play starts from a clean boot instead
     /// of inheriting the previous one's services. Reading it unarmed throws rather than returning
@@ -39,6 +42,11 @@ namespace Submodules.Utility.Services
                 throw new InvalidOperationException($"A {nameof(ServiceRegistry)} is already armed; call {nameof(Reset)} before installing another.");
 
             current = registry;
+
+#if UNITY_EDITOR
+            EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
+            EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
+#endif
         }
 
         public static T Get<T>() where T : class, IService => Current.Get<T>();
@@ -47,5 +55,15 @@ namespace Submodules.Utility.Services
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetOnPlayEntry() => Reset();
+
+#if UNITY_EDITOR
+        // Also cleared on leaving Play Mode, so Edit Mode (an [InitializeOnLoad] hook, an editor
+        // window, a test) never sees the last session's services as armed.
+        internal static void OnPlayModeStateChanged(PlayModeStateChange state)
+        {
+            if (state == PlayModeStateChange.ExitingPlayMode)
+                Reset();
+        }
+#endif
     }
 }
