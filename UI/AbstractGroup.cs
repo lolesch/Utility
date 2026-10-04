@@ -16,6 +16,12 @@ namespace Submodules.Utility.UI
     /// such as a context closing) needs <see cref="GroupCanUntoggle"/>, on by default, and is
     /// also allowed wherever the user is.
     ///
+    /// <para>A group that can never be empty (neither flag set) also goes home: the first member
+    /// to become active is remembered as <see cref="FirstMember"/>, and when the
+    /// <see cref="SimplePanel"/> the group lives in stops blocking raycasts - the moment that panel
+    /// starts closing - the group switches back to it. A tabbed panel therefore reopens on its
+    /// first tab without the panel knowing its tabs exist.</para>
+    ///
     /// A subclass supplies only the two things that differ per member kind: what counts as
     /// membership (<see cref="IsMember"/>) and how a member is switched on or off
     /// (<see cref="SetMemberActive"/>).
@@ -24,6 +30,15 @@ namespace Submodules.Utility.UI
     {
         [field: SerializeField, ReadOnly] public TMember ActiveMember { get; private set; }
         [field: SerializeField, ReadOnly] internal TMember PreviousMember { get; private set; }
+
+        /// <summary>The first member that became active - the authored selection, or the first one
+        /// activated at runtime. What a group that can never be empty returns to when its panel
+        /// closes (<see cref="ResetToFirst"/>).</summary>
+        public TMember FirstMember { get; private set; }
+
+        /// <summary>The panel this group lives in, found once on the way up like a toggle finds its
+        /// group. Null when the group is not inside one, which leaves it never resetting.</summary>
+        private SimplePanel owner;
         [field: SerializeField, FormerlySerializedAs("<IsClearable>k__BackingField")]
         [field: Tooltip("The user may switch the active member off by clicking it, leaving the group " +
                         "with nothing active. Off keeps the radio-button rule: one member always stays on.")]
@@ -66,6 +81,33 @@ namespace Submodules.Utility.UI
         }
 #endif
 
+        protected virtual void Awake()
+        {
+            owner = GetComponentInParent<SimplePanel>(true);
+
+            if (!Exists(FirstMember) && Exists(ActiveMember))
+                FirstMember = ActiveMember;
+        }
+
+        /// <summary>Unity's message for a change on a <c>CanvasGroup</c> above this object - alpha,
+        /// interactable or blocksRaycasts alike - so it also fires on every frame of a fade. The
+        /// panel's <see cref="SimplePanel.IsInteractive"/> is what says it has started closing.</summary>
+        private void OnCanvasGroupChanged()
+        {
+            if (owner && !owner.IsInteractive)
+                ResetToFirst();
+        }
+
+        /// <summary>Switches back to <see cref="FirstMember"/>, for a group that can never be empty.
+        /// A group that may be emptied is left as it is: there is no home to return to.</summary>
+        internal void ResetToFirst()
+        {
+            if (CanUntoggle(byUser: false) || !Exists(FirstMember) || Same(ActiveMember, FirstMember))
+                return;
+
+            Activate(FirstMember);
+        }
+
         public void ClearActive() => Deactivate(ActiveMember, byUser: false);
 
         internal void Activate(TMember member)
@@ -75,6 +117,9 @@ namespace Submodules.Utility.UI
 
             PreviousMember = ActiveMember;
             ActiveMember = member;
+
+            if (!Exists(FirstMember))
+                FirstMember = member;
 
             if (Exists(PreviousMember))
                 SetMemberActive(PreviousMember, false);

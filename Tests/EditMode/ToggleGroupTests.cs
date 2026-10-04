@@ -235,6 +235,60 @@ namespace Submodules.Utility.Tests.EditMode
             Assert.That(userGroup.ActiveMember, Is.Null, "where the user may untoggle, the group may as well");
         }
 
+        [Test]
+        public void FirstMember_IsTheFirstToggleThatBecameActive_AndStaysSo()
+        {
+            var first = scene.Toggle(group);
+            var second = scene.Toggle(group);
+
+            group.Activate(first);
+            group.Activate(second);
+
+            Assert.That(group.FirstMember, Is.SameAs(first));
+        }
+
+        [Test]
+        public void ResetToFirst_OnAGroupThatCanNeverBeEmpty_SwitchesBackToTheFirstToggle()
+        {
+            var locked = scene.Group(groupCanUntoggle: false);
+            var first = scene.Toggle(locked);
+            var second = scene.Toggle(locked);
+            locked.Activate(first);
+            locked.Activate(second);
+
+            locked.ResetToFirst();
+
+            Assert.That(locked.ActiveMember, Is.SameAs(first));
+            Assert.That(first.IsOn, Is.True);
+            Assert.That(second.IsOn, Is.False);
+        }
+
+        [Test]
+        public void ResetToFirst_OnAGroupThatMayBeEmptied_LeavesTheActiveToggleAlone()
+        {
+            var first = scene.Toggle(group);
+            var second = scene.Toggle(group);
+            group.Activate(first);
+            group.Activate(second);
+
+            group.ResetToFirst();
+
+            Assert.That(group.ActiveMember, Is.SameAs(second), "with no obligation to keep one on there is no home");
+        }
+
+        [Test]
+        public void ResetToFirst_WhereTheFirstToggleIsAlreadyActive_ChangesNothing()
+        {
+            var locked = scene.Group(groupCanUntoggle: false);
+            var first = scene.Toggle(locked);
+            locked.Activate(first);
+
+            locked.ResetToFirst();
+
+            Assert.That(locked.ActiveMember, Is.SameAs(first));
+            Assert.That(locked.PreviousMember, Is.Null, "no switch happened");
+        }
+
         /// <summary>The membership guard (issue: a hand-edited/reparented toggle left a
         /// foreign group's <c>ActivatedToggle</c> pointing at it). A group can only ever
         /// activate its own child.</summary>
