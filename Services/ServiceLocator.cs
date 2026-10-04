@@ -13,11 +13,14 @@ namespace Submodules.Utility.Services
     /// or dirty anything, so an EditMode test or an <c>[InitializeOnLoad]</c> hook can ask
     /// <see cref="IsArmed"/> safely.
     ///
-    /// Armed once by the boot (<see cref="Install"/>), cleared on leaving Play Mode and in
-    /// <see cref="RuntimeInitializeLoadType.SubsystemRegistration"/>, which fires on every Play
-    /// entry even with domain reload disabled, so a second Play starts from a clean boot instead
-    /// of inheriting the previous one's services. Reading it unarmed throws rather than returning
-    /// null: a missed boot should fail at the read, not as an NRE far from the cause.
+    /// Armed once by the boot (<see cref="Install"/>) before the first scene loads, so it must
+    /// outlive the last scene: it is cleared on entering Edit Mode, after the scene is torn down
+    /// (<c>OnDisable</c> and <c>OnDestroy</c> run after <c>ExitingPlayMode</c>, and may still read
+    /// a service), and in <see cref="RuntimeInitializeLoadType.SubsystemRegistration"/>, which
+    /// fires on every Play entry even with domain reload disabled, so a second Play starts from a
+    /// clean boot instead of inheriting the previous one's services. Reading it unarmed throws
+    /// rather than returning null: a missed boot should fail at the read, not as an NRE far from
+    /// the cause.
     /// </summary>
     public static class ServiceLocator
     {
@@ -57,11 +60,13 @@ namespace Submodules.Utility.Services
         private static void ResetOnPlayEntry() => Reset();
 
 #if UNITY_EDITOR
-        // Also cleared on leaving Play Mode, so Edit Mode (an [InitializeOnLoad] hook, an editor
-        // window, a test) never sees the last session's services as armed.
+        // Also cleared on entering Edit Mode, so Edit Mode (an [InitializeOnLoad] hook, an editor
+        // window, a test) never sees the last session's services as armed. Not on
+        // ExitingPlayMode: that fires while the scene is still alive, and every OnDisable /
+        // OnDestroy that reads a service on the way out would throw.
         internal static void OnPlayModeStateChanged(PlayModeStateChange state)
         {
-            if (state == PlayModeStateChange.ExitingPlayMode)
+            if (state == PlayModeStateChange.EnteredEditMode)
                 Reset();
         }
 #endif

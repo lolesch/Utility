@@ -72,15 +72,30 @@ namespace Submodules.Utility.Tests.EditMode
         }
 
         [Test]
-        public void LeavingPlayMode_DisarmsIt_SoEditModeNeverSeesTheLastSessionsServices()
+        public void EnteringEditMode_DisarmsIt_SoEditModeNeverSeesTheLastSessionsServices()
         {
             ServiceLocator.Install(new ServiceRegistry());
 
             ServiceLocator.OnPlayModeStateChanged(PlayModeStateChange.EnteredPlayMode);
             Assert.That(ServiceLocator.IsArmed, Is.True);
 
-            ServiceLocator.OnPlayModeStateChanged(PlayModeStateChange.ExitingPlayMode);
+            ServiceLocator.OnPlayModeStateChanged(PlayModeStateChange.EnteredEditMode);
             Assert.That(ServiceLocator.IsArmed, Is.False);
+        }
+
+        [Test]
+        public void ExitingPlayMode_StaysArmed_SoTheScenesTeardownCanStillReadAService()
+        {
+            var registry = new ServiceRegistry();
+            var counter = new FakeCounter();
+            registry.Register(counter);
+            ServiceLocator.Install(registry);
+
+            // The scene is still alive here: every OnDisable and OnDestroy runs after this event.
+            ServiceLocator.OnPlayModeStateChanged(PlayModeStateChange.ExitingPlayMode);
+
+            Assert.That(ServiceLocator.IsArmed, Is.True);
+            Assert.That(ServiceLocator.Get<FakeCounter>(), Is.SameAs(counter));
         }
 
         [Test]
