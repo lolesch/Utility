@@ -34,14 +34,17 @@ namespace Submodules.Utility.Tools.Timer
 
             static void OnPlayModeStateChanged( PlayModeStateChange state )
             {
+                // The loop system goes first, so nothing ticks while the scene is torn down...
                 if( state == PlayModeStateChange.ExitingPlayMode )
                 {
                     var currentPlayerLoop = PlayerLoop.GetCurrentPlayerLoop();
                     RemoveTimerManager<Update>( ref currentPlayerLoop );
                     PlayerLoop.SetPlayerLoop( currentPlayerLoop );
-
-                    TimerTicker.Clear();
                 }
+                // ...and the registrations are cleared after that teardown, so an owner can still
+                // deregister its timer or tween from OnDisable / OnDestroy.
+                else if( state == PlayModeStateChange.EnteredEditMode )
+                    TimerTicker.Clear();
             }
 #endif
         }
