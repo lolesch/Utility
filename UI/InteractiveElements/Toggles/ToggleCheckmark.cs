@@ -39,10 +39,12 @@ namespace Submodules.Utility.UI
         private void GetComponents()
         {
             image = GetComponent<Image>();
-            toggle = GetComponentInParent<AbstractToggle>();
+            toggle = GetComponentInParent<AbstractToggle>(true);
 
             if (!toggle)
                 Debug.LogWarning($"[ToggleCheckmark] {name} has no Toggle parent component!", this);
+        
+            enabled = toggle;
         }
 
         private void Refresh()
