@@ -94,9 +94,10 @@ namespace Submodules.Utility.Persistence
             if (!File.Exists(path))
                 return false;
 
-            // key.sav.corrupt, then key.sav.corrupt2, ...: an earlier set-aside file is never overwritten.
+            // key.sav.corrupt, then key.sav.corrupt2, ...: an earlier set-aside file is never overwritten,
+            // and neither target of the two moves exists, so the pair is never left half moved.
             var aside = path + AsideExtension;
-            for (var attempt = 2; File.Exists(aside); attempt++)
+            for (var attempt = 2; File.Exists(aside) || File.Exists(aside + BackupExtension); attempt++)
                 aside = path + AsideExtension + attempt;
 
             File.Move(path, aside);

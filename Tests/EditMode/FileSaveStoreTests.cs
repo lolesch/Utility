@@ -217,5 +217,19 @@ namespace Submodules.Utility.Tests.EditMode
             Assert.Throws<ArgumentException>(() => store.AppendSideFile("hero.sav", "x"));
             Assert.Throws<ArgumentException>(() => store.AppendSideFile("", "x"));
         }
+
+        [Test]
+        public void SetAside_SkipsAName_WhoseBackupSlotIsAlreadyTaken_SoNeitherMoveCollides()
+        {
+            store.Write(Key, "one");
+            store.Write(Key, "two");
+            File.WriteAllText(Path.Combine(directory, Key + ".sav.corrupt.bak"), "somebody's file");
+
+            Assert.That(store.SetAside(Key), Is.True);
+
+            Assert.That(File.ReadAllText(Path.Combine(directory, Key + ".sav.corrupt2")), Is.EqualTo("two"));
+            Assert.That(File.ReadAllText(Path.Combine(directory, Key + ".sav.corrupt2.bak")), Is.EqualTo("one"));
+            Assert.That(File.ReadAllText(Path.Combine(directory, Key + ".sav.corrupt.bak")), Is.EqualTo("somebody's file"));
+        }
     }
 }
