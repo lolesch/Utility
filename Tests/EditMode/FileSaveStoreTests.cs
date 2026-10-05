@@ -154,5 +154,68 @@ namespace Submodules.Utility.Tests.EditMode
             Assert.Throws<ArgumentException>(() => store.TryRead("a/b", out _));
             Assert.Throws<ArgumentException>(() => store.Write("", "x"));
         }
+
+        [Test]
+        public void SetAside_RenamesTheSaveAndItsBackup_NeverDeletingThem()
+        {
+            store.Write(Key, "one");
+            store.Write(Key, "two");
+
+            Assert.That(store.SetAside(Key), Is.True);
+
+            Assert.That(store.TryRead(Key, out _), Is.False);
+            Assert.That(store.Keys(), Is.Empty);
+            Assert.That(File.ReadAllText(Path.Combine(directory, Key + ".sav.corrupt")), Is.EqualTo("two"));
+            Assert.That(File.ReadAllText(Path.Combine(directory, Key + ".sav.corrupt.bak")), Is.EqualTo("one"));
+            Assert.That(store.SetAside(Key), Is.False, "nothing left to set aside");
+        }
+
+        [Test]
+        public void SetAside_TwiceForOneKey_KeepsBothFiles()
+        {
+            store.Write(Key, "first");
+            store.SetAside(Key);
+            store.Write(Key, "second");
+
+            store.SetAside(Key);
+
+            Assert.That(File.ReadAllText(Path.Combine(directory, Key + ".sav.corrupt")), Is.EqualTo("first"));
+            Assert.That(File.ReadAllText(Path.Combine(directory, Key + ".sav.corrupt2")), Is.EqualTo("second"));
+        }
+
+        [Test]
+        public void AKeyWrittenAfterASetAside_IsAFreshSave()
+        {
+            store.Write(Key, "damaged");
+            store.SetAside(Key);
+
+            Assert.That(Slot().Load().Status, Is.EqualTo(LoadStatus.Missing));
+
+            Slot().Save(NoteOf("fresh"));
+            Assert.That(Slot().Load().Payload.text, Is.EqualTo("fresh"));
+        }
+
+        [Test]
+        public void AppendSideFile_AppendsBesideTheSaves_AndIsNotListedAsAKey()
+        {
+            store.Write(Key, "one");
+
+            store.AppendSideFile("hero.quarantine.json", "first\n");
+            store.AppendSideFile("hero.quarantine.json", "second\n");
+
+            Assert.That(File.ReadAllText(Path.Combine(directory, "hero.quarantine.json")), Is.EqualTo("first\nsecond\n"));
+            Assert.That(store.Keys(), Is.EqualTo(new[] { Key }));
+        }
+
+        [Test]
+        public void AppendSideFile_CreatesTheFolder_AndRejectsANameThatCouldEscapeOrIsASave()
+        {
+            store.AppendSideFile("a.txt", "x");
+            Assert.That(Directory.Exists(directory), Is.True);
+
+            Assert.Throws<ArgumentException>(() => store.AppendSideFile("../outside.txt", "x"));
+            Assert.Throws<ArgumentException>(() => store.AppendSideFile("hero.sav", "x"));
+            Assert.Throws<ArgumentException>(() => store.AppendSideFile("", "x"));
+        }
     }
 }

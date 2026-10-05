@@ -24,5 +24,20 @@ namespace Submodules.Utility.Persistence
 
         /// <summary>Every key that has a current value.</summary>
         IReadOnlyCollection<string> Keys();
+
+        /// <summary>
+        /// Moves the value under <paramref name="key"/>, and its backup, out of the way so neither is read as
+        /// a save again, and keeps their text where a person can find it. Never deletes: a damaged save is
+        /// evidence. Setting aside twice keeps both. False when the key had no current value.
+        /// </summary>
+        bool SetAside(string key);
+
+        /// <summary>
+        /// Appends <paramref name="text"/> to a side file named <paramref name="fileName"/> beside the
+        /// saves, creating it on the first call. A side file is not a save: it is never listed by
+        /// <see cref="Keys"/> and nothing in this interface reads it back. The name is a plain file name,
+        /// never a path, and never ends in <c>.sav</c>.
+        /// </summary>
+        void AppendSideFile(string fileName, string text);
     }
 }

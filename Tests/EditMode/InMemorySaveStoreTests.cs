@@ -67,6 +67,56 @@ namespace Submodules.Utility.Tests.EditMode
         }
 
         [Test]
+        public void SetAside_TakesTheValueAndItsBackupOutOfTheWay_AndKeepsTheirText()
+        {
+            var store = new InMemorySaveStore();
+            store.Write("a", "one");
+            store.Write("a", "two");
+
+            Assert.That(store.SetAside("a"), Is.True);
+
+            Assert.That(store.TryRead("a", out _), Is.False);
+            Assert.That(store.TryReadBackup("a", out _), Is.False);
+            Assert.That(store.Keys(), Is.Empty);
+            Assert.That(store.SetAsideValues, Is.EquivalentTo(new[] { "two", "one" }));
+            Assert.That(store.SetAside("a"), Is.False, "nothing left to set aside");
+        }
+
+        [Test]
+        public void SetAside_LeavesOtherKeysAlone()
+        {
+            var store = new InMemorySaveStore();
+            store.Write("a", "1");
+            store.Write("b", "2");
+
+            _ = store.SetAside("a");
+
+            Assert.That(store.Keys(), Is.EqualTo(new[] { "b" }));
+        }
+
+        [Test]
+        public void AppendSideFile_AppendsInOrder_AndIsNotASave()
+        {
+            var store = new InMemorySaveStore();
+
+            store.AppendSideFile("a.quarantine.json", "one\n");
+            store.AppendSideFile("a.quarantine.json", "two\n");
+
+            Assert.That(store.SideFiles["a.quarantine.json"], Is.EqualTo("one\ntwo\n"));
+            Assert.That(store.Keys(), Is.Empty);
+        }
+
+        [Test]
+        public void AppendSideFile_RejectsAnEmptyNameANameThatIsASaveAndNullText()
+        {
+            var store = new InMemorySaveStore();
+
+            Assert.Throws<ArgumentException>(() => store.AppendSideFile("", "x"));
+            Assert.Throws<ArgumentException>(() => store.AppendSideFile("a.sav", "x"));
+            Assert.Throws<ArgumentNullException>(() => store.AppendSideFile("a.txt", null));
+        }
+
+        [Test]
         public void Write_RejectsAnEmptyKeyAndNullContent()
         {
             var store = new InMemorySaveStore();

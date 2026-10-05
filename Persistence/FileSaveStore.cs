@@ -9,7 +9,9 @@ namespace Submodules.Utility.Persistence
     /// One file per key in an injected directory: <c>key.sav</c>, with the value it replaced in
     /// <c>key.sav.bak</c>. A write goes to <c>key.sav.tmp</c> first and then replaces the save in one
     /// step, so a crash or a failed write leaves the previous save readable; a leftover temp file is
-    /// never read as a save. The directory is created on the first write. The platform's persistent
+    /// never read as a save. <see cref="SetAside"/> renames a damaged save to <c>key.sav.corrupt</c>
+    /// and keeps it; <see cref="AppendSideFile"/> writes other files beside the saves. The directory
+    /// is created on the first write. The platform's persistent
     /// data path is chosen by the caller, never here, so tests point this at a temp directory.
     /// </summary>
     public sealed class FileSaveStore : ISaveStore
@@ -17,6 +19,7 @@ namespace Submodules.Utility.Persistence
         private const string SaveExtension = ".sav";
         private const string BackupExtension = ".bak";
         private const string TempExtension = ".tmp";
+        private const string AsideExtension = ".corrupt";
 
         private static readonly Encoding Utf8 = new UTF8Encoding(false);
 
@@ -82,6 +85,41 @@ namespace Submodules.Utility.Persistence
             }
 
             return keys;
+        }
+
+        public bool SetAside(string key)
+        {
+            var path = SavePath(key);
+
+            if (!File.Exists(path))
+                return false;
+
+            // key.sav.corrupt, then key.sav.corrupt2, ...: an earlier set-aside file is never overwritten.
+            var aside = path + AsideExtension;
+            for (var attempt = 2; File.Exists(aside); attempt++)
+                aside = path + AsideExtension + attempt;
+
+            File.Move(path, aside);
+
+            var backup = path + BackupExtension;
+            if (File.Exists(backup))
+                File.Move(backup, aside + BackupExtension);
+
+            return true;
+        }
+
+        public void AppendSideFile(string fileName, string text)
+        {
+            if (string.IsNullOrEmpty(fileName)
+                || fileName.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0
+                || fileName.EndsWith(SaveExtension, StringComparison.Ordinal))
+                throw new ArgumentException($"'{fileName}' is not a usable side file name.", nameof(fileName));
+
+            if (text == null)
+                throw new ArgumentNullException(nameof(text));
+
+            Directory.CreateDirectory(directory);
+            File.AppendAllText(Path.Combine(directory, fileName), text, Utf8);
         }
 
         private string SavePath(string key)
