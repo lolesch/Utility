@@ -3,6 +3,7 @@
     "rootNamespace": "",
     "references": [
         "Utility",
+        "Utility.Persistence",
         "Utility.UI",
         "Unity.TextMeshPro",
         "Submodules.Utility.TestSupport",
