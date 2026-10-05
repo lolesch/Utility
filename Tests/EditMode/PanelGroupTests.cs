@@ -12,8 +12,7 @@ namespace Submodules.Utility.Tests.EditMode
     /// <see cref="PanelGroup"/> is <see cref="ToggleGroup"/>'s counterpart for content rather
     /// than input: panels occupying the same screen space, where showing one hides whichever
     /// else is up. Deliberately driven the same way — <see cref="PanelGroup.Activate"/> /
-    /// <see cref="PanelGroup.Deactivate"/>, membership by hierarchy, an
-    /// <see cref="PanelGroup.OnGroupChanged"/> announcement — so a caller who already knows
+    /// <see cref="PanelGroup.Deactivate"/>, membership by hierarchy — so a caller who already knows
     /// <see cref="ToggleGroup"/> reads this for free. The difference is what drives it: a
     /// toggle asking the group to show its panel is one caller, but not the only one —
     /// phase-change code can call <see cref="PanelGroup.Activate"/> directly, with no toggle
@@ -119,25 +118,9 @@ namespace Submodules.Utility.Tests.EditMode
             var panel = scene.Panel(group);
             group.Activate(panel);
 
-            var changes = 0;
-            group.OnGroupChanged += _ => changes++;
-
             group.Activate(panel);
 
-            Assert.That(changes, Is.Zero);
             Assert.That(panel.FadeInCalls, Is.EqualTo(1), "re-showing the active panel must not re-fade it");
-        }
-
-        [Test]
-        public void Activate_AnnouncesTheChange()
-        {
-            var panel = scene.Panel(group);
-            var changes = 0;
-            group.OnGroupChanged += _ => changes++;
-
-            group.Activate(panel);
-
-            Assert.That(changes, Is.EqualTo(1));
         }
 
         /// <summary>The membership guard, mirroring <c>RadioGroup.Activate</c>: a group can
@@ -196,39 +179,19 @@ namespace Submodules.Utility.Tests.EditMode
             var other = scene.Panel(clearable);
             clearable.Activate(active);
 
-            var changes = 0;
-            clearable.OnGroupChanged += _ => changes++;
-
             clearable.Deactivate(other);
 
             Assert.That(clearable.ActiveMember, Is.SameAs(active));
-            Assert.That(changes, Is.Zero);
-        }
-
-        [Test]
-        public void Clear_AnnouncesTheChange()
-        {
-            var clearable = scene.PanelGroup(userCanUntoggle: true);
-            var panel = scene.Panel(clearable);
-            clearable.Activate(panel);
-
-            var changes = 0;
-            clearable.OnGroupChanged += _ => changes++;
-
-            clearable.Deactivate(panel);
-
-            Assert.That(changes, Is.EqualTo(1));
+            Assert.That(active.FadeOutCalls, Is.Zero);
         }
 
         [Test]
         public void Clear_Null_LeavesTheGroupAlone_EvenWhenNothingIsActive()
         {
             var clearable = scene.PanelGroup(userCanUntoggle: true);
-            var changes = 0;
-            clearable.OnGroupChanged += _ => changes++;
 
             Assert.That(() => clearable.Deactivate(null), Throws.Nothing);
-            Assert.That(changes, Is.Zero);
+            Assert.That(clearable.PreviousMember, Is.Null);
         }
 
         /// <summary><see cref="SimplePanel.Collapse"/>'s own guard, the counterpart to
@@ -272,11 +235,9 @@ namespace Submodules.Utility.Tests.EditMode
         public void ResetGroup_WhenNothingIsActive_IsANoOp()
         {
             var clearable = scene.PanelGroup(userCanUntoggle: true);
-            var changes = 0;
-            clearable.OnGroupChanged += _ => changes++;
 
             Assert.That(() => clearable.ResetGroup(), Throws.Nothing);
-            Assert.That(changes, Is.Zero);
+            Assert.That(clearable.PreviousMember, Is.Null);
         }
 
         /// <summary>The self-heal counterpart to the membership guard, mirroring

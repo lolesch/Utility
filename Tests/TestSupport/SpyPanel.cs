@@ -38,6 +38,8 @@ namespace Submodules.Utility.Tests.TestSupport
 
         protected override void BeforeDisappear()
         {
+            base.BeforeDisappear();
+
             FadeOutCalls++;
             Log?.Add($"{Label ?? name}-");
         }

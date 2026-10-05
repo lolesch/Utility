@@ -1,4 +1,3 @@
-using System;
 using NaughtyAttributes;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -19,9 +18,10 @@ namespace Submodules.Utility.UI
     /// <para>A group that can never be empty (neither flag set) also goes home: the first member
     /// to become active is remembered as <see cref="FirstMember"/>, and resetting the group
     /// (<see cref="ResetGroup"/>, state derived from elsewhere) switches back to it instead of
-    /// emptying it. With <see cref="ResetWithParentPanel"/> on, the group does the same once the
-    /// <see cref="SimplePanel"/> it lives in has finished closing, so a tabbed panel reopens on its
-    /// first tab without the panel knowing its tabs exist.</para>
+    /// emptying it. With <see cref="ResetWithParentPanel"/> on, the group resets itself the same way once
+    /// the <see cref="SimplePanel"/> it lives in has finished closing - back to its first tab where it
+    /// can never be empty, emptied where it may be - so a selection never outlives the panel that
+    /// showed it, without the panel knowing its members exist.</para>
     ///
     /// A subclass supplies only the two things that differ per member kind: what counts as
     /// membership (<see cref="IsMember"/>) and how a member is switched on or off
@@ -52,9 +52,10 @@ namespace Submodules.Utility.UI
         public bool GroupCanUntoggle { get; private set; } = true;
 
         [field: SerializeField]
-        [field: Tooltip("Switch back to the first member once the panel this group lives in has finished " +
-                        "closing, so the panel reopens as it was first shown. Only takes effect on a " +
-                        "group that can never be empty: neither 'UserCanUntoggle' nor 'GroupCanUntoggle'.")]
+        [field: Tooltip("Reset the group once the panel it lives in has finished closing, so a selection " +
+                        "never outlives the panel that showed it: back to the first member on a group that " +
+                        "can never be empty (neither 'UserCanUntoggle' nor 'GroupCanUntoggle'), emptied " +
+                        "otherwise.")]
         public bool ResetWithParentPanel { get; private set; }
 
         /// <summary>The one statement of whether the active member may be deactivated with no
@@ -66,8 +67,6 @@ namespace Submodules.Utility.UI
         /// <summary>A group that can never be empty, neither by the user nor by itself: resetting it
         /// means going back to <see cref="FirstMember"/>.</summary>
         private bool ReturnsToFirst => !CanUntoggle(byUser: false);
-
-        public event Action<TMember> OnGroupChanged;
 
         /// <summary>Whether <paramref name="member"/> belongs to this group — the back-reference
         /// the member kind keeps to its own group.</summary>
@@ -108,8 +107,24 @@ namespace Submodules.Utility.UI
         /// with nothing left to see swap.</summary>
         private void OnCanvasGroupChanged()
         {
-            if (parentPanel && parentPanel.IsCollapsed)
+            if (parentPanel)
+                ResetWhenCollapsed(parentPanel);
+        }
+
+        /// <summary>The reset <see cref="ResetWithParentPanel"/> asks for, once <paramref name="parent"/>
+        /// has finished closing: back to <see cref="FirstMember"/> on a group that can never be empty
+        /// (even with nothing active - <see cref="ResetGroup"/> would find no member to deactivate and
+        /// stop), emptied otherwise. Split out of <see cref="OnCanvasGroupChanged"/> so it can be
+        /// driven without the Unity message or an <c>Awake</c>.</summary>
+        internal void ResetWhenCollapsed(SimplePanel parent)
+        {
+            if (!parent.IsCollapsed)
+                return;
+
+            if (ReturnsToFirst)
                 ResetToFirst();
+            else
+                ResetGroup();
         }
 
         /// <summary>Switches back to <see cref="FirstMember"/>. Only a group that can never be empty
@@ -143,8 +158,6 @@ namespace Submodules.Utility.UI
                 SetMemberActive(PreviousMember, false);
 
             SetMemberActive(ActiveMember, true);
-
-            OnGroupChanged?.Invoke(ActiveMember);
         }
 
         /// <param name="byUser">Whether the un-toggle is the user's own (a click, a hotkey, a
@@ -173,8 +186,6 @@ namespace Submodules.Utility.UI
             PreviousMember = ActiveMember;
             ActiveMember = null;
             SetMemberActive(PreviousMember, false);
-
-            OnGroupChanged?.Invoke(null);
         }
     }
 }

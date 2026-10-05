@@ -2,6 +2,7 @@ using NUnit.Framework;
 using Submodules.Utility.Tests.TestSupport;
 using Submodules.Utility.Tools.Tweening;
 using Submodules.Utility.UI;
+using UnityEngine;
 
 namespace Submodules.Utility.Tests.EditMode
 {
@@ -87,6 +88,48 @@ namespace Submodules.Utility.Tests.EditMode
             panel.Appear(true);
 
             Assert.That(Tween.ActiveCount, Is.Zero, "an instant appear still has to clear the fade it replaces");
+        }
+
+        /// <summary>A hidden panel's contents must be out of reach of a hotkey as well as of a
+        /// click: <c>blocksRaycasts</c> stops only the second, whereas a <c>Selectable</c> below
+        /// asks <c>IsInteractable()</c>, which reads the group's <c>interactable</c>.</summary>
+        [Test]
+        public void Disappear_TakesTheContentsOutOfReach_OfAClickAndAHotkeyAlike()
+        {
+            panel.Appear(true);
+
+            panel.Disappear(true);
+
+            var group = panel.GetComponent<CanvasGroup>();
+            Assert.That(group.blocksRaycasts, Is.False);
+            Assert.That(group.interactable, Is.False);
+        }
+
+        /// <summary>The consumer side of the same fact: a <c>Selectable</c> below a hidden panel reports
+        /// itself non-interactable, which is what silences a hotkey toggle that polls
+        /// <c>IsInteractable()</c>.</summary>
+        [Test]
+        public void Disappear_MakesASelectableBelow_ReportNonInteractable()
+        {
+            var below = scene.Element<SpyToggle>(parent: panel.transform);
+            panel.Appear(true);
+            Assume.That(below.IsInteractable(), Is.True);
+
+            panel.Disappear(true);
+
+            Assert.That(below.IsInteractable(), Is.False);
+        }
+
+        [Test]
+        public void Appear_PutsTheContentsBackInReach()
+        {
+            panel.Disappear(true);
+
+            panel.Appear(true);
+
+            var group = panel.GetComponent<CanvasGroup>();
+            Assert.That(group.blocksRaycasts, Is.True);
+            Assert.That(group.interactable, Is.True);
         }
     }
 }

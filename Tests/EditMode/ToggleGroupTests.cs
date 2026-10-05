@@ -92,26 +92,14 @@ namespace Submodules.Utility.Tests.EditMode
         public void Activate_TheAlreadyActiveToggle_ChangesNothing()
         {
             var toggle = scene.Toggle(group);
+            var other = scene.Toggle(group);
+            group.Activate(other);
             group.Activate(toggle);
-
-            var changes = 0;
-            group.OnGroupChanged += _ => changes++;
-
-            group.Activate(toggle);
-
-            Assert.That(changes, Is.Zero);
-        }
-
-        [Test]
-        public void Activate_AnnouncesTheChange()
-        {
-            var toggle = scene.Toggle(group);
-            var changes = 0;
-            group.OnGroupChanged += _ => changes++;
 
             group.Activate(toggle);
 
-            Assert.That(changes, Is.EqualTo(1));
+            Assert.That(group.ActiveMember, Is.SameAs(toggle));
+            Assert.That(group.PreviousMember, Is.SameAs(other), "re-activating the active toggle must not make it its own predecessor");
         }
 
         [Test]
@@ -144,28 +132,10 @@ namespace Submodules.Utility.Tests.EditMode
             var other = scene.Toggle(group);
             group.Activate(active);
 
-            var changes = 0;
-            group.OnGroupChanged += _ => changes++;
-
             group.Deactivate(other);
 
             Assert.That(group.ActiveMember, Is.SameAs(active));
-            Assert.That(changes, Is.Zero);
-        }
-
-        [Test]
-        public void Deactivate_AnnouncesTheChange()
-        {
-            var clearable = scene.Group(userCanUntoggle: true);
-            var toggle = scene.Toggle(clearable);
-            clearable.Activate(toggle);
-
-            var changes = 0;
-            clearable.OnGroupChanged += _ => changes++;
-
-            clearable.Deactivate(toggle);
-
-            Assert.That(changes, Is.EqualTo(1));
+            Assert.That(group.PreviousMember, Is.Null);
         }
 
         [Test]
@@ -187,11 +157,8 @@ namespace Submodules.Utility.Tests.EditMode
         [Test]
         public void Deactivate_Null_LeavesTheGroupAlone_EvenWhenNothingIsActive()
         {
-            var changes = 0;
-            group.OnGroupChanged += _ => changes++;
-
             Assert.That(() => group.Deactivate(null), Throws.Nothing);
-            Assert.That(changes, Is.Zero, "a null toggle must not be read as 'the (null) active toggle switched off'");
+            Assert.That(group.PreviousMember, Is.Null, "a null toggle must not be read as 'the (null) active toggle switched off'");
         }
 
         /// <summary>The two initiators of an un-toggle: the user (Deactivate's default) and the
@@ -331,6 +298,55 @@ namespace Submodules.Utility.Tests.EditMode
             Assert.That(locked.PreviousMember, Is.Null, "no switch happened");
         }
 
+        /// <summary><see cref="UI.AbstractGroup{TMember}.ResetWithParentPanel"/>'s reset, driven directly:
+        /// the Unity message and the group's <c>Awake</c> do not run in EditMode. A group that may be
+        /// emptied is emptied once its parent panel has finished closing.</summary>
+        [Test]
+        public void ResetWhenCollapsed_AGroupThatMayBeEmptied_IsEmptied()
+        {
+            var toggle = scene.Toggle(group);
+            group.Activate(toggle);
+            var parent = scene.Panel();
+            parent.Disappear(true);
+
+            group.ResetWhenCollapsed(parent);
+
+            Assert.That(group.ActiveMember, Is.Null, "a selection must not outlive the panel that showed it");
+        }
+
+        [Test]
+        public void ResetWhenCollapsed_WhileTheParentIsStillUp_ChangesNothing()
+        {
+            var toggle = scene.Toggle(group);
+            group.Activate(toggle);
+            var parent = scene.Panel();
+            parent.Appear(true);
+
+            group.ResetWhenCollapsed(parent);
+
+            Assert.That(group.ActiveMember, Is.SameAs(toggle));
+        }
+
+        /// <summary>A group that can never be empty goes home even with nothing active - the state a
+        /// destroyed or cleared active member leaves behind, which <c>ResetGroup</c> alone would
+        /// treat as "nothing to deactivate".</summary>
+        [Test]
+        public void ResetWhenCollapsed_AGroupThatCanNeverBeEmpty_GoesBackToTheFirstToggle_EvenWithNothingActive()
+        {
+            var locked = scene.Group(groupCanUntoggle: false);
+            var first = scene.Toggle(locked);
+            var second = scene.Toggle(locked);
+            locked.Activate(first);
+            locked.Activate(second);
+            UiTestScene.SetObject(locked, "<ActiveMember>k__BackingField", null);
+            var parent = scene.Panel();
+            parent.Disappear(true);
+
+            locked.ResetWhenCollapsed(parent);
+
+            Assert.That(locked.ActiveMember, Is.SameAs(first));
+        }
+
         /// <summary>The membership guard (issue: a hand-edited/reparented toggle left a
         /// foreign group's <c>ActivatedToggle</c> pointing at it). A group can only ever
         /// activate its own child.</summary>
@@ -346,18 +362,15 @@ namespace Submodules.Utility.Tests.EditMode
         }
 
         [Test]
-        public void SetToggle_False_OnTheActiveToggle_AnnouncesTheChange()
+        public void SetToggle_False_OnTheActiveToggle_ClearsTheGroup()
         {
             var clearable = scene.Group(userCanUntoggle: true);
             var toggle = scene.Toggle(clearable);
             toggle.SetToggle(true);
 
-            var changes = 0;
-            clearable.OnGroupChanged += _ => changes++;
-
             toggle.SetToggle(false);
 
-            Assert.That(changes, Is.EqualTo(1),
+            Assert.That(clearable.ActiveMember, Is.Null,
                 "the toggle switching itself off is a real 'no panel open' state change, "
                 + "whichever of click / hotkey / script routed it through SetToggle, as long as the group is clearable");
         }

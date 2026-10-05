@@ -10,6 +10,8 @@ namespace Submodules.Utility.UI
     /// Panels provide appearance options such as fading in and out, scaling and movement.
     /// A panel should always stay enabled, only its canvasGroup alpha is set to 0.
     /// Therefore, use <see cref="BeforeAppear"/> instead of <see cref="OnEnable"/> to set data.
+    /// The panel owns its <c>CanvasGroup</c>'s <c>alpha</c>, <c>blocksRaycasts</c> and
+    /// <c>interactable</c>: hidden, nothing below it can be clicked or driven by a hotkey.
     /// </summary>
     [RequireComponent(typeof(CanvasGroup), typeof(GraphicRaycaster))]
     public class SimplePanel : MonoBehaviour
@@ -32,7 +34,7 @@ namespace Submodules.Utility.UI
         [SerializeField] protected Vector2 moveFrom = Vector2.zero;
         
         public bool IsCollapsed => CanvasGroup.alpha <= 0f;
-        public bool IsInteractive => CanvasGroup.blocksRaycasts;
+        public bool IsInteractive => CanvasGroup.blocksRaycasts && CanvasGroup.interactable;
         public bool IsExtended => CanvasGroup.alpha >= 1;
 
         private Vector2 startPosition;
@@ -56,7 +58,7 @@ namespace Submodules.Utility.UI
         {
             startPosition = Transform.anchoredPosition;
             
-            CanvasGroup.blocksRaycasts = true;
+            SetReachable(true);
             CanvasGroup.alpha = 1;
 
             if(!RadioGroup)
@@ -143,7 +145,7 @@ namespace Submodules.Utility.UI
         protected virtual void BeforeAppear()
         {
             // refresh data -> IDisplay?
-            CanvasGroup.blocksRaycasts = true;
+            SetReachable(true);
         } 
 
         /// <summary> Called after the CanvasGroup completed fading in.
@@ -182,9 +184,18 @@ namespace Submodules.Utility.UI
                 _ = Transform.TweenScale(scaleFrom, FadeDuration, Ease.InQuad);
         }
 
-        /// <summary> Called right before the CanvasGroup fades out.
+        /// <summary> Called right before the CanvasGroup fades out. Also takes the panel's contents out of
+        /// reach of a hotkey, which <c>blocksRaycasts</c> alone does not: a <c>Selectable</c> below
+        /// reports <c>IsInteractable()</c> false for as long as this panel is hidden.
         /// </summary>
-        protected virtual void BeforeDisappear() => CanvasGroup.blocksRaycasts = false;
+        protected virtual void BeforeDisappear() => SetReachable(false);
+
+        /// <summary>The one place a panel's reach is written: a click (<c>blocksRaycasts</c>) and a
+        /// hotkey or script (<c>interactable</c>, read by every <c>Selectable</c> below through
+        /// <c>IsInteractable()</c>) agree by construction. A panel owns both flags on its
+        /// <c>CanvasGroup</c> - whatever was authored there is overwritten on the first show or hide.</summary>
+        private void SetReachable(bool reachable) =>
+            CanvasGroup.blocksRaycasts = CanvasGroup.interactable = reachable;
 
         /// <summary> Called after the CanvasGroup completed fading out.
         /// </summary>
