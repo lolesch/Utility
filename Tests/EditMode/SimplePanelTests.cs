@@ -90,6 +90,24 @@ namespace Submodules.Utility.Tests.EditMode
             Assert.That(Tween.ActiveCount, Is.Zero, "an instant appear still has to clear the fade it replaces");
         }
 
+        /// <summary>The Inspector's Expand / Collapse run in Edit Mode, where no tween is ever pumped: they
+        /// must land at once, without starting a fade that would never finish.</summary>
+        [TestCase("ExpandFromInspector", 1f)]
+        [TestCase("CollapseFromInspector", 0f)]
+        public void TheInspectorMenu_TogglesInstantly_InEditMode(string menuItem, float alpha)
+        {
+            if (alpha == 0f)
+                panel.Appear(true);
+            else
+                panel.Disappear(true);
+
+            _ = typeof(SimplePanel).GetMethod(menuItem, System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
+                .Invoke(panel, null);
+
+            Assert.That(panel.GetComponent<CanvasGroup>().alpha, Is.EqualTo(alpha));
+            Assert.That(Tween.ActiveCount, Is.Zero);
+        }
+
         /// <summary>A hidden panel's contents must be out of reach of a hotkey as well as of a
         /// click: <c>blocksRaycasts</c> stops only the second, whereas a <c>Selectable</c> below
         /// asks <c>IsInteractable()</c>, which reads the group's <c>interactable</c>.</summary>

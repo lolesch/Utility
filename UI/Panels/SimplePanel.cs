@@ -1,4 +1,5 @@
 using NaughtyAttributes;
+using System;
 using Submodules.Utility.Extensions;
 using Submodules.Utility.Tools.Tweening;
 using UnityEngine;
@@ -38,6 +39,11 @@ namespace Submodules.Utility.UI
         public bool IsExtended => CanvasGroup.alpha >= 1;
 
         private Vector2 startPosition;
+
+        // Set only around the Inspector's Expand / Collapse in Edit Mode, where nothing pumps a tween: a fade
+        // started there would never finish. The primitives take it as `instant`, so a test (or any caller)
+        // that asks for a fade in Edit Mode still gets one.
+        private static bool instantInEditor;
 
         private bool IsScaling => !Mathf.Approximately(scaleFrom, 1f);
         private bool IsMoving => moveFrom != Vector2.zero;
@@ -84,7 +90,6 @@ namespace Submodules.Utility.UI
         /// this exactly as it always has, and — if this panel sits under a
         /// <see cref="RadioGroup"/> — the group takes over and drives <see cref="Appear"/>
         /// itself, hiding whichever sibling was up first. Ungrouped, it just appears.</summary>
-        [ContextMenu("Expand")]
         public virtual void Expand()
         {
             if (RadioGroup)
@@ -97,7 +102,6 @@ namespace Submodules.Utility.UI
         /// outright on the sole active panel of a group the user cannot untoggle
         /// (<see cref="AbstractGroup{TMember}.UserCanUntoggle"/>) — the same guard <see cref="AbstractToggle.SetToggle"/> has for
         /// un-toggling the active one.</summary>
-        [ContextMenu("Collapse")]
         public void Collapse()
         {
             if (RadioGroup && RadioGroup.ActiveMember == this && !RadioGroup.CanUntoggle(byUser: true))
@@ -113,6 +117,27 @@ namespace Submodules.Utility.UI
                 Disappear();
         }
 
+        [ContextMenu("Expand")]
+        private void ExpandFromInspector() => InstantInEditMode(Expand);
+
+        [ContextMenu("Collapse")]
+        private void CollapseFromInspector() => InstantInEditMode(Collapse);
+
+        // The whole group-aware path runs instantly, so the sibling a RadioGroup replaces snaps too.
+        private static void InstantInEditMode(Action toggle)
+        {
+            instantInEditor = !Application.isPlaying;
+
+            try
+            {
+                toggle();
+            }
+            finally
+            {
+                instantInEditor = false;
+            }
+        }
+
         /// <summary>The actual appear primitive, named to match <see cref="AbstractToggle.SetToggle"/>'s
         /// on/off vocabulary. Internal so <see cref="PanelGroup.Activate"/> can drive it directly
         /// without looping back through the group-aware <see cref="Expand"/> — that loop is
@@ -122,7 +147,7 @@ namespace Submodules.Utility.UI
             KillTweens();
             BeforeAppear();
 
-            if (instant)
+            if (instant || instantInEditor)
             {
                 OnAppear();
                 return;
@@ -164,7 +189,7 @@ namespace Submodules.Utility.UI
             KillTweens();
             BeforeDisappear();
 
-            if (instant)
+            if (instant || instantInEditor)
             {
                 if (IsMoving)
                     Transform.anchoredPosition = startPosition + moveFrom;
