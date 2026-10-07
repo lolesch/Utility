@@ -53,6 +53,21 @@ namespace Submodules.Utility.Tests.EditMode
         [TearDown]
         public void TearDown() => scene.Dispose();
 
+        /// <summary>A second pair in its own group, wired like the fixture's (inert partner on and
+        /// first), for a test to break one rule of.</summary>
+        private (ToggleGroup group, SpyToggle inert, TwoPanelToggle other) AnotherPair(bool userCanUntoggle = false,
+            bool groupCanUntoggle = false)
+        {
+            var other = scene.Group(userCanUntoggle, groupCanUntoggle);
+            var inert = scene.Toggle(other);
+            var twin = scene.Element<TwoPanelToggle>(parent: other.transform);
+            UiTestScene.SetObject(twin, "panelWhenOff", panelA);
+            UiTestScene.SetObject(twin, "panelWhenOn", panelB);
+            other.Activate(inert);
+
+            return (other, inert, twin);
+        }
+
         private bool Showing(string label) => log.LastOrDefault(entry => entry.StartsWith(label)) == label + "+";
 
         private bool Hiding(string label) => log.LastOrDefault(entry => entry.StartsWith(label)) == label + "-";
@@ -114,16 +129,32 @@ namespace Submodules.Utility.Tests.EditMode
             Assert.That(Showing("B"), Is.True);
         }
 
+        /// <summary>A peek switches the bool off from the group's side: the group goes home to the
+        /// partner instead of emptying, even though the user's own click on the driver is refused.</summary>
+        [Test]
+        public void SyncToggleOff_FromTheGroupsSide_GoesHomeToThePartner()
+        {
+            driver.SetToggle(true);
+            var writes = driver.Writes;
+
+            driver.SyncToggle(false);
+
+            Assert.That(driver.IsOn, Is.False);
+            Assert.That(partner.IsOn, Is.True);
+            Assert.That(driver.Writes, Is.EqualTo(writes + 1));
+            Assert.That(Showing("A"), Is.True);
+        }
+
         [Test]
         public void TheTwoPanelsAreNeverBothShowing_OnAnySwitch()
         {
             for (var i = 0; i < 4; i++)
             {
-                driver.SetToggle(i % 2 == 0);
-                partner.SetToggle(i % 2 == 1);
+                driver.SetToggle(true);
+                Assert.That(Showing("B") && Hiding("A"), Is.True, $"B alone after switching on, round {i}");
 
-                Assert.That(Showing("A") && Showing("B"), Is.False, $"both showing after switch {i}");
-                Assert.That(Hiding("A") && Hiding("B"), Is.False, $"both hidden after switch {i}");
+                partner.SetToggle(true);
+                Assert.That(Showing("A") && Hiding("B"), Is.True, $"A alone after switching off, round {i}");
             }
         }
 
@@ -210,34 +241,23 @@ namespace Submodules.Utility.Tests.EditMode
         {
             var alone = scene.Element<TwoPanelToggle>();
 
-            Assert.That(alone.AuthoringProblems().Count(), Is.EqualTo(1));
-            Assert.That(alone.AuthoringProblems().Single(), Does.Contain("no ToggleGroup"));
+            Assert.That(alone.AuthoringProblems(), Has.Some.Contain("no ToggleGroup"));
         }
 
         [Test]
         public void AGroupThatAllowsSwitchOff_IsWarned()
         {
-            var loose = scene.Group(userCanUntoggle: true, groupCanUntoggle: false);
-            var inert = scene.Toggle(loose);
-            var other = scene.Element<TwoPanelToggle>(parent: loose.transform);
-            loose.Activate(inert);
-            UiTestScene.SetObject(other, "panelWhenOff", panelA);
-            UiTestScene.SetObject(other, "panelWhenOn", panelB);
+            var pair = AnotherPair(userCanUntoggle: true);
 
-            Assert.That(other.AuthoringProblems().Single(), Does.Contain("allows switch-off"));
+            Assert.That(pair.other.AuthoringProblems().Single(), Does.Contain("allows switch-off"));
         }
 
         [Test]
         public void AGroupWhoseGroupMayEmptyItself_IsWarned()
         {
-            var loose = scene.Group();
-            var inert = scene.Toggle(loose);
-            var other = scene.Element<TwoPanelToggle>(parent: loose.transform);
-            loose.Activate(inert);
-            UiTestScene.SetObject(other, "panelWhenOff", panelA);
-            UiTestScene.SetObject(other, "panelWhenOn", panelB);
+            var pair = AnotherPair(groupCanUntoggle: true);
 
-            Assert.That(other.AuthoringProblems().Single(), Does.Contain("allows switch-off"));
+            Assert.That(pair.other.AuthoringProblems().Single(), Does.Contain("allows switch-off"));
         }
 
         [Test]
@@ -259,10 +279,39 @@ namespace Submodules.Utility.Tests.EditMode
         {
             var empty = scene.Group(groupCanUntoggle: false);
             var other = scene.Element<TwoPanelToggle>(parent: empty.transform);
+            scene.Toggle(empty);
             UiTestScene.SetObject(other, "panelWhenOff", panelA);
             UiTestScene.SetObject(other, "panelWhenOn", panelB);
 
             Assert.That(other.AuthoringProblems().Single(), Does.Contain("first member"));
+        }
+
+        [Test]
+        public void AThirdToggleInTheGroup_IsWarned()
+        {
+            var pair = AnotherPair();
+            scene.Toggle(pair.group);
+
+            Assert.That(pair.other.AuthoringProblems().Single(), Does.Contain("3 toggles"));
+        }
+
+        [Test]
+        public void AMissingPartner_IsWarned()
+        {
+            var alone = scene.Group(groupCanUntoggle: false);
+            var other = scene.Element<TwoPanelToggle>(parent: alone.transform);
+            UiTestScene.SetObject(other, "panelWhenOff", panelA);
+            UiTestScene.SetObject(other, "panelWhenOn", panelB);
+
+            Assert.That(other.AuthoringProblems(), Has.Some.Contain("1 toggles"));
+        }
+
+        [Test]
+        public void AnUnsetPanel_IsWarned_EvenWithNoGroup()
+        {
+            var alone = scene.Element<TwoPanelToggle>();
+
+            Assert.That(alone.AuthoringProblems(), Has.Some.Contain("panel is unset"));
         }
 
         [Test]

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace Submodules.Utility.UI
@@ -53,12 +54,21 @@ namespace Submodules.Utility.UI
         /// wired as a two-panel switch has to be.</summary>
         internal IEnumerable<string> AuthoringProblems()
         {
+            if (!panelWhenOff || !panelWhenOn)
+                yield return "a panel is unset: a two-panel switch needs both 'panelWhenOff' and 'panelWhenOn'.";
+
             if (!RadioGroup)
             {
                 yield return "it has no ToggleGroup on its parent, so nothing mirrors its bool to the other " +
                              "tab button. Put it and its inert partner under a ToggleGroup.";
                 yield break;
             }
+
+            var members = RadioGroup.GetComponentsInChildren<AbstractToggle>(true).Count(t => t.RadioGroup == RadioGroup);
+
+            if (members != 2)
+                yield return $"its ToggleGroup '{RadioGroup.name}' has {members} toggles; a two-panel switch is " +
+                             "exactly the driver and one inert partner.";
 
             if (RadioGroup.CanUntoggle(byUser: false))
                 yield return $"its ToggleGroup '{RadioGroup.name}' allows switch-off, so both tab buttons can " +
@@ -71,9 +81,6 @@ namespace Submodules.Utility.UI
                 yield return $"the first member of its ToggleGroup '{RadioGroup.name}' is not the off-state " +
                              "toggle, so a reset would not return the pair to the panel shown while off. " +
                              "Author the inert partner on, not this toggle.";
-
-            if (!panelWhenOff || !panelWhenOn)
-                yield return "a panel is unset: a two-panel switch needs both 'panelWhenOff' and 'panelWhenOn'.";
         }
 
 #if UNITY_EDITOR
