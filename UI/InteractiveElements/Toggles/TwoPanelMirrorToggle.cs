@@ -31,6 +31,10 @@ namespace Submodules.Utility.UI
             if (!RadioGroup || RadioGroup != driver.RadioGroup)
                 yield return $"it and its driver '{driver.name}' are not in the same ToggleGroup, so neither " +
                              "switches the other off.";
+
+            if (IsOn && driver.IsOn)
+                yield return $"it and its driver '{driver.name}' are both authored on. The mirror is the off-state " +
+                             "button: author it on and the driver off.";
         }
 
 #if UNITY_EDITOR

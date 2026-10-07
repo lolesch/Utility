@@ -47,13 +47,17 @@ namespace Submodules.Utility.UI
             var hidden = IsOn ? panelWhenOff : panelWhenOn;
 
             // The incoming panel first: a PanelGroup hides its sibling itself, and refuses to collapse
-            // the sole active panel of a group that can never be empty.
+            // the sole active panel of a group that can never be empty. A sibling it has already hidden
+            // is left alone: collapsing it again would restart its fade-out.
             if (shown)
                 shown.ToggleState(true);
 
-            if (hidden)
+            if (hidden && !SharesPanelGroup(shown, hidden))
                 hidden.ToggleState(false);
         }
+
+        private static bool SharesPanelGroup(SimplePanel a, SimplePanel b) =>
+            a && b && a.RadioGroup && a.RadioGroup == b.RadioGroup;
 
         /// <summary>What is wrong with how this driver is authored, one sentence each; empty when it is
         /// wired as a two-panel switch has to be.</summary>
@@ -61,6 +65,9 @@ namespace Submodules.Utility.UI
         {
             if (!panelWhenOff || !panelWhenOn)
                 yield return "a panel is unset: a two-panel switch needs both 'panelWhenOff' and 'panelWhenOn'.";
+            else if (panelWhenOff == panelWhenOn)
+                yield return "'panelWhenOff' and 'panelWhenOn' are the same panel, which would be shown and " +
+                             "hidden by every write. A two-panel switch needs two.";
 
             if (!RadioGroup)
             {

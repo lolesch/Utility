@@ -220,6 +220,41 @@ namespace Submodules.Utility.Tests.EditMode
             Assert.That(panels.ActiveMember, Is.SameAs(inA));
         }
 
+        /// <summary>The group hands the slot over by fading the sibling out itself; the switch must not
+        /// fade it a second time, which would restart its fade-out.</summary>
+        [Test]
+        public void SiblingPanelsInAGroup_AreEachFadedOutOnce_OnASwitch()
+        {
+            var panels = scene.PanelGroup(groupCanUntoggle: false);
+            var inA = scene.Panel(panels);
+            var inB = scene.Panel(panels);
+            UiTestScene.SetObject(driver, "panelWhenOff", inA);
+            UiTestScene.SetObject(driver, "panelWhenOn", inB);
+            inA.Expand();
+            var fadedOut = inA.FadeOutCalls;
+
+            driver.SetToggle(true);
+
+            Assert.That(inA.FadeOutCalls, Is.EqualTo(fadedOut + 1));
+        }
+
+        [Test]
+        public void PanelsInDifferentGroups_AreStillBothSwitched()
+        {
+            var groupA = scene.PanelGroup(userCanUntoggle: true);
+            var groupB = scene.PanelGroup();
+            var inA = scene.Panel(groupA);
+            var inB = scene.Panel(groupB);
+            UiTestScene.SetObject(driver, "panelWhenOff", inA);
+            UiTestScene.SetObject(driver, "panelWhenOn", inB);
+            inA.Expand();
+
+            driver.SetToggle(true);
+
+            Assert.That(groupB.ActiveMember, Is.SameAs(inB));
+            Assert.That(groupA.ActiveMember, Is.Null);
+        }
+
         [Test]
         public void Writes_CountsEveryChangeOfTheBool_AClickAndTheGroupsOwn()
         {
@@ -392,6 +427,28 @@ namespace Submodules.Utility.Tests.EditMode
             UiTestScene.SetObject(alone, "driver", driver);
 
             Assert.That(alone.AuthoringProblems().Single(), Does.Contain("not in the same ToggleGroup"));
+        }
+
+        [Test]
+        public void TheSamePanelInBothSlots_IsWarned()
+        {
+            UiTestScene.SetObject(driver, "panelWhenOn", panelA);
+
+            Assert.That(driver.AuthoringProblems().Single(), Does.Contain("same panel"));
+        }
+
+        /// <summary>Authored in one group, a mirror and its driver cannot both be on (the group keeps one);
+        /// across two groups they can, and the pair would have both tab buttons selected.</summary>
+        [Test]
+        public void AMirrorAndADriverBothAuthoredOn_AreWarned()
+        {
+            var elsewhere = scene.Group(groupCanUntoggle: false);
+            var stray = scene.Element<TwoPanelMirrorToggle>(parent: elsewhere.transform);
+            UiTestScene.SetObject(stray, "driver", driver);
+            UiTestScene.SetBool(stray, "<IsOn>k__BackingField", true);
+            UiTestScene.SetBool(driver, "<IsOn>k__BackingField", true);
+
+            Assert.That(stray.AuthoringProblems(), Has.Some.Contain("both authored on"));
         }
 
         [Test]
