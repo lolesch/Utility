@@ -30,7 +30,8 @@ namespace Submodules.Utility.UI
             rootCanvas.Canvas.sortingOrder = 1;
 
             var image = GetComponent<Image>();
-            image.color = Color.black;
+            if (image.sprite == null)
+                image.color = Color.black;
 
             Display.Collapse();
         }
@@ -88,23 +89,23 @@ namespace Submodules.Utility.UI
                     yield return null;
 
                     // map progress (from 0f to .9f) to 0f to 1f
-                    targetProgress = Mathf.Clamp01(loaderOperation.progress / .9f);
+                    targetProgress = loaderOperation.progress.MapTo01(0, 0.9f);
 
                     // Wait for the new sceneName to preload
-                    if (targetProgress < .5f)
-                        targetProgress *= 0.25f;
+                    if (targetProgress < .45f)
+                        targetProgress *= 0.2f;
 
-                    delta += Time.unscaledDeltaTime / 4;
+                    delta += Time.unscaledDeltaTime * 0.2f;
 
                     currentProgress = Mathf.Clamp01(Mathf.Lerp(currentProgress, targetProgress, delta));
 
                     Display.SetLoadingProgression(currentProgress);
 
-                    if (targetProgress == 1 && loaderOperation.allowSceneActivation == false)
+                    if (targetProgress >= 1 && !loaderOperation.allowSceneActivation)
                         loaderOperation.allowSceneActivation = true;
                 }
 
-                yield return new WaitForSeconds(.5f);
+                yield return new WaitForSeconds(.3f);
 
                 Display.Collapse();
 

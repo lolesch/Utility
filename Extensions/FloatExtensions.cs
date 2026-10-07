@@ -9,7 +9,7 @@ namespace Submodules.Utility.Extensions
             if ( fromMax - fromMin == 0 )
             {
                 Debug.LogWarning( $"{fromMin} should differ from {fromMax}" );
-                fromMin--; // to not devide by 0
+                fromMin--; // to not divide by 0
             }
 
             return ( value - fromMin ) / ( fromMax - fromMin ) * ( toMax - toMin ) + toMin;
