@@ -9,8 +9,9 @@ namespace Submodules.Utility.Tests.EditMode
 {
     /// <summary>
     /// A two-panel switch is a driver toggle owning one bool and exactly two panels following it
-    /// (off shows A, on shows B), beside an inert partner in the same group that can never be
-    /// empty: a click on either tab button flips both. The group is the one mirror of the bool.
+    /// (off shows A, on shows B), beside a mirror toggle in the same group that can never be
+    /// empty: a click on either tab button flips both. The group is the one mirror of the bool, and
+    /// does the switching off of whichever member was on - so other toggles may share it.
     ///
     /// Which panel is showing is read from the order record the panels share: the last thing a
     /// panel was told is what it is doing. A stray <c>Start</c> (the toggle is <c>[ExecuteAlways]</c>)
@@ -21,7 +22,7 @@ namespace Submodules.Utility.Tests.EditMode
     {
         private UiTestScene scene;
         private ToggleGroup group;
-        private SpyToggle partner;
+        private TwoPanelMirrorToggle partner;
         private TwoPanelToggle driver;
         private SpyPanel panelA;
         private SpyPanel panelB;
@@ -33,11 +34,12 @@ namespace Submodules.Utility.Tests.EditMode
             scene = new UiTestScene();
             log = new List<string>();
 
-            // The pair as authored: a group that can never be empty, the inert partner (the off-state
+            // The pair as authored: a group that can never be empty, the mirror (the off-state
             // toggle) first and on, the driver beside it.
             group = scene.Group(groupCanUntoggle: false);
-            partner = scene.Toggle(group);
             driver = scene.Element<TwoPanelToggle>(parent: group.transform);
+            partner = scene.Element<TwoPanelMirrorToggle>(parent: group.transform);
+            UiTestScene.SetObject(partner, "driver", driver);
             group.Activate(partner);
 
             panelA = scene.Panel();
@@ -53,19 +55,20 @@ namespace Submodules.Utility.Tests.EditMode
         [TearDown]
         public void TearDown() => scene.Dispose();
 
-        /// <summary>A second pair in its own group, wired like the fixture's (inert partner on and
-        /// first), for a test to break one rule of.</summary>
-        private (ToggleGroup group, SpyToggle inert, TwoPanelToggle other) AnotherPair(bool userCanUntoggle = false,
-            bool groupCanUntoggle = false)
+        /// <summary>A second pair in its own group, wired like the fixture's (mirror on and first),
+        /// for a test to break one rule of.</summary>
+        private (ToggleGroup group, TwoPanelMirrorToggle mirror, TwoPanelToggle other) AnotherPair(
+            bool userCanUntoggle = false, bool groupCanUntoggle = false)
         {
             var other = scene.Group(userCanUntoggle, groupCanUntoggle);
-            var inert = scene.Toggle(other);
             var twin = scene.Element<TwoPanelToggle>(parent: other.transform);
+            var mirror = scene.Element<TwoPanelMirrorToggle>(parent: other.transform);
             UiTestScene.SetObject(twin, "panelWhenOff", panelA);
             UiTestScene.SetObject(twin, "panelWhenOn", panelB);
-            other.Activate(inert);
+            UiTestScene.SetObject(mirror, "driver", twin);
+            other.Activate(mirror);
 
-            return (other, inert, twin);
+            return (other, mirror, twin);
         }
 
         private bool Showing(string label) => log.LastOrDefault(entry => entry.StartsWith(label)) == label + "+";
@@ -95,7 +98,7 @@ namespace Submodules.Utility.Tests.EditMode
         }
 
         [Test]
-        public void TheDriverSwitchedOn_TurnsTheInertPartnerOff()
+        public void TheDriverSwitchedOn_TurnsTheMirrorOff()
         {
             driver.SetToggle(true);
 
@@ -104,7 +107,7 @@ namespace Submodules.Utility.Tests.EditMode
         }
 
         [Test]
-        public void AClickOnTheInertToggle_SwitchesTheDriverOff()
+        public void AClickOnTheMirror_SwitchesTheDriverOff()
         {
             driver.SetToggle(true);
 
@@ -129,10 +132,50 @@ namespace Submodules.Utility.Tests.EditMode
             Assert.That(Showing("B"), Is.True);
         }
 
-        /// <summary>A peek switches the bool off from the group's side: the group goes home to the
-        /// partner instead of emptying, even though the user's own click on the driver is refused.</summary>
         [Test]
-        public void SyncToggleOff_FromTheGroupsSide_GoesHomeToThePartner()
+        public void AClickOnTheMirrorWhileItIsOn_IsRefused()
+        {
+            var writes = driver.Writes;
+
+            partner.SetToggle(false);
+
+            Assert.That(partner.IsOn, Is.True, "the group forbids switch-off");
+            Assert.That(group.ActiveMember, Is.SameAs(partner));
+            Assert.That(driver.Writes, Is.EqualTo(writes), "a refused click is not a write");
+        }
+
+        [Test]
+        public void AnotherToggleInTheGroupSwitchedOn_SwitchesTheDriverOff_AndShowsPanelA()
+        {
+            var other = scene.Toggle(group);
+            driver.SetToggle(true);
+
+            other.SetToggle(true);
+
+            Assert.That(driver.IsOn, Is.False);
+            Assert.That(partner.IsOn, Is.False);
+            Assert.That(group.ActiveMember, Is.SameAs(other));
+            Assert.That(Showing("A"), Is.True);
+            Assert.That(Hiding("B"), Is.True);
+        }
+
+        [Test]
+        public void TheDriverSwitchedOn_TurnsAnotherToggleInTheGroupOff()
+        {
+            var other = scene.Toggle(group);
+            other.SetToggle(true);
+
+            driver.SetToggle(true);
+
+            Assert.That(other.IsOn, Is.False);
+            Assert.That(group.ActiveMember, Is.SameAs(driver));
+            Assert.That(Showing("B"), Is.True);
+        }
+
+        /// <summary>A peek switches the bool off from the group's side: the group goes home to the
+        /// mirror instead of emptying, even though the user's own click on the driver is refused.</summary>
+        [Test]
+        public void SyncToggleOff_FromTheGroupsSide_GoesHomeToTheMirror()
         {
             driver.SetToggle(true);
             var writes = driver.Writes;
@@ -220,6 +263,29 @@ namespace Submodules.Utility.Tests.EditMode
             Assert.That(driver.Writes, Is.EqualTo(writes));
         }
 
+        /// <summary>The group's home is whatever member it authored first, so the pair need not be
+        /// alone in it: any member but the driver is a home that switches the driver off.</summary>
+        [Test]
+        public void TheGroupsResetToAnotherFirstMember_StillSwitchesTheDriverOff()
+        {
+            var home = scene.Group(groupCanUntoggle: false);
+            var tab = scene.Toggle(home);
+            var other = scene.Element<TwoPanelToggle>(parent: home.transform);
+            UiTestScene.SetObject(other, "panelWhenOff", panelA);
+            UiTestScene.SetObject(other, "panelWhenOn", panelB);
+            home.Activate(tab);
+            other.SetToggle(true);
+            var parent = scene.Panel();
+            parent.Disappear(true);
+
+            home.ResetWhenCollapsed(parent);
+
+            Assert.That(other.IsOn, Is.False);
+            Assert.That(tab.IsOn, Is.True);
+            Assert.That(Showing("A"), Is.True);
+            Assert.That(other.AuthoringProblems(), Is.Empty);
+        }
+
         [Test]
         public void WithUnsetPanels_ASwitchDoesNotThrow()
         {
@@ -287,23 +353,45 @@ namespace Submodules.Utility.Tests.EditMode
         }
 
         [Test]
-        public void AThirdToggleInTheGroup_IsWarned()
+        public void ADriverAmongOtherToggles_IsNotWarned()
         {
             var pair = AnotherPair();
             scene.Toggle(pair.group);
 
-            Assert.That(pair.other.AuthoringProblems().Single(), Does.Contain("3 toggles"));
+            Assert.That(pair.other.AuthoringProblems(), Is.Empty);
         }
 
         [Test]
-        public void AMissingPartner_IsWarned()
+        public void AMirrorWithItsDriverInTheSameGroup_HasNoAuthoringProblem()
         {
-            var alone = scene.Group(groupCanUntoggle: false);
-            var other = scene.Element<TwoPanelToggle>(parent: alone.transform);
-            UiTestScene.SetObject(other, "panelWhenOff", panelA);
-            UiTestScene.SetObject(other, "panelWhenOn", panelB);
+            Assert.That(partner.AuthoringProblems(), Is.Empty);
+        }
 
-            Assert.That(other.AuthoringProblems(), Has.Some.Contain("1 toggles"));
+        [Test]
+        public void AMirrorWithNoDriver_IsWarned()
+        {
+            var loose = scene.Element<TwoPanelMirrorToggle>(parent: group.transform);
+
+            Assert.That(loose.AuthoringProblems().Single(), Does.Contain("driver is unset"));
+        }
+
+        [Test]
+        public void AMirrorInAnotherGroupThanItsDriver_IsWarned()
+        {
+            var elsewhere = scene.Group(groupCanUntoggle: false);
+            var stray = scene.Element<TwoPanelMirrorToggle>(parent: elsewhere.transform);
+            UiTestScene.SetObject(stray, "driver", driver);
+
+            Assert.That(stray.AuthoringProblems().Single(), Does.Contain("not in the same ToggleGroup"));
+        }
+
+        [Test]
+        public void AMirrorWithNoGroup_IsWarned()
+        {
+            var alone = scene.Element<TwoPanelMirrorToggle>();
+            UiTestScene.SetObject(alone, "driver", driver);
+
+            Assert.That(alone.AuthoringProblems().Single(), Does.Contain("not in the same ToggleGroup"));
         }
 
         [Test]

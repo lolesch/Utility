@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 namespace Submodules.Utility.UI
@@ -10,14 +9,20 @@ namespace Submodules.Utility.UI
     /// it is on. The panels follow the bool, never the other way round, so neither both showing nor
     /// neither showing can be authored.
     ///
-    /// <para>The pair of tab buttons the player sees is two toggles in one <see cref="ToggleGroup"/>
-    /// that can never be empty: this driver and an inert partner (a toggle with no panel), authored
-    /// on, as the group's <see cref="AbstractGroup{TMember}.FirstMember"/>. A click on either button
-    /// flips both, because the group deactivates whichever member was on. A click on the driver
-    /// while it is on is refused (<see cref="AbstractToggle.SetToggle"/>), and the group's reset
-    /// on its panel closing goes home to the partner, which switches the driver off through the
-    /// same <see cref="AbstractToggle.ToggleState"/> a click does. The group is the one mirror of
+    /// <para>The driver is a member of a <see cref="ToggleGroup"/> that can never be empty, and the
+    /// group does the exclusion: the driver switching on switches off whichever member was on, and any
+    /// other member switching on switches the driver off. The off-state button the player sees is a
+    /// <see cref="TwoPanelMirrorToggle"/> beside it, authored on as the group's
+    /// <see cref="AbstractGroup{TMember}.FirstMember"/>, so a click on either button flips both. A click
+    /// on the driver while it is on is refused (<see cref="AbstractToggle.SetToggle"/>), and the group's
+    /// reset on its panel closing goes home to its first member, which switches the driver off through
+    /// the same <see cref="AbstractToggle.ToggleState"/> a click does. The group is the one mirror of
     /// the bool; no second piece of state is kept.</para>
+    ///
+    /// <para>Other toggles may share the group; each one switching on switches the driver off. Their
+    /// panels belong elsewhere than beside <see cref="panelWhenOff"/> in a <see cref="PanelGroup"/>,
+    /// or the off panel would clash with them: that is scene layout, not something this component
+    /// can check.</para>
     ///
     /// <para>Every write to the bool is counted (<see cref="Writes"/>), so a caller that flipped it
     /// for a while can tell, on giving it back, whether anything else wrote it meanwhile.</para>
@@ -50,7 +55,7 @@ namespace Submodules.Utility.UI
                 hidden.ToggleState(false);
         }
 
-        /// <summary>What is wrong with how this pair is authored, one sentence each; empty when it is
+        /// <summary>What is wrong with how this driver is authored, one sentence each; empty when it is
         /// wired as a two-panel switch has to be.</summary>
         internal IEnumerable<string> AuthoringProblems()
         {
@@ -59,16 +64,10 @@ namespace Submodules.Utility.UI
 
             if (!RadioGroup)
             {
-                yield return "it has no ToggleGroup on its parent, so nothing mirrors its bool to the other " +
-                             "tab button. Put it and its inert partner under a ToggleGroup.";
+                yield return "it has no ToggleGroup on its parent, so nothing switches it off when the " +
+                             "other tab button is clicked. Put it and its TwoPanelMirrorToggle under a ToggleGroup.";
                 yield break;
             }
-
-            var members = RadioGroup.GetComponentsInChildren<AbstractToggle>(true).Count(t => t.RadioGroup == RadioGroup);
-
-            if (members != 2)
-                yield return $"its ToggleGroup '{RadioGroup.name}' has {members} toggles; a two-panel switch is " +
-                             "exactly the driver and one inert partner.";
 
             if (RadioGroup.CanUntoggle(byUser: false))
                 yield return $"its ToggleGroup '{RadioGroup.name}' allows switch-off, so both tab buttons can " +
@@ -78,9 +77,9 @@ namespace Submodules.Utility.UI
             var first = RadioGroup.FirstMember ? RadioGroup.FirstMember : RadioGroup.ActiveMember;
 
             if (!first || first == this)
-                yield return $"the first member of its ToggleGroup '{RadioGroup.name}' is not the off-state " +
-                             "toggle, so a reset would not return the pair to the panel shown while off. " +
-                             "Author the inert partner on, not this toggle.";
+                yield return $"the first member of its ToggleGroup '{RadioGroup.name}' is not another toggle, " +
+                             "so a reset would not return the pair to the panel shown while off. " +
+                             "Author the TwoPanelMirrorToggle on, not this toggle.";
         }
 
 #if UNITY_EDITOR
