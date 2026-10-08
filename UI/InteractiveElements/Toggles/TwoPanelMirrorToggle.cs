@@ -4,8 +4,10 @@ using UnityEngine;
 namespace Submodules.Utility.UI
 {
     /// <summary>
-    /// The off-state button of a two-panel switch: a toggle with no panel that names its
-    /// <see cref="TwoPanelToggle"/> driver and sits in the driver's <see cref="ToggleGroup"/>. It does
+    /// The other button of a two-panel switch: a toggle with no panel that names its
+    /// <see cref="TwoPanelToggle"/> driver and sits in the driver's <see cref="ToggleGroup"/>. It is
+    /// the driver's off-state button, and so the only way to switch the driver off when the driver is
+    /// the group's first member. It does
     /// nothing itself, because the group does the mirroring: switching it on switches the driver off,
     /// which moves the panels, and the driver switching on switches it off. What it adds is the
     /// reference - a pair named by a field rather than found by hierarchy - and the warnings that
@@ -36,8 +38,8 @@ namespace Submodules.Utility.UI
                              "switches the other off.";
 
             if (IsOn && driver.IsOn)
-                yield return $"it and its driver '{driver.name}' are both authored on. The mirror is the off-state " +
-                             "button: author it on and the driver off.";
+                yield return $"it and its driver '{driver.name}' are both authored on, so the pair would have both " +
+                             "tab buttons selected. Author one of them on: the group's first member.";
         }
 
 #if UNITY_EDITOR

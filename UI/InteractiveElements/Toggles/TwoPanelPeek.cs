@@ -7,12 +7,18 @@ namespace Submodules.Utility.UI
     /// and on release it flips it back - unless something else wrote the bool since the peek began. It is
     /// a real selection made through the group, not a view-only overlay, so both tab buttons follow.
     ///
-    /// <para>The restore is one rule, "nothing else wrote the bool": the driver counts its writes
-    /// (<see cref="ITwoPanelDriver.Writes"/>) and the peek compares the count after its own write with the
-    /// count on release. A click on the home tab and the group's reset on its panel closing are both
-    /// writes and so cancel the restore, with no case of their own; a click on the tab being peeked at is
-    /// refused because it is already on, writes nothing, and the release returns home. A peek never
-    /// becomes a choice.</para>
+    /// <para>The restore is "nothing else wrote the bool, and the panel stayed open": the driver counts
+    /// its writes (<see cref="ITwoPanelDriver.Writes"/>) and the peek compares the count after its own
+    /// write with the count on release. A click on the home tab is a write and so cancels the restore,
+    /// with no case of its own; a click on the tab being peeked at is refused because it is already on,
+    /// writes nothing, and the release returns home. A peek never becomes a choice.</para>
+    ///
+    /// <para>The panel closing is the second half. Its group's reset is a write only where it moves the
+    /// pair, and a peek that landed on the group's first member (which of the two buttons that is does
+    /// not matter) leaves it nothing to move, so the count cannot tell. The peek therefore abandons its
+    /// restore itself the first frame it sees the panel closed during the hold, and a release after the
+    /// reopen leaves the pair where the reset (or the peek) put it. A reopen inside the fade, before the
+    /// reset has run, thus keeps the peeked tab.</para>
     ///
     /// <para>The two answers it needs - whether the key is held, whether the panel is open - are
     /// injected, so a test drives it without a keyboard or a canvas. It begins on the first frame both
@@ -48,7 +54,15 @@ namespace Submodules.Utility.UI
                 return;
             }
 
-            if (spent || !panelOpen())
+            if (!panelOpen())
+            {
+                // The panel closing ends the peek. Its reset is no write where the peek already landed
+                // on the group's first member, so the count alone would restore the tab the player left.
+                restorePending = false;
+                return;
+            }
+
+            if (spent)
                 return;
 
             spent = true;

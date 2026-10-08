@@ -227,6 +227,66 @@ namespace Submodules.Utility.Tests.EditMode
             Assert.That(ShowingSupply, Is.True);
         }
 
+        /// <summary>The peek lands on the Supply, the group's first member, so the reset on closing finds
+        /// the pair already home and writes nothing. The close itself must then end the peek: a release
+        /// after the reopen would otherwise put the player back on the Sold tab they had left by closing.</summary>
+        [Test]
+        public void PeekingFromTheSoldTab_ThenClosingAndReopening_ReleasingStaysOnTheSupply()
+        {
+            soldTab.SetToggle(true);
+            Hold();
+            Assert.That(ShowingSupply, Is.True);
+            var writes = driver.Writes;
+
+            panelOpen = false;
+            peek.Tick();
+            PanelFinishesClosing();
+            panelOpen = true;
+            peek.Tick();
+
+            Assert.That(driver.Writes, Is.EqualTo(writes), "the reset found the pair home: not a write");
+            Assert.That(ShowingSupply, Is.True);
+
+            Release();
+
+            Assert.That(ShowingSupply, Is.True, "the close abandoned the restore");
+            Assert.That(driver.Writes, Is.EqualTo(writes), "the release wrote nothing");
+        }
+
+        [Test]
+        public void PeekingFromTheSoldTab_ThenTheKeyIsLetGoWhileClosed_StaysOnTheSupply()
+        {
+            soldTab.SetToggle(true);
+            Hold();
+
+            panelOpen = false;
+            peek.Tick();
+            PanelFinishesClosing();
+            Release();
+
+            Assert.That(ShowingSupply, Is.True);
+        }
+
+        [Test]
+        public void AfterTheCloseAbandonedAPeek_ANewPressPeeksAgain()
+        {
+            soldTab.SetToggle(true);
+            Hold();
+            panelOpen = false;
+            peek.Tick();
+            PanelFinishesClosing();
+            panelOpen = true;
+            Release();
+
+            Hold();
+
+            Assert.That(ShowingSold, Is.True);
+
+            Release();
+
+            Assert.That(ShowingSupply, Is.True);
+        }
+
         [Test]
         public void HoldingBeforeThePanelOpens_PeeksOnceItOpens()
         {

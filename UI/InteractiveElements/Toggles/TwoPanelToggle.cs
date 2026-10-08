@@ -12,13 +12,20 @@ namespace Submodules.Utility.UI
     ///
     /// <para>The driver is a member of a <see cref="ToggleGroup"/> that can never be empty, and the
     /// group does the exclusion: the driver switching on switches off whichever member was on, and any
-    /// other member switching on switches the driver off. The off-state button the player sees is a
-    /// <see cref="TwoPanelMirrorToggle"/> beside it, authored on as the group's
-    /// <see cref="AbstractGroup{TMember}.FirstMember"/>, so a click on either button flips both. A click
-    /// on the driver while it is on is refused (<see cref="AbstractToggle.SetToggle"/>), and the group's
-    /// reset on its panel closing goes home to its first member, which switches the driver off through
-    /// the same <see cref="AbstractToggle.ToggleState"/> a click does. The group is the one mirror of
-    /// the bool; no second piece of state is kept.</para>
+    /// other member switching on switches the driver off. The two buttons the player sees are the driver
+    /// and a <see cref="TwoPanelMirrorToggle"/> beside it, so a click on either button flips both. A
+    /// click on the driver while it is on is refused (<see cref="AbstractToggle.SetToggle"/>), and the
+    /// group's reset on its panel closing goes home to its
+    /// <see cref="AbstractGroup{TMember}.FirstMember"/> through the same
+    /// <see cref="AbstractToggle.ToggleState"/> a click does. The group is the one mirror of the bool;
+    /// no second piece of state is kept.</para>
+    ///
+    /// <para>Either button may be home. With the <b>mirror first</b> the pair rests off: the reset
+    /// switches the driver off, and <see cref="panelWhenOff"/> is what a panel opens on. With the
+    /// <b>driver first</b> (the Vendor and the Healer, where the driver is the Supply tab) the pair
+    /// rests on: the reset switches the driver on, a write like any other, and the mirror is the only
+    /// way off, so a driver that is first must have its mirror in the group
+    /// (<see cref="AuthoringProblems"/>).</para>
     ///
     /// <para>Other toggles may share the group; each one switching on switches the driver off. Their
     /// panels belong elsewhere than beside <see cref="panelWhenOff"/> in a <see cref="PanelGroup"/>,
@@ -86,7 +93,9 @@ namespace Submodules.Utility.UI
             a && b && a.RadioGroup && a.RadioGroup == b.RadioGroup;
 
         /// <summary>What is wrong with how this driver is authored, one sentence each; empty when it is
-        /// wired as a two-panel switch has to be.</summary>
+        /// wired as a two-panel switch has to be. Whether the driver or its mirror is the group's first
+        /// member is the author's choice and is not a problem; a first member must exist, and a driver
+        /// that is it needs its mirror.</summary>
         internal IEnumerable<string> AuthoringProblems()
         {
             if (!panelWhenOff || !panelWhenOn)
@@ -98,8 +107,7 @@ namespace Submodules.Utility.UI
             if (!RadioGroup)
             {
                 yield return "it has no ToggleGroup on its parent, so nothing switches it off when the " +
-                             "other tab button is clicked. Put it and its TwoPanelMirrorToggle under a ToggleGroup.";
-                yield break;
+                             "other tab button is clicked. Put it and its TwoPanelMirrorToggle under a ToggleGroup.";                yield break;
             }
 
             if (RadioGroup.CanUntoggle(byUser: false))
@@ -109,10 +117,13 @@ namespace Submodules.Utility.UI
 
             var first = RadioGroup.FirstMember ? RadioGroup.FirstMember : RadioGroup.ActiveMember;
 
-            if (!first || first == this)
-                yield return $"the first member of its ToggleGroup '{RadioGroup.name}' is not another toggle, " +
-                             "so a reset would not return the pair to the panel shown while off. " +
-                             "Author the TwoPanelMirrorToggle on, not this toggle.";
+            if (!first)
+                yield return $"its ToggleGroup '{RadioGroup.name}' has no first member, so a reset has no " +
+                             "home to return the pair to. Author one of the group's toggles on.";
+            else if (first == this && !MirrorInGroup())
+                yield return $"it is the first member of its ToggleGroup '{RadioGroup.name}' but no " +
+                             "TwoPanelMirrorToggle in that group names it, so nothing can switch it off: " +
+                             "a click on it is refused and a reset would go home to itself. Add the mirror.";
         }
 
 #if UNITY_EDITOR
