@@ -8,49 +8,36 @@ namespace Submodules.Utility.UI
     public sealed class ToggleCheckmark : MonoBehaviour
     {
         [SerializeField, ReadOnly] private Image image = null;
+        private Image Image => image ? image : image = GetComponent<Image>();
         
         [SerializeField, ReadOnly] private AbstractToggle toggle;
+        private AbstractToggle Toggle => toggle ? toggle : toggle = GetComponentInParent<AbstractToggle>(true);
         
         private bool show;
 
 #if UNITY_EDITOR
-        private void OnValidate()
-        {
-            GetComponents();
-            image.enabled = true;
-        }
+        private void OnValidate() => Image.enabled = true;
 #endif //UNITY_EDITOR
 
         private void Awake()
         {
-            GetComponents();
             Refresh();
+            enabled = Toggle;
         }
 
         private void Update()
         {
-            if(!toggle || !image)
+            if(!Toggle || !Image)
                 return;
             
-            if (show != toggle.IsOn) 
+            if (show != Toggle.IsOn) 
                 Refresh();
-        }
-
-        private void GetComponents()
-        {
-            image = GetComponent<Image>();
-            toggle = GetComponentInParent<AbstractToggle>(true);
-
-            if (!toggle)
-                Debug.LogWarning($"[ToggleCheckmark] {name} has no Toggle parent component!", this);
-        
-            enabled = toggle;
         }
 
         private void Refresh()
         {
-            show = toggle.IsOn;
-            image.enabled = show;
+            show = Toggle.IsOn;
+            Image.enabled = show;
         }
     }
 }
