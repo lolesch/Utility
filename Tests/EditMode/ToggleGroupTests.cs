@@ -327,6 +327,42 @@ namespace Submodules.Utility.Tests.EditMode
             Assert.That(group.ActiveMember, Is.SameAs(toggle));
         }
 
+        /// <summary>The event says that a reset ran, not that it moved anything: a group already home has
+        /// nothing to switch, and an observer (a peek) must still be able to tell the panel closed.</summary>
+        [Test]
+        public void ResetWhenCollapsed_RaisesWasReset_EvenWhereTheGroupIsAlreadyHome()
+        {
+            var locked = scene.Group(groupCanUntoggle: false);
+            var first = scene.Toggle(locked);
+            locked.Activate(first);
+            var closing = scene.Panel();
+            closing.Disappear(true);
+
+            var raised = 0;
+            locked.WasReset += () => raised++;
+
+            locked.ResetWhenCollapsed(closing);
+
+            Assert.That(locked.ActiveMember, Is.SameAs(first));
+            Assert.That(raised, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void ResetWhenCollapsed_WhileTheParentIsStillUp_RaisesNothing()
+        {
+            var locked = scene.Group(groupCanUntoggle: false);
+            locked.Activate(scene.Toggle(locked));
+            var up = scene.Panel();
+            up.Appear(true);
+
+            var raised = 0;
+            locked.WasReset += () => raised++;
+
+            locked.ResetWhenCollapsed(up);
+
+            Assert.That(raised, Is.EqualTo(0));
+        }
+
         /// <summary>A group that can never be empty goes home even with nothing active - the state a
         /// destroyed or cleared active member leaves behind, which <c>ResetGroup</c> alone would
         /// treat as "nothing to deactivate".</summary>

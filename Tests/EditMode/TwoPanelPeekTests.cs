@@ -8,10 +8,10 @@ using ToggleGroup = Submodules.Utility.UI.ToggleGroup;
 namespace Submodules.Utility.Tests.EditMode
 {
     /// <summary>
-    /// A peek flips a two-panel switch's bool while a key is held and puts it back on release, unless
-    /// something else wrote the bool in between. Run for both orientations of the pair: the driver as the
+    /// A peek switches a two-panel pair to its other button while a key is held and puts it back on
+    /// release, unless something else moved the pair in between. Run for both orientations of the pair: the driver as the
     /// Supply tab and the group's first member (how the Vendor and Healer are authored), and the driver as
-    /// the Sold tab beside a mirror that is first. The peek must not care which button the bool belongs to.
+    /// the Sold tab beside a mirror that is first. The peek must not care which button is the driver.
     ///
     /// Tabs are named by what the player sees, not by which toggle is the driver; which panel is showing
     /// is read from the order record the panels share, as in <see cref="TwoPanelToggleTests"/>.
@@ -68,7 +68,7 @@ namespace Submodules.Utility.Tests.EditMode
 
             keyHeld = false;
             panelOpen = true;
-            peek = new TwoPanelPeek(driver, () => keyHeld, () => panelOpen);
+            peek = new TwoPanelPeek(driver, mirror, () => keyHeld, () => panelOpen);
         }
 
         [TearDown]
@@ -130,26 +130,21 @@ namespace Submodules.Utility.Tests.EditMode
         }
 
         [Test]
-        public void ARepeatedHoldFrame_WritesNothingMore()
+        public void ARepeatedHoldFrame_DoesNothingMore()
         {
             Hold();
-            var writes = driver.Writes;
 
             peek.Tick();
             peek.Tick();
 
-            Assert.That(driver.Writes, Is.EqualTo(writes));
             Assert.That(ShowingSold, Is.True);
         }
 
         [Test]
-        public void ReleasingWithNoPeek_WritesNothing()
+        public void ReleasingWithNoPeek_DoesNothing()
         {
-            var writes = driver.Writes;
-
             Release();
 
-            Assert.That(driver.Writes, Is.EqualTo(writes));
             Assert.That(ShowingSupply, Is.True);
         }
 
@@ -184,11 +179,10 @@ namespace Submodules.Utility.Tests.EditMode
         public void HoldingThenClickingThePeekedTab_IsRefused_AndReleasingReturnsHome()
         {
             Hold();
-            var writes = driver.Writes;
 
             soldTab.SetToggle(true);
 
-            Assert.That(driver.Writes, Is.EqualTo(writes), "a click on the tab that is on writes nothing");
+            Assert.That(ShowingSold, Is.True, "a click on the tab that is on changes nothing");
 
             Release();
 
@@ -196,16 +190,18 @@ namespace Submodules.Utility.Tests.EditMode
         }
 
         /// <summary>The group's reset goes home to its first member, which here is the Supply tab - the
-        /// driver itself in one orientation. Switching the driver on is a write however it is reached.</summary>
+        /// driver itself in one orientation - and the peek stands down, so the release gives nothing back.</summary>
         [Test]
-        public void TheGroupsResetOnClosing_IsAWrite_EvenWhenTheSupplyIsTheFirstMember()
+        public void TheGroupsResetOnClosing_GoesHome_AndTheReleaseLeavesItThere()
         {
             Hold();
-            var writes = driver.Writes;
 
             PanelFinishesClosing();
 
-            Assert.That(driver.Writes, Is.EqualTo(writes + 1));
+            Assert.That(ShowingSupply, Is.True);
+
+            Release();
+
             Assert.That(ShowingSupply, Is.True);
         }
 
@@ -228,15 +224,15 @@ namespace Submodules.Utility.Tests.EditMode
         }
 
         /// <summary>The peek lands on the Supply, the group's first member, so the reset on closing finds
-        /// the pair already home and writes nothing. The close itself must then end the peek: a release
-        /// after the reopen would otherwise put the player back on the Sold tab they had left by closing.</summary>
+        /// the pair already home and moves nothing. The reset is still raised, and that ends the peek: a
+        /// release after the reopen would otherwise put the player back on the Sold tab they had left by
+        /// closing.</summary>
         [Test]
         public void PeekingFromTheSoldTab_ThenClosingAndReopening_ReleasingStaysOnTheSupply()
         {
             soldTab.SetToggle(true);
             Hold();
             Assert.That(ShowingSupply, Is.True);
-            var writes = driver.Writes;
 
             panelOpen = false;
             peek.Tick();
@@ -244,13 +240,56 @@ namespace Submodules.Utility.Tests.EditMode
             panelOpen = true;
             peek.Tick();
 
-            Assert.That(driver.Writes, Is.EqualTo(writes), "the reset found the pair home: not a write");
             Assert.That(ShowingSupply, Is.True);
 
             Release();
 
-            Assert.That(ShowingSupply, Is.True, "the close abandoned the restore");
-            Assert.That(driver.Writes, Is.EqualTo(writes), "the release wrote nothing");
+            Assert.That(ShowingSupply, Is.True, "the reset abandoned the restore");
+        }
+
+        /// <summary>An ancestor fading, another screen briefly over the panel: the panel is not open for a
+        /// frame, but its group never reset. The peek has not been abandoned, so the release gives it back.</summary>
+        [Test]
+        public void AFrameWithThePanelNotOpen_WithoutTheGroupsReset_DoesNotStrandThePlayerOnThePeekedTab()
+        {
+            Hold();
+            Assert.That(ShowingSold, Is.True);
+
+            panelOpen = false;
+            peek.Tick();
+            panelOpen = true;
+            peek.Tick();
+            Release();
+
+            Assert.That(ShowingSupply, Is.True);
+        }
+
+        [Test]
+        public void AFrameWithThePanelNotOpen_WithoutTheGroupsReset_FromTheSoldTab_ReleaseReturnsToTheSoldTab()
+        {
+            soldTab.SetToggle(true);
+            Hold();
+            Assert.That(ShowingSupply, Is.True);
+
+            panelOpen = false;
+            peek.Tick();
+            panelOpen = true;
+            peek.Tick();
+            Release();
+
+            Assert.That(ShowingSold, Is.True);
+        }
+
+        [Test]
+        public void TheKeyLetGoWhileThePanelIsNotOpen_WithoutTheGroupsReset_StillGivesTheTabBack()
+        {
+            soldTab.SetToggle(true);
+            Hold();
+
+            panelOpen = false;
+            Release();
+
+            Assert.That(ShowingSold, Is.True);
         }
 
         [Test]
@@ -309,13 +348,11 @@ namespace Submodules.Utility.Tests.EditMode
         public void HoldingWithThePanelClosed_DoesNothing()
         {
             panelOpen = false;
-            var writes = driver.Writes;
 
             Hold();
             peek.Tick();
             Release();
 
-            Assert.That(driver.Writes, Is.EqualTo(writes));
             Assert.That(ShowingSupply, Is.True);
         }
 
@@ -338,55 +375,20 @@ namespace Submodules.Utility.Tests.EditMode
             Assert.That(ShowingSold, Is.True, "a new press peeks again");
         }
 
-        /// <summary>The peek names its driver by <see cref="ITwoPanelDriver"/> only, so a test double
-        /// stands in for the toggle.</summary>
+        /// <summary>Two clicks in separate frames - home, then the peeked tab - leave the player where the
+        /// last click put them, and the release does not move them again.</summary>
         [Test]
-        public void ThePeekDependsOnTheInterface_NotOnTheToggle()
+        public void HoldingThenClickingHomeAndThenThePeekedTab_StaysOnThePeekedTab()
         {
-            var fake = new FakeDriver { IsOn = true };
-            var onFake = new TwoPanelPeek(fake, () => keyHeld, () => panelOpen);
+            Hold();
 
-            keyHeld = true;
-            onFake.Tick();
+            supplyTab.SetToggle(true);
+            peek.Tick();
+            soldTab.SetToggle(true);
+            peek.Tick();
+            Release();
 
-            Assert.That(fake.IsOn, Is.False);
-
-            keyHeld = false;
-            onFake.Tick();
-
-            Assert.That(fake.IsOn, Is.True);
-            Assert.That(fake.Sets, Is.EqualTo(new[] { false, true }));
-        }
-
-        [Test]
-        public void TheDriversGroupSideWrite_SwitchesTheBoolBothWays_FromEitherOrientation()
-        {
-            ITwoPanelDriver asDriver = driver;
-            var start = driver.IsOn;
-
-            asDriver.SetFromGroup(!start);
-
-            Assert.That(driver.IsOn, Is.EqualTo(!start));
-            Assert.That(group.ActiveMember, Is.SameAs(driver.IsOn ? driver : mirror));
-
-            asDriver.SetFromGroup(start);
-
-            Assert.That(driver.IsOn, Is.EqualTo(start));
-            Assert.That(group.ActiveMember, Is.SameAs(start ? driver : mirror));
-        }
-
-        private sealed class FakeDriver : ITwoPanelDriver
-        {
-            public bool IsOn { get; set; }
-            public int Writes { get; private set; }
-            public List<bool> Sets { get; } = new();
-
-            public void SetFromGroup(bool on)
-            {
-                IsOn = on;
-                Writes++;
-                Sets.Add(on);
-            }
+            Assert.That(ShowingSold, Is.True, "the last click was a choice");
         }
     }
 }

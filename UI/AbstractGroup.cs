@@ -1,3 +1,4 @@
+using System;
 using NaughtyAttributes;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -36,6 +37,11 @@ namespace Submodules.Utility.UI
         /// activated at runtime. Only a group that can never be empty keeps one: it is what that
         /// group returns to (<see cref="ResetToFirst"/>) instead of being cleared.</summary>
         public TMember FirstMember { get; private set; }
+
+        /// <summary>Raised once the group has run its reset on its parent panel having finished closing
+        /// (<see cref="ResetWithParentPanel"/>), whether or not that moved anything: a group already
+        /// home has nothing to switch, and an observer still needs to tell that the panel closed.</summary>
+        public event Action WasReset;
 
         /// <summary>The panel this group lives in, found once on the way up like a toggle finds its
         /// group. Only looked for where <see cref="ResetWithParentPanel"/> is on.</summary>
@@ -125,6 +131,8 @@ namespace Submodules.Utility.UI
                 ResetToFirst();
             else
                 ResetGroup();
+
+            WasReset?.Invoke();
         }
 
         /// <summary>Switches back to <see cref="FirstMember"/>. Only a group that can never be empty

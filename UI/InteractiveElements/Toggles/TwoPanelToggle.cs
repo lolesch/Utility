@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 namespace Submodules.Utility.UI
@@ -20,37 +19,23 @@ namespace Submodules.Utility.UI
     /// <see cref="AbstractToggle.ToggleState"/> a click does. The group is the one mirror of the bool;
     /// no second piece of state is kept.</para>
     ///
-    /// <para>Either button may be home. With the <b>mirror first</b> the pair rests off: the reset
-    /// switches the driver off, and <see cref="panelWhenOff"/> is what a panel opens on. With the
-    /// <b>driver first</b> (the Vendor and the Healer, where the driver is the Supply tab) the pair
-    /// rests on: the reset switches the driver on, a write like any other, and the mirror is the only
-    /// way off, so a driver that is first must have its mirror in the group
-    /// (<see cref="AuthoringProblems"/>).</para>
+    /// <para>Either button may be home, and the author says which by switching it on in the group. With
+    /// the <b>mirror first</b> the pair rests off; with the <b>driver first</b> (the Vendor and the
+    /// Healer, where the driver is the Supply tab) it rests on. The driver does nothing differently.</para>
     ///
     /// <para>Other toggles may share the group; each one switching on switches the driver off. Their
     /// panels belong elsewhere than beside <see cref="panelWhenOff"/> in a <see cref="PanelGroup"/>,
     /// or the off panel would clash with them: that is scene layout, not something this component
     /// can check.</para>
-    ///
-    /// <para>Every write to the bool is counted (<see cref="Writes"/>), so a caller that flipped it
-    /// for a while can tell, on giving it back, whether anything else wrote it meanwhile.</para>
     /// </summary>
     [DisallowMultipleComponent]
-    public sealed class TwoPanelToggle : AbstractToggle, ITwoPanelDriver
+    public sealed class TwoPanelToggle : AbstractToggle
     {
         [SerializeField] private SimplePanel panelWhenOff;
         [SerializeField] private SimplePanel panelWhenOn;
 
-        /// <summary>How often the bool was written, whether it changed or not: a click, the group's
-        /// reset and any other driver of it all pass through <see cref="OnToggle"/>. Compare two
-        /// reads rather than trusting the absolute number - the toggle writes its authored state once
-        /// on <c>Start</c>.</summary>
-        public int Writes { get; private set; }
-
         protected override void OnToggle()
         {
-            Writes++;
-
             var shown = IsOn ? panelWhenOn : panelWhenOff;
             var hidden = IsOn ? panelWhenOff : panelWhenOn;
 
@@ -64,44 +49,12 @@ namespace Submodules.Utility.UI
                 hidden.ToggleState(false);
         }
 
-        /// <summary>The group-side write a <see cref="TwoPanelPeek"/> makes. Switching the driver off from
-        /// the group's side normally goes home to the group's first member; when that is the driver
-        /// itself there is nowhere to go and the write would do nothing, so the pair is switched off by
-        /// switching its <see cref="TwoPanelMirrorToggle"/> on instead, which the group answers by
-        /// switching this toggle off.</summary>
-        void ITwoPanelDriver.SetFromGroup(bool on)
-        {
-            if (!on && IsOn && GroupsFirstMember() == this)
-            {
-                var mirror = MirrorInGroup();
-
-                if (mirror)
-                {
-                    mirror.SyncToggle(true);
-                    return;
-                }
-            }
-
-            SyncToggle(on);
-        }
-
-        /// <summary>The toggle the group goes home to, null without a group. A group records its first
-        /// member in <c>Awake</c> or on a first activation; until then the active member is home, as
-        /// the group itself reads it.</summary>
-        private AbstractToggle GroupsFirstMember() =>
-            !RadioGroup ? null : RadioGroup.FirstMember ? RadioGroup.FirstMember : RadioGroup.ActiveMember;
-
-        private TwoPanelMirrorToggle MirrorInGroup() =>
-            RadioGroup.GetComponentsInChildren<TwoPanelMirrorToggle>(true)
-                .FirstOrDefault(mirror => mirror.Driver == this && mirror.RadioGroup == RadioGroup);
-
         private static bool SharesPanelGroup(SimplePanel a, SimplePanel b) =>
             a && b && a.RadioGroup && a.RadioGroup == b.RadioGroup;
 
         /// <summary>What is wrong with how this driver is authored, one sentence each; empty when it is
         /// wired as a two-panel switch has to be. Whether the driver or its mirror is the group's first
-        /// member is the author's choice and is not a problem; a first member must exist, and a driver
-        /// that is it needs its mirror.</summary>
+        /// member is the author's choice and is not a problem; a first member must exist.</summary>
         internal IEnumerable<string> AuthoringProblems()
         {
             if (!panelWhenOff || !panelWhenOn)
@@ -122,15 +75,9 @@ namespace Submodules.Utility.UI
                              "be off and the group cannot go home. Disable 'UserCanUntoggle' and " +
                              "'GroupCanUntoggle' on the group.";
 
-            var first = GroupsFirstMember();
-
-            if (!first)
+            if (!(RadioGroup.FirstMember ? RadioGroup.FirstMember : RadioGroup.ActiveMember))
                 yield return $"its ToggleGroup '{RadioGroup.name}' has no first member, so a reset has no " +
                              "home to return the pair to. Author one of the group's toggles on.";
-            else if (first == this && !MirrorInGroup())
-                yield return $"it is the first member of its ToggleGroup '{RadioGroup.name}' but no " +
-                             "TwoPanelMirrorToggle in that group names it, so nothing can switch it off: " +
-                             "a click on it is refused and a reset would go home to itself. Add the mirror.";
         }
 
 #if UNITY_EDITOR

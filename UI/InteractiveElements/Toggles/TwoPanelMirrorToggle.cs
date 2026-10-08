@@ -5,9 +5,7 @@ namespace Submodules.Utility.UI
 {
     /// <summary>
     /// The other button of a two-panel switch: a toggle with no panel that names its
-    /// <see cref="TwoPanelToggle"/> driver and sits in the driver's <see cref="ToggleGroup"/>. It is
-    /// the driver's off-state button, and so the only way to switch the driver off when the driver is
-    /// the group's first member. It does
+    /// <see cref="TwoPanelToggle"/> driver and sits in the driver's <see cref="ToggleGroup"/>. It does
     /// nothing itself, because the group does the mirroring: switching it on switches the driver off,
     /// which moves the panels, and the driver switching on switches it off. What it adds is the
     /// reference - a pair named by a field rather than found by hierarchy - and the warnings that
@@ -17,9 +15,6 @@ namespace Submodules.Utility.UI
     public sealed class TwoPanelMirrorToggle : AbstractToggle
     {
         [SerializeField] private TwoPanelToggle driver;
-
-        /// <summary>The driver this mirror stands in for, so the driver can find its mirror.</summary>
-        internal TwoPanelToggle Driver => driver;
 
         protected override void OnToggle() { }
 
