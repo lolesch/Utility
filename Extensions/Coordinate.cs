@@ -51,12 +51,14 @@ namespace Submodules.Utility.Extensions
         public override bool Equals(object other) => other is Coordinate coordinate && Equals(coordinate);
 
         /// <summary>
-        /// Returns true if the given Coordinate is exactly equal to this Coordinate.
+        /// Returns true if the given Coordinate is exactly equal to this Coordinate. Exact, so that equal
+        /// coordinates always hash equal: an approximate comparison cannot have a matching hash and is not
+        /// transitive, which is why a Coordinate is not used as a dictionary key either.
         /// </summary>
         /// <param name="other"></param>
         /// <returns></returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool Equals(Coordinate other) => Mathf.Approximately( x, other.x ) && Mathf.Approximately( z, other.z );
+        public bool Equals(Coordinate other) => x.Equals( other.x ) && z.Equals( other.z );
 
         /// <summary>
         /// Returns a formatted string for this Coordinate.
@@ -87,7 +89,7 @@ namespace Submodules.Utility.Extensions
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public override int GetHashCode() => x.GetHashCode() ^ (z.GetHashCode() << 2);
+        public override int GetHashCode() => HashCode.Combine( x + 0f, z + 0f ); // + 0f folds -0 into +0, which Equals treats as one
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Magnitude(Coordinate coord) => (float)Math.Sqrt((coord.x * coord.x) + (coord.z * coord.z));
@@ -99,7 +101,93 @@ namespace Submodules.Utility.Extensions
             var num2 = a.z - b.z;
             return (float) Math.Sqrt( num1 * num1 + num2 * num2 );
         }
-        
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float SqrMagnitude(Coordinate a) => a.x * a.x + a.z * a.z;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float Dot(Coordinate lhs, Coordinate rhs) => lhs.x * rhs.x + lhs.z * rhs.z;
+
+        /// <summary>
+        /// Returns the coordinate scaled to length 1, or zero for the zero coordinate.
+        /// </summary>
+        public static Coordinate Normalize(Coordinate coord)
+        {
+            var magnitude = Magnitude(coord);
+
+            return magnitude > 0f ? coord / magnitude : default;
+        }
+
+        /// <summary>
+        /// Moves <paramref name="current"/> toward <paramref name="target"/> by at most
+        /// <paramref name="maxDistanceDelta"/>, landing on the target rather than past it. A negative delta
+        /// does not move away from the target.
+        /// </summary>
+        public static Coordinate MoveTowards(Coordinate current, Coordinate target, float maxDistanceDelta)
+        {
+            var toTarget = target - current;
+            var distance = Magnitude(toTarget);
+
+            if (distance <= maxDistanceDelta)
+                return target;
+
+            if (maxDistanceDelta <= 0f)
+                return current;
+
+            return current + toTarget / distance * maxDistanceDelta;
+        }
+
+        /// <summary>
+        /// Returns the coordinate with its length limited to <paramref name="maxLength"/>, keeping its direction.
+        /// A negative limit counts as zero.
+        /// </summary>
+        public static Coordinate ClampMagnitude(Coordinate coord, float maxLength)
+        {
+            maxLength = Mathf.Max(maxLength, 0f);
+
+            var magnitude = Magnitude(coord);
+
+            return magnitude > maxLength ? coord / magnitude * maxLength : coord;
+        }
+
+        /// <summary>
+        /// Linearly interpolates between <paramref name="a"/> and <paramref name="b"/> by <paramref name="t"/>,
+        /// which is clamped to 0..1.
+        /// </summary>
+        public static Coordinate Lerp(Coordinate a, Coordinate b, float t)
+        {
+            t = Mathf.Clamp01(t);
+
+            return new Coordinate(a.x + (b.x - a.x) * t, a.z + (b.z - a.z) * t);
+        }
+
+        /// <summary>
+        /// Rotates the coordinate about the origin by <paramref name="degrees"/>. Positive turns from +x toward +z.
+        /// </summary>
+        public static Coordinate Rotate(Coordinate coord, float degrees)
+        {
+            var radians = degrees * Mathf.Deg2Rad;
+            var cos = (float)Math.Cos(radians);
+            var sin = (float)Math.Sin(radians);
+
+            return new Coordinate(coord.x * cos - coord.z * sin, coord.x * sin + coord.z * cos);
+        }
+
+        /// <summary>
+        /// The angle in degrees, in -180..180, that turns <paramref name="from"/> onto the direction of
+        /// <paramref name="to"/>; positive turns from +x toward +z, as <see cref="Rotate"/> does. Zero when
+        /// either coordinate is the zero coordinate.
+        /// </summary>
+        public static float SignedAngle(Coordinate from, Coordinate to)
+        {
+            if (SqrMagnitude(from) == 0f || SqrMagnitude(to) == 0f)
+                return 0f;
+
+            var cross = from.x * to.z - from.z * to.x;
+
+            return (float)Math.Atan2(cross, Dot(from, to)) * Mathf.Rad2Deg;
+        }
+
         /*
 
         /// <summary>
@@ -112,52 +200,6 @@ namespace Submodules.Utility.Extensions
         {
             x = newX;
             z = newZ;
-        }
-
-        /// <summary>
-        /// Linearly interpolates between Coordinates a and b by t.
-        /// </summary>
-        /// <param name="a"></param>
-        /// <param name="b"></param>
-        /// <param name="t"></param>
-        /// <returns></returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Coordinate Lerp(Coordinate a, Coordinate b, float t)
-        {
-            t = Mathf.Clamp01(t);
-            return new Coordinate(a.x + (b.x - a.x) * t, a.z + (b.z - a.z) * t);
-        }
-
-        /// <summary>
-        /// Linearly interpolates between vectors a and b by t.
-        /// </summary>
-        /// <param name="a"></param>
-        /// <param name="b"></param>
-        /// <param name="t"></param>
-        /// <returns></returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Coordinate LerpUnclamped(Coordinate a, Coordinate b, float t) => new(a.x + (b.x - a.x) * t, a.z + (b.z - a.z) * t);
-
-        /// <summary>
-        /// Moves a point current towards characterPrefab.
-        /// </summary>
-        /// <param name="current"></param>
-        /// <param name="characterPrefab"></param>
-        /// <param name="maxDistanceDelta"></param>
-        /// <returns></returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Coordinate MoveTowards(Coordinate current, Coordinate characterPrefab, float maxDistanceDelta)
-        {
-            var num = characterPrefab.x - current.x;
-            var num2 = characterPrefab.z - current.z;
-            var num3 = num * num + num2 * num2;
-            if (num3 == 0f || (maxDistanceDelta >= 0f && num3 <= maxDistanceDelta * maxDistanceDelta))
-            {
-                return characterPrefab;
-            }
-
-            var num4 = (float)Math.Sqrt(num3);
-            return new Coordinate(current.x + num / num4 * maxDistanceDelta, current.z + num2 / num4 * maxDistanceDelta);
         }
 
         /// <summary>
@@ -201,93 +243,6 @@ namespace Submodules.Utility.Extensions
         //     The perpendicular direction.
         //[MethodImpl(MethodImplOptions.AggressiveInlining)]
         //public static Vector2 Perpendicular(Vector2 inDirection) => new(0f - inDirection.y, inDirection.x);
-
-        //
-        // Summary:
-        //     Dot Product of two vectors.
-        //
-        // Parameters:
-        //   lhs:
-        //
-        //   rhs:
-        //[MethodImpl(MethodImplOptions.AggressiveInlining)]
-        //public static float Dot(Vector2 lhs, Vector2 rhs) => lhs.x * rhs.x + lhs.y * rhs.y;
-
-        //
-        // Summary:
-        //     Gets the unsigned angle in degrees between from and to.
-        //
-        // Parameters:
-        //   from:
-        //     The coord from which the angular difference is measured.
-        //
-        //   to:
-        //     The coord to which the angular difference is measured.
-        //
-        // Returns:
-        //     The unsigned angle in degrees between the two vectors.
-        //[MethodImpl(MethodImplOptions.AggressiveInlining)]
-        //public static float Angle(Coordinate from, Coordinate to)
-        //{
-        //    var num = (float)Math.Sqrt(from.sqrMagnitude * to.sqrMagnitude);
-        //    if (num < 1E-15f)
-        //    {
-        //        return 0f;
-        //    }
-        //
-        //    var num2 = Mathf.Clamp(Dot(from, to) / num, -1f, 1f);
-        //    return (float)Math.Acos(num2) * 57.29578f;
-        //}
-
-        //
-        // Summary:
-        //     Gets the signed angle in degrees between from and to.
-        //
-        // Parameters:
-        //   from:
-        //     The coord from which the angular difference is measured.
-        //
-        //   to:
-        //     The coord to which the angular difference is measured.
-        //
-        // Returns:
-        //     The signed angle in degrees between the two vectors.
-        //[MethodImpl(MethodImplOptions.AggressiveInlining)]
-        //public static float SignedAngle(Coordinate from, Coordinate to)
-        //{
-        //    var num = Angle(from, to);
-        //    var num2 = Mathf.Sign(from.x * to.y - from.y * to.x);
-        //    return num * num2;
-        //}
-
-        //
-        // Summary:
-        //     Returns a copy of coord with its magnitude clamped to maxLength.
-        //
-        // Parameters:
-        //   coord:
-        //
-        //   maxLength:
-        //[MethodImpl(MethodImplOptions.AggressiveInlining)]
-        //public static Coordinate ClampMagnitude(Coordinate coord, float maxLength)
-        //{
-        //    var num = coord.sqrMagnitude;
-        //    if (num > maxLength * maxLength)
-        //    {
-        //        var num2 = (float)Math.Sqrt(num);
-        //        var num3 = coord.x / num2;
-        //        var num4 = coord.y / num2;
-        //        return new Coordinate(num3 * maxLength, num4 * maxLength);
-        //    }
-        //
-        //    return coord;
-        //}
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float SqrMagnitude(Coordinate a) => a.x * a.x + a.z * a.z;
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public float SqrMagnitude() => x * x + z * z;
 
         //
         // Summary:
@@ -395,12 +350,7 @@ namespace Submodules.Utility.Extensions
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Coordinate operator /(Coordinate a, float d) => new(a.x / d, a.z / d);
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool operator ==(Coordinate lhs, Coordinate rhs)
-        {
-            var num = lhs.x - rhs.x;
-            var num2 = lhs.z - rhs.z;
-            return (num * num) + (num2 * num2) < 9.99999944E-11f;
-        }
+        public static bool operator ==(Coordinate lhs, Coordinate rhs) => lhs.Equals(rhs);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator !=(Coordinate lhs, Coordinate rhs) => !(lhs == rhs);

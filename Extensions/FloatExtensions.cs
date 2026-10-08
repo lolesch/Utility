@@ -6,11 +6,9 @@ namespace Submodules.Utility.Extensions
     {
         public static float Map( this float value, float fromMin, float fromMax, float toMin, float toMax )
         {
+            // A zero-width source has no slope to follow: answer the low end of the target.
             if ( fromMax - fromMin == 0 )
-            {
-                Debug.LogWarning( $"{fromMin} should differ from {fromMax}" );
-                fromMin--; // to not divide by 0
-            }
+                return toMin;
 
             return ( value - fromMin ) / ( fromMax - fromMin ) * ( toMax - toMin ) + toMin;
         }
@@ -24,6 +22,17 @@ namespace Submodules.Utility.Extensions
         public static float Map( this float value, float fromMin, float fromMax, Vector2 to ) => Map( value, fromMin, fromMax, to.x, to.y );
 
         public static float Map( this float value, Vector2 from, Vector2 to ) => Map( value, from.x, from.y, to.x, to.y );
+
+        /// <summary><see cref="Map(float,float,float,float,float)"/> that never leaves the target range, in
+        /// either direction: a value outside the source range lands on the nearer end of the target.</summary>
+        public static float MapClamped( this float value, float fromMin, float fromMax, float toMin, float toMax )
+        {
+            var mapped = Map( value, fromMin, fromMax, toMin, toMax );
+
+            return Mathf.Clamp( mapped, Mathf.Min( toMin, toMax ), Mathf.Max( toMin, toMax ) );
+        }
+
+        public static float MapClamped( this float value, Vector2 from, Vector2 to ) => MapClamped( value, from.x, from.y, to.x, to.y );
 
         public static float Squared( this float value ) => value * value;
 
