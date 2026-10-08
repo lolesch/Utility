@@ -11,6 +11,6 @@ namespace Submodules.Utility.Tests.TestSupport
     {
         public bool KeyHeld { get; set; }
 
-        protected override bool PeekKeyHeld => KeyHeld;
+        protected override bool PeekKeyPressed => KeyHeld;
     }
 }

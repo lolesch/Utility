@@ -49,7 +49,7 @@ namespace Submodules.Utility.Tests.EditMode
             panelB.Log = log;
             UiTestScene.SetObject(driver, "panelWhenOff", panelA);
             UiTestScene.SetObject(driver, "panelWhenOn", panelB);
-            UiTestScene.SetObject(driver, "peekTarget", other);
+            UiTestScene.SetObject(driver, "companionToggle", other);
         }
 
         [TearDown]
@@ -62,13 +62,13 @@ namespace Submodules.Utility.Tests.EditMode
         private void Hold()
         {
             driver.KeyHeld = true;
-            driver.Tick();
+            driver.EvaluateKey();
         }
 
         private void Release()
         {
             driver.KeyHeld = false;
-            driver.Tick();
+            driver.EvaluateKey();
         }
 
         /// <summary>The pair the other way round, as the Vendor and the Healer author it: the driver is the
@@ -80,7 +80,7 @@ namespace Submodules.Utility.Tests.EditMode
             var second = scene.Toggle(swapped);
             UiTestScene.SetObject(first, "panelWhenOff", panelA);
             UiTestScene.SetObject(first, "panelWhenOn", panelB);
-            UiTestScene.SetObject(first, "peekTarget", second);
+            UiTestScene.SetObject(first, "companionToggle", second);
             swapped.Activate(first);
 
             return (swapped, first, second);
@@ -152,19 +152,6 @@ namespace Submodules.Utility.Tests.EditMode
                 other.SetToggle(true);
                 Assert.That(Showing("A") && Hiding("B"), Is.True, $"A alone after switching off, round {i}");
             }
-        }
-
-        [Test]
-        public void AnotherToggleInTheGroupSwitchedOn_SwitchesTheDriverOff_AndShowsPanelA()
-        {
-            var third = scene.Toggle(group);
-            driver.SetToggle(true);
-
-            third.SetToggle(true);
-
-            Assert.That(driver.IsOn, Is.False);
-            Assert.That(group.ActiveMember, Is.SameAs(third));
-            Assert.That(Showing("A"), Is.True);
         }
 
         /// <summary>Sibling panels in a <see cref="PanelGroup"/> that can never be empty switch like any
@@ -265,6 +252,19 @@ namespace Submodules.Utility.Tests.EditMode
             Assert.That(() => other.SetToggle(true), Throws.Nothing);
         }
 
+        /// <summary>The two slots are independent: a toggle with only one panel still shows and hides it.</summary>
+        [Test]
+        public void WithOnlyOnePanelSet_ASwitchStillMovesThatPanel()
+        {
+            UiTestScene.SetObject(driver, "panelWhenOff", null);
+
+            driver.SetToggle(true);
+            Assert.That(Showing("B"), Is.True);
+
+            other.SetToggle(true);
+            Assert.That(Hiding("B"), Is.True);
+        }
+
         /// <summary>The group's reset on its panel closing reaches the driver's own toggle callback exactly
         /// as a click does, so the driver needs no case for it. Driven directly - the Unity message does not
         /// run in EditMode.</summary>
@@ -342,11 +342,11 @@ namespace Submodules.Utility.Tests.EditMode
             var pair = DriverFirstPair();
 
             pair.driver.KeyHeld = true;
-            pair.driver.Tick();
+            pair.driver.EvaluateKey();
             Assert.That(pair.other.IsOn, Is.True);
 
             pair.driver.KeyHeld = false;
-            pair.driver.Tick();
+            pair.driver.EvaluateKey();
             Assert.That(pair.driver.IsOn, Is.True);
             Assert.That(pair.other.IsOn, Is.False);
         }
@@ -357,8 +357,8 @@ namespace Submodules.Utility.Tests.EditMode
             Hold();
             var shown = log.Count;
 
-            driver.Tick();
-            driver.Tick();
+            driver.EvaluateKey();
+            driver.EvaluateKey();
 
             Assert.That(log.Count, Is.EqualTo(shown));
             Assert.That(driver.IsOn, Is.True);
@@ -381,7 +381,7 @@ namespace Submodules.Utility.Tests.EditMode
             Hold();
 
             other.SetToggle(true);
-            driver.Tick();
+            driver.EvaluateKey();
             Release();
 
             Assert.That(other.IsOn, Is.True);
@@ -419,33 +419,6 @@ namespace Submodules.Utility.Tests.EditMode
         }
 
         [Test]
-        public void HoldThenAThirdToggleSwitchedOn_ThenRelease_LeavesTheThirdToggle()
-        {
-            var third = scene.Toggle(group);
-            Hold();
-
-            third.SetToggle(true);
-            Release();
-
-            Assert.That(third.IsOn, Is.True);
-            Assert.That(driver.IsOn, Is.False);
-        }
-
-        [Test]
-        public void APeekFromAThirdToggle_ReturnsToIt()
-        {
-            var third = scene.Toggle(group);
-            third.SetToggle(true);
-
-            Hold();
-            Assert.That(driver.IsOn, Is.True);
-
-            Release();
-            Assert.That(third.IsOn, Is.True);
-            Assert.That(driver.IsOn, Is.False);
-        }
-
-        [Test]
         public void AHoldWithTheToggleNotInteractive_DoesNothing()
         {
             driver.interactable = false;
@@ -478,7 +451,7 @@ namespace Submodules.Utility.Tests.EditMode
             Assert.That(driver.IsOn, Is.False);
 
             driver.interactable = true;
-            driver.Tick();
+            driver.EvaluateKey();
 
             Assert.That(driver.IsOn, Is.True);
             Assert.That(other.IsOn, Is.False);
@@ -489,12 +462,12 @@ namespace Submodules.Utility.Tests.EditMode
         [Test]
         public void ARefusedBegin_IsNotRetried_ForTheRestOfTheHold()
         {
-            UiTestScene.SetObject(driver, "peekTarget", null);
+            UiTestScene.SetObject(driver, "companionToggle", null);
             driver.SetToggle(true);
             Hold();
 
-            UiTestScene.SetObject(driver, "peekTarget", other);
-            driver.Tick();
+            UiTestScene.SetObject(driver, "companionToggle", other);
+            driver.EvaluateKey();
 
             Assert.That(driver.IsOn, Is.True);
             Assert.That(other.IsOn, Is.False);
@@ -517,7 +490,7 @@ namespace Submodules.Utility.Tests.EditMode
             Hold();
 
             driver.interactable = false;
-            driver.Tick();
+            driver.EvaluateKey();
 
             Assert.That(driver.IsOn, Is.False);
             Assert.That(other.IsOn, Is.True);
@@ -531,14 +504,14 @@ namespace Submodules.Utility.Tests.EditMode
             driver.SetToggle(true);
             Hold();
             driver.interactable = false;
-            driver.Tick();
+            driver.EvaluateKey();
             var parent = scene.Panel();
             parent.Disappear(true);
             group.ResetWhenCollapsed(parent);
 
             driver.interactable = true;
             driver.KeyHeld = false;
-            driver.Tick();
+            driver.EvaluateKey();
 
             Assert.That(other.IsOn, Is.True);
             Assert.That(driver.IsOn, Is.False);
@@ -550,10 +523,10 @@ namespace Submodules.Utility.Tests.EditMode
         {
             Hold();
             driver.interactable = false;
-            driver.Tick();
+            driver.EvaluateKey();
             driver.interactable = true;
 
-            driver.Tick();
+            driver.EvaluateKey();
             Assert.That(driver.IsOn, Is.True);
 
             Release();
@@ -561,9 +534,9 @@ namespace Submodules.Utility.Tests.EditMode
         }
 
         [Test]
-        public void WithNoPeekTarget_APeekFromTheOnStateIsNotPossible()
+        public void WithNoCompanion_APeekFromTheOnStateIsRefusedByTheGroup()
         {
-            UiTestScene.SetObject(driver, "peekTarget", null);
+            UiTestScene.SetObject(driver, "companionToggle", null);
             driver.SetToggle(true);
 
             Hold();
@@ -572,12 +545,33 @@ namespace Submodules.Utility.Tests.EditMode
             Assert.That(other.IsOn, Is.False);
         }
 
+        /// <summary>Without a companion the toggle flips itself, so where nothing keeps the pair exclusive (no
+        /// group to refuse the switch-off) a peek from the on state goes off and comes back.</summary>
         [Test]
-        public void WithAPeekTargetInAnotherGroup_APeekFromTheOnStateIsNotPossible()
+        public void WithNoCompanionAndNoGroup_APeekFromTheOnStateFlipsTheToggle_AndReleaseFlipsItBack()
+        {
+            var alone = scene.Element<SpyPeekToggle>();
+            UiTestScene.SetObject(alone, "panelWhenOff", panelA);
+            UiTestScene.SetObject(alone, "panelWhenOn", panelB);
+            alone.SetToggle(true);
+
+            alone.KeyHeld = true;
+            alone.EvaluateKey();
+            Assert.That(alone.IsOn, Is.False);
+            Assert.That(Showing("A"), Is.True);
+
+            alone.KeyHeld = false;
+            alone.EvaluateKey();
+            Assert.That(alone.IsOn, Is.True);
+            Assert.That(Showing("B"), Is.True);
+        }
+
+        [Test]
+        public void WithACompanionInAnotherGroup_APeekFromTheOnStateIsRefusedByTheGroup()
         {
             var elsewhere = scene.Group(groupCanUntoggle: false);
             var stray = scene.Toggle(elsewhere);
-            UiTestScene.SetObject(driver, "peekTarget", stray);
+            UiTestScene.SetObject(driver, "companionToggle", stray);
             driver.SetToggle(true);
 
             Hold();
@@ -586,93 +580,27 @@ namespace Submodules.Utility.Tests.EditMode
             Assert.That(stray.IsOn, Is.False);
         }
 
-        #endregion THE PEEK
-
-        #region AUTHORING
-
+        /// <summary>No group on either side is not a pair: nothing would switch the toggle off when the
+        /// companion goes on, so the companion would stay on after the release.</summary>
         [Test]
-        public void AWellAuthoredPair_HasNoAuthoringProblem()
-        {
-            Assert.That(driver.AuthoringProblems(), Is.Empty);
-        }
-
-        [Test]
-        public void ADriverWithNoGroup_IsWarned()
+        public void ACompanionWithNoGroupOnEitherSide_IsNotAPair_AndIsLeftAlone()
         {
             var alone = scene.Element<SpyPeekToggle>();
+            var loner = scene.Toggle();
+            UiTestScene.SetObject(alone, "panelWhenOff", panelA);
+            UiTestScene.SetObject(alone, "panelWhenOn", panelB);
+            UiTestScene.SetObject(alone, "companionToggle", loner);
+            alone.SetToggle(true);
 
-            Assert.That(alone.AuthoringProblems(), Has.Some.Contain("no ToggleGroup"));
+            alone.KeyHeld = true;
+            alone.EvaluateKey();
+            alone.KeyHeld = false;
+            alone.EvaluateKey();
+
+            Assert.That(loner.IsOn, Is.False);
+            Assert.That(alone.IsOn, Is.True);
         }
 
-        /// <summary>A second pair in a group of its own, wired like the fixture's, for a test to break one rule of.</summary>
-        private SpyPeekToggle PairInGroup(ToggleGroup loose)
-        {
-            var strayDriver = scene.Element<SpyPeekToggle>(parent: loose.transform);
-            var strayOther = scene.Toggle(loose);
-            UiTestScene.SetObject(strayDriver, "panelWhenOff", panelA);
-            UiTestScene.SetObject(strayDriver, "panelWhenOn", panelB);
-            UiTestScene.SetObject(strayDriver, "peekTarget", strayOther);
-
-            return strayDriver;
-        }
-
-        [Test]
-        public void AGroupThatAllowsSwitchOff_IsWarned()
-        {
-            var pair = PairInGroup(scene.Group(userCanUntoggle: true));
-
-            Assert.That(pair.AuthoringProblems().Single(), Does.Contain("allows switch-off"));
-        }
-
-        [Test]
-        public void AGroupWhoseGroupMayEmptyItself_IsWarned()
-        {
-            var pair = PairInGroup(scene.Group(groupCanUntoggle: true));
-
-            Assert.That(pair.AuthoringProblems().Single(), Does.Contain("allows switch-off"));
-        }
-
-        [Test]
-        public void AnUnsetPanel_IsWarned()
-        {
-            UiTestScene.SetObject(driver, "panelWhenOn", null);
-
-            Assert.That(driver.AuthoringProblems().Single(), Does.Contain("panel is unset"));
-        }
-
-        [Test]
-        public void TheSamePanelInBothSlots_IsWarned()
-        {
-            UiTestScene.SetObject(driver, "panelWhenOn", panelA);
-
-            Assert.That(driver.AuthoringProblems().Single(), Does.Contain("same panel"));
-        }
-
-        [Test]
-        public void AnUnsetPeekTarget_IsWarned()
-        {
-            UiTestScene.SetObject(driver, "peekTarget", null);
-
-            Assert.That(driver.AuthoringProblems().Single(), Does.Contain("'peekTarget' is unset"));
-        }
-
-        [Test]
-        public void APeekTargetInAnotherGroup_IsWarned()
-        {
-            var elsewhere = scene.Group(groupCanUntoggle: false);
-            UiTestScene.SetObject(driver, "peekTarget", scene.Toggle(elsewhere));
-
-            Assert.That(driver.AuthoringProblems().Single(), Does.Contain("not in the same ToggleGroup"));
-        }
-
-        [Test]
-        public void ADriverAmongOtherToggles_IsNotWarned()
-        {
-            scene.Toggle(group);
-
-            Assert.That(driver.AuthoringProblems(), Is.Empty);
-        }
-
-        #endregion AUTHORING
+        #endregion THE PEEK
     }
 }

@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace Submodules.Utility.UI
@@ -6,18 +5,22 @@ namespace Submodules.Utility.UI
     /// <summary>
     /// A tab that owns one bool and two panels - <see cref="panelWhenOff"/> while it is off,
     /// <see cref="panelWhenOn"/> while it is on - and can be <b>peeked past</b>: while
-    /// <see cref="PeekKeyHeld"/> the pair shows its other tab, and letting go brings it back.
+    /// <see cref="PeekKeyPressed"/> the pair shows its other tab, and letting go brings it back.
     ///
-    /// <para><b>The pair is scene layout.</b> This toggle and <see cref="peekTarget"/> sit in one
+    /// <para><b>The pair is scene layout.</b> This toggle and <see cref="companionToggle"/> sit in one
     /// <see cref="ToggleGroup"/> that can never be empty, and their panels in a <see cref="PanelGroup"/>
     /// of their own. The group is the one mirror of the bool and does all the switching; the peek
     /// only ever calls <see cref="AbstractToggle.SetToggle"/> on a member of it, so a click on either
     /// button, the group's reset on its panel closing and the peek all go the same road.</para>
     ///
-    /// <para><b>One restore rule.</b> A peek remembers the member it left (<c>home</c>) and the one it
-    /// switched on (<c>away</c>). On release it switches home back on only if away is still on - a click on
-    /// the home tab, or on a third toggle, has moved the group on, and that is left where the player put
-    /// it. A click on the tab being peeked at is refused (it is on), so release brings the player home.</para>
+    /// <para><b>One restore rule.</b> A press remembers whether this toggle was on. On release the peek is
+    /// given back only if that has changed, that is, the pair is still where the peek left it. A click on
+    /// either tab during the hold has already put the pair where the player wants it, and is left there. A
+    /// click on the tab being peeked at is refused (it is on), so release brings the player home.</para>
+    ///
+    /// <para><b>A pair, and only a pair.</b> This toggle and its companion are the whole group. Nothing checks
+    /// that: with a third member, a click on it during a peek is undone on release, because this toggle is
+    /// then off where the press found it on.</para>
     ///
     /// <para><b>Held, not pressed.</b> The key is read every frame as "held and reachable", and a peek begins
     /// and ends on the edges of that, once per hold. Reachable is <see cref="Selectable.IsInteractable"/>,
@@ -31,29 +34,27 @@ namespace Submodules.Utility.UI
     /// </summary>
     public abstract class PanelPeekToggle : AbstractToggle
     {
-        [Space]
-        [SerializeField] private SimplePanel panelWhenOff;
+        [Space] 
         [SerializeField] private SimplePanel panelWhenOn;
+        [SerializeField] private SimplePanel panelWhenOff;
 
-        [SerializeField, Tooltip("The other tab button of the pair, in the same ToggleGroup. Switched on to " +
-                                 "peek while this toggle is on. Unset, a peek from the on state is not possible.")]
-        private AbstractToggle peekTarget;
+        [SerializeField, Tooltip("The other tab button of the pair, in the same ToggleGroup.")]
+        private AbstractToggle companionToggle;
 
         /// <summary>Whether the peek key is held down right now.</summary>
-        protected abstract bool PeekKeyHeld { get; }
-
-        /// <summary>The member the running peek left, and the one it switched on. Null when not peeking.</summary>
-        private AbstractToggle home;
-        private AbstractToggle away;
+        protected abstract bool PeekKeyPressed { get; }
 
         /// <summary>Whether the last tick read the key as held and reachable. A peek begins and ends on the
         /// edges of this, so a begin that was refused is not retried for the rest of the hold.</summary>
-        private bool wasHeld;
+        private bool wasPressed;
+
+        /// <summary>Whether this toggle was on when the current peek began; null when not peeking.</summary>
+        private bool? snapshot;
 
         private void Update()
         {
             if (Application.isPlaying)
-                Tick();
+                EvaluateKey();
         }
 
         /// <summary>A <c>CanvasGroup</c> above changed: a closing panel takes this toggle out of reach here,
@@ -64,124 +65,70 @@ namespace Submodules.Utility.UI
             base.OnCanvasGroupChanged();
 
             if (Application.isPlaying)
-                Tick();
+                EvaluateKey();
         }
 
         protected override void OnDisable()
         {
             base.OnDisable();
 
-            End();
-            wasHeld = false;
+            if (wasPressed)
+                Cancel();
+            
+            wasPressed = false;
         }
 
         /// <summary>Evaluates the peek for this frame: begins it, ends it or leaves it be.</summary>
-        internal void Tick()
+        internal void EvaluateKey()
         {
-            var held = PeekKeyHeld && IsInteractable();
-
-            if (held == wasHeld)
+            var pressed = PeekKeyPressed && IsInteractable();
+            if (pressed == wasPressed)
                 return;
 
-            wasHeld = held;
+            wasPressed = pressed;
 
-            if (held)
-                Begin();
+            if (pressed) 
+                SwitchPanels();
             else
-                End();
+                Cancel();
         }
 
-        private void Begin()
+        /// <summary>Gives the peek back, unless the player has already moved the pair themselves.</summary>
+        private void Cancel()
         {
-            if (!RadioGroup)
-                return;
+            if (snapshot.HasValue && snapshot != IsOn)
+                SwitchPanels();
+            snapshot = null;
+        }
 
-            if (IsOn)
-            {
-                if (!PeekTargetIsInGroup)
-                    return;
+        /// <summary>Shows the other tab of the pair: the companion when this toggle is on, otherwise this toggle.
+        /// With no companion to switch to it flips itself, which the group refuses unless it allows switch-off.</summary>
+        private void SwitchPanels()
+        {
+            snapshot = IsOn;
 
-                (home, away) = (this, peekTarget);
-            }
+            if (IsOn && HasCompanion)
+                companionToggle.SetToggle(true);
             else
-            {
-                // Whoever the group is on - the other tab, or a third toggle sharing the group.
-                if (!RadioGroup.ActiveMember)
-                    return;
-
-                (home, away) = (RadioGroup.ActiveMember, this);
-            }
-
-            away.SetToggle(true);
+                SetToggle(!IsOn);
         }
 
-        private void End()
-        {
-            if (home == null)
-                return;
-
-            var back = home;
-            var peeked = away;
-            home = away = null;
-
-            if (back && peeked && peeked.IsOn)
-                back.SetToggle(true);
-        }
-
-        private bool PeekTargetIsInGroup => peekTarget && peekTarget != this && peekTarget.RadioGroup == RadioGroup;
+        private bool HasCompanion => companionToggle && companionToggle != this && RadioGroup && companionToggle.RadioGroup == RadioGroup;
 
         protected override void OnToggle()
         {
             var shown = IsOn ? panelWhenOn : panelWhenOff;
             var hidden = IsOn ? panelWhenOff : panelWhenOn;
 
-            // The incoming panel first: a PanelGroup hides its sibling itself, and refuses to collapse the
-            // sole active panel of a group that can never be empty. A sibling it has already hidden is left
-            // alone: collapsing it again would restart its fade-out.
+            // Each slot is optional on its own. The incoming panel first: a PanelGroup hides its sibling
+            // itself, and refuses to collapse its sole active panel. Collapsing a sibling it already hid would
+            // restart its fade-out.
             if (shown)
                 shown.ToggleState(true);
 
-            if (hidden && !SharesPanelGroup(shown, hidden))
+            var sharesGroup = shown && hidden && shown.RadioGroup && shown.RadioGroup == hidden.RadioGroup;
+            if (hidden && !sharesGroup)
                 hidden.ToggleState(false);
-        }
-
-        private static bool SharesPanelGroup(SimplePanel a, SimplePanel b) =>
-            a && b && a.RadioGroup && a.RadioGroup == b.RadioGroup;
-
-#if UNITY_EDITOR
-        protected override void OnValidate()
-        {
-            base.OnValidate();
-
-            foreach (var problem in AuthoringProblems())
-                Debug.LogWarning($"{name}: {problem}", this);
-        }
-#endif
-
-        /// <summary>What is wrong with how this pair is authored, one line each; empty when nothing is.</summary>
-        internal IEnumerable<string> AuthoringProblems()
-        {
-            if (!panelWhenOff || !panelWhenOn)
-                yield return "a panel is unset: a peek toggle needs both 'panelWhenOff' and 'panelWhenOn'.";
-            else if (panelWhenOff == panelWhenOn)
-                yield return "'panelWhenOff' and 'panelWhenOn' are the same panel, which would be shown and " +
-                             "hidden by the same switch.";
-
-            if (!RadioGroup)
-            {
-                yield return "it has no ToggleGroup on its parent: the group is what keeps the pair exclusive.";
-                yield break;
-            }
-
-            if (RadioGroup.CanUntoggle(byUser: false))
-                yield return $"its ToggleGroup '{RadioGroup.name}' allows switch-off, so both tab buttons can be " +
-                             "off at once: turn off 'UserCanUntoggle' and 'GroupCanUntoggle'.";
-
-            if (!peekTarget)
-                yield return "'peekTarget' is unset: a peek from the on state has no tab to switch on.";
-            else if (!PeekTargetIsInGroup)
-                yield return $"'peekTarget' {peekTarget.name} is not in the same ToggleGroup, so switching it on " +
-                             "would not switch this toggle off.";
         }
     }
 }
