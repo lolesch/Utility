@@ -6,9 +6,13 @@ namespace Submodules.Utility.Extensions
     {
         public static float Map( this float value, float fromMin, float fromMax, float toMin, float toMax )
         {
-            // A zero-width source has no slope to follow: answer the low end of the target.
+            // A zero-width source has no slope to follow: answer the low end of the target, and warn, since
+            // a caller that gets here has a bug (a guard like RollQuality.FontSize's keeps it quiet).
             if ( fromMax - fromMin == 0 )
+            {
+                Debug.LogWarning( $"{fromMin} should differ from {fromMax}" );
                 return toMin;
+            }
 
             return ( value - fromMin ) / ( fromMax - fromMin ) * ( toMax - toMin ) + toMin;
         }

@@ -15,6 +15,13 @@ namespace Submodules.Utility.Tests.EditMode
     {
         private const float Tolerance = 1e-4f;
 
+        // A zero-width source is a caller bug, so Map says so; the tests that pin the answer expect the warning.
+        private static void ExpectZeroWidthWarning(float bound, int times = 1)
+        {
+            for (var i = 0; i < times; i++)
+                LogAssert.Expect(LogType.Warning, $"{bound} should differ from {bound}");
+        }
+
         // --- Map ---
 
         [Test]
@@ -35,35 +42,55 @@ namespace Submodules.Utility.Tests.EditMode
         [Test]
         public void Map_ZeroWidthSource_ReturnsTheLowEndOfTheTarget()
         {
+            ExpectZeroWidthWarning(3f, 3);
+
             Assert.That(3f.Map(3f, 3f, 10f, 20f), Is.EqualTo(10f).Within(Tolerance));
             Assert.That(7f.Map(3f, 3f, 10f, 20f), Is.EqualTo(10f).Within(Tolerance));
             Assert.That((-7f).Map(3f, 3f, 10f, 20f), Is.EqualTo(10f).Within(Tolerance));
         }
 
         [Test]
-        public void Map_ZeroWidthSource_DoesNotShiftTheBound() =>
+        public void Map_ZeroWidthSource_DoesNotShiftTheBound()
+        {
             // The old fallback moved fromMin down by one, so a value on the bound landed on the high end.
+            ExpectZeroWidthWarning(3f);
+
             Assert.That(3f.Map(3f, 3f, 10f, 20f), Is.Not.EqualTo(20f).Within(Tolerance));
+        }
 
         [Test]
-        public void Map_ZeroWidthSource_LogsNothing()
+        public void Map_ZeroWidthSource_WarnsOfTheCallerBug()
         {
+            ExpectZeroWidthWarning(3f);
+
             3f.Map(3f, 3f, 10f, 20f);
 
             LogAssert.NoUnexpectedReceived();
         }
 
         [Test]
-        public void Map_ZeroWidthSource_DescendingTarget_ReturnsTheFirstTargetValue() =>
+        public void Map_ZeroWidthSource_DescendingTarget_ReturnsTheFirstTargetValue()
+        {
+            ExpectZeroWidthWarning(3f);
+
             Assert.That(3f.Map(3f, 3f, 20f, 10f), Is.EqualTo(20f).Within(Tolerance));
+        }
 
         [Test]
-        public void Map_Vector2Overload_UsesTheSameZeroWidthRule() =>
+        public void Map_Vector2Overload_UsesTheSameZeroWidthRule()
+        {
+            ExpectZeroWidthWarning(3f);
+
             Assert.That(3f.Map(new Vector2(3f, 3f), new Vector2(10f, 20f)), Is.EqualTo(10f).Within(Tolerance));
+        }
 
         [Test]
-        public void MapTo01_ZeroWidthSource_IsZero() =>
+        public void MapTo01_ZeroWidthSource_IsZero()
+        {
+            ExpectZeroWidthWarning(4f);
+
             Assert.That(4f.MapTo01(4f, 4f), Is.EqualTo(0f).Within(Tolerance));
+        }
 
         // --- MapClamped ---
 
@@ -96,6 +123,8 @@ namespace Submodules.Utility.Tests.EditMode
         [Test]
         public void MapClamped_ZeroWidthSource_ReturnsTheLowEndOfTheTarget()
         {
+            ExpectZeroWidthWarning(3f, 2);
+
             Assert.That(9f.MapClamped(3f, 3f, 10f, 20f), Is.EqualTo(10f).Within(Tolerance));
             Assert.That(3f.MapClamped(3f, 3f, 10f, 20f), Is.EqualTo(10f).Within(Tolerance));
         }
