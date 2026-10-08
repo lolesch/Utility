@@ -128,14 +128,8 @@ namespace Submodules.Utility.UI
         {
             instantInEditor = !Application.isPlaying;
 
-            try
-            {
-                toggle();
-            }
-            finally
-            {
-                instantInEditor = false;
-            }
+            try { toggle(); }
+            finally { instantInEditor = false; }
         }
 
         /// <summary>The actual appear primitive, named to match <see cref="AbstractToggle.SetToggle"/>'s
