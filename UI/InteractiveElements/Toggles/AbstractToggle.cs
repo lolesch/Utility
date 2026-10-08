@@ -3,6 +3,7 @@ using UnityEngine;
 
 namespace Submodules.Utility.UI
 {
+    [DisallowMultipleComponent]
     public abstract class AbstractToggle : AbstractButton
     {
         //TODO: implement audio feedback on toggle
