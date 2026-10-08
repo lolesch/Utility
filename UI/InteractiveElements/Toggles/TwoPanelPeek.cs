@@ -8,24 +8,27 @@ namespace Submodules.Utility.UI
     /// a real selection made through the group, not a view-only overlay, so both tab buttons follow; it
     /// touches the driver's bool and nothing else.
     ///
-    /// <para>The restore is "nothing else wrote the bool, and the panel stayed open": the driver counts
-    /// its writes (<see cref="ITwoPanelDriver.Writes"/>) and the peek compares the count after its own
-    /// write with the count on release. A click on the home tab is a write and so cancels the restore,
-    /// with no case of its own; a click on the tab being peeked at is refused because it is already on,
-    /// writes nothing, and the release returns home. A peek never becomes a choice.</para>
+    /// <para>The restore is "nothing else wrote the bool, and the group did not reset": the driver counts
+    /// its writes (<see cref="ITwoPanelDriver.Writes"/>) and its group's resets
+    /// (<see cref="ITwoPanelDriver.Resets"/>), and the peek compares both counts after its own write with
+    /// the counts on release. A click on the home tab is a write and so cancels the restore, with no case
+    /// of its own; a click on the tab being peeked at is refused because it is already on, writes nothing,
+    /// and the release returns home. A peek never becomes a choice.</para>
     ///
-    /// <para>The panel closing is the second half. Its group's reset is a write only where it moves the
-    /// pair, and a peek that landed on the group's first member (which of the two buttons that is does
-    /// not matter) leaves it nothing to move, so the count cannot tell. The peek therefore abandons its
-    /// restore itself the first frame it sees the panel closed during the hold, and a release after the
-    /// reopen leaves the pair where the reset (or the peek) put it. A reopen inside the fade, before the
-    /// reset has run, thus keeps the peeked tab.</para>
+    /// <para>The panel closing is the second half, and it is the reset that is watched, not the panel. A
+    /// reset is a write only where it moves the pair, and a peek that landed on the group's first member
+    /// (which of the two buttons that is does not matter) leaves it nothing to move, so the write count
+    /// cannot tell; the reset count can. A panel that closed and reset during the hold is where the player
+    /// left it, and a release after the reopen leaves the pair where the reset (or the peek) put it. A
+    /// frame where the panel is merely not open (an ancestor fading, another screen over it) without the
+    /// reset is nothing, and the release still gives the tab back. A reopen inside the fade, before the
+    /// reset has run, does likewise.</para>
     ///
     /// <para>The two answers it needs - whether the key is held, whether the panel is open - are
     /// injected, so a test drives it without a keyboard or a canvas. It begins on the first frame both
     /// hold; it ends only when the key is let go (or <see cref="Release"/> says the app lost focus), so a
     /// panel closed and reopened during one hold is not peeked at again, and a hold begun while the panel
-    /// was closed peeks when it opens.</para>
+    /// was closed peeks when it opens. Whether the panel is open gates only the beginning.</para>
     /// </summary>
     public sealed class TwoPanelPeek : ITwoPanelPeek
     {
@@ -37,6 +40,7 @@ namespace Submodules.Utility.UI
         private bool restorePending;
         private bool homeState;
         private int writesAfterPeek;
+        private int resetsAfterPeek;
 
         public TwoPanelPeek(ITwoPanelDriver driver, Func<bool> keyHeld, Func<bool> panelOpen)
         {
@@ -56,15 +60,7 @@ namespace Submodules.Utility.UI
                 return;
             }
 
-            if (!panelOpen())
-            {
-                // The panel closing ends the peek. Its reset is no write where the peek already landed
-                // on the group's first member, so the count alone would restore the tab the player left.
-                restorePending = false;
-                return;
-            }
-
-            if (peekedThisHold)
+            if (peekedThisHold || !panelOpen())
                 return;
 
             peekedThisHold = true;
@@ -72,6 +68,7 @@ namespace Submodules.Utility.UI
             homeState = driver.IsOn;
             driver.SetFromGroup(!homeState);
             writesAfterPeek = driver.Writes;
+            resetsAfterPeek = driver.Resets;
         }
 
         /// <inheritdoc/>
@@ -79,7 +76,7 @@ namespace Submodules.Utility.UI
         /// key that is still reported held does not peek a second time.</remarks>
         public void Release()
         {
-            if (restorePending && driver.Writes == writesAfterPeek)
+            if (restorePending && driver.Writes == writesAfterPeek && driver.Resets == resetsAfterPeek)
                 driver.SetFromGroup(homeState);
 
             restorePending = false;

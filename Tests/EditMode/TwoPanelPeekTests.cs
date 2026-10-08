@@ -228,8 +228,9 @@ namespace Submodules.Utility.Tests.EditMode
         }
 
         /// <summary>The peek lands on the Supply, the group's first member, so the reset on closing finds
-        /// the pair already home and writes nothing. The close itself must then end the peek: a release
-        /// after the reopen would otherwise put the player back on the Sold tab they had left by closing.</summary>
+        /// the pair already home and writes nothing. The reset is still counted, and that ends the peek: a
+        /// release after the reopen would otherwise put the player back on the Sold tab they had left by
+        /// closing.</summary>
         [Test]
         public void PeekingFromTheSoldTab_ThenClosingAndReopening_ReleasingStaysOnTheSupply()
         {
@@ -249,8 +250,53 @@ namespace Submodules.Utility.Tests.EditMode
 
             Release();
 
-            Assert.That(ShowingSupply, Is.True, "the close abandoned the restore");
+            Assert.That(ShowingSupply, Is.True, "the reset abandoned the restore");
             Assert.That(driver.Writes, Is.EqualTo(writes), "the release wrote nothing");
+        }
+
+        /// <summary>An ancestor fading, another screen briefly over the panel: the panel is not open for a
+        /// frame, but its group never reset. The peek has not been abandoned, so the release gives it back.</summary>
+        [Test]
+        public void AFrameWithThePanelNotOpen_WithoutTheGroupsReset_DoesNotStrandThePlayerOnThePeekedTab()
+        {
+            Hold();
+            Assert.That(ShowingSold, Is.True);
+
+            panelOpen = false;
+            peek.Tick();
+            panelOpen = true;
+            peek.Tick();
+            Release();
+
+            Assert.That(ShowingSupply, Is.True);
+        }
+
+        [Test]
+        public void AFrameWithThePanelNotOpen_WithoutTheGroupsReset_FromTheSoldTab_ReleaseReturnsToTheSoldTab()
+        {
+            soldTab.SetToggle(true);
+            Hold();
+            Assert.That(ShowingSupply, Is.True);
+
+            panelOpen = false;
+            peek.Tick();
+            panelOpen = true;
+            peek.Tick();
+            Release();
+
+            Assert.That(ShowingSold, Is.True);
+        }
+
+        [Test]
+        public void TheKeyLetGoWhileThePanelIsNotOpen_WithoutTheGroupsReset_StillGivesTheTabBack()
+        {
+            soldTab.SetToggle(true);
+            Hold();
+
+            panelOpen = false;
+            Release();
+
+            Assert.That(ShowingSold, Is.True);
         }
 
         [Test]
@@ -379,6 +425,7 @@ namespace Submodules.Utility.Tests.EditMode
         {
             public bool IsOn { get; set; }
             public int Writes { get; private set; }
+            public int Resets { get; set; }
             public List<bool> Sets { get; } = new();
 
             public void SetFromGroup(bool on)

@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 namespace Submodules.Utility.UI
@@ -23,9 +22,10 @@ namespace Submodules.Utility.UI
     /// <para>Either button may be home. With the <b>mirror first</b> the pair rests off: the reset
     /// switches the driver off, and <see cref="panelWhenOff"/> is what a panel opens on. With the
     /// <b>driver first</b> (the Vendor and the Healer, where the driver is the Supply tab) the pair
-    /// rests on: the reset switches the driver on, a write like any other, and the mirror is the only
-    /// way off, so a driver that is first must have its mirror in the group
-    /// (<see cref="AuthoringProblems"/>).</para>
+    /// rests on: the reset switches the driver on, a write like any other, and the group's other
+    /// member (the mirror) is the only way off. The group does that, from the group's side too
+    /// (<see cref="ITwoPanelDriver.SetFromGroup"/>): the mirror is driven by the group alone, and
+    /// nothing looks for it.</para>
     ///
     /// <para>Other toggles may share the group; each one switching on switches the driver off. Their
     /// panels belong elsewhere than beside <see cref="panelWhenOff"/> in a <see cref="PanelGroup"/>,
@@ -47,6 +47,11 @@ namespace Submodules.Utility.UI
         /// on <c>Start</c>.</summary>
         public int Writes { get; private set; }
 
+        /// <summary>How often the group ran its reset on its panel closing, moving the pair or not
+        /// (<see cref="AbstractGroup{TMember}.Resets"/>); zero without a group. A reset that finds the pair
+        /// already home is no write, so this is the one way to tell the panel closed.</summary>
+        public int Resets => RadioGroup ? RadioGroup.Resets : 0;
+
         protected override void OnToggle()
         {
             Writes++;
@@ -66,21 +71,13 @@ namespace Submodules.Utility.UI
 
         /// <summary>The group-side write a <see cref="TwoPanelPeek"/> makes. Switching the driver off from
         /// the group's side normally goes home to the group's first member; when that is the driver
-        /// itself there is nowhere to go and the write would do nothing, so the pair is switched off by
-        /// switching its <see cref="TwoPanelMirrorToggle"/> on instead, which the group answers by
-        /// switching this toggle off.</summary>
+        /// itself there is nowhere to go and the write would do nothing, so the group is asked to switch
+        /// to another of its members (<see cref="AbstractGroup{TMember}.ActivateAnother"/>: the other tab
+        /// button, in a pair), which switches this toggle off. Nothing looks for that other button.</summary>
         void ITwoPanelDriver.SetFromGroup(bool on)
         {
-            if (!on && IsOn && GroupsFirstMember() == this)
-            {
-                var mirror = MirrorInGroup();
-
-                if (mirror)
-                {
-                    mirror.SyncToggle(true);
-                    return;
-                }
-            }
+            if (!on && IsOn && GroupsFirstMember() == this && RadioGroup.ActivateAnother(this))
+                return;
 
             SyncToggle(on);
         }
@@ -91,17 +88,14 @@ namespace Submodules.Utility.UI
         private AbstractToggle GroupsFirstMember() =>
             !RadioGroup ? null : RadioGroup.FirstMember ? RadioGroup.FirstMember : RadioGroup.ActiveMember;
 
-        private TwoPanelMirrorToggle MirrorInGroup() =>
-            RadioGroup.GetComponentsInChildren<TwoPanelMirrorToggle>(true)
-                .FirstOrDefault(mirror => mirror.Driver == this && mirror.RadioGroup == RadioGroup);
-
         private static bool SharesPanelGroup(SimplePanel a, SimplePanel b) =>
             a && b && a.RadioGroup && a.RadioGroup == b.RadioGroup;
 
         /// <summary>What is wrong with how this driver is authored, one sentence each; empty when it is
         /// wired as a two-panel switch has to be. Whether the driver or its mirror is the group's first
-        /// member is the author's choice and is not a problem; a first member must exist, and a driver
-        /// that is it needs its mirror.</summary>
+        /// member is the author's choice and is not a problem; a first member must exist. A driver that is
+        /// first has no check of its own: nothing here looks for the mirror, which warns for itself when
+        /// its driver is unset or sits in another group.</summary>
         internal IEnumerable<string> AuthoringProblems()
         {
             if (!panelWhenOff || !panelWhenOn)
@@ -122,15 +116,9 @@ namespace Submodules.Utility.UI
                              "be off and the group cannot go home. Disable 'UserCanUntoggle' and " +
                              "'GroupCanUntoggle' on the group.";
 
-            var first = GroupsFirstMember();
-
-            if (!first)
+            if (!GroupsFirstMember())
                 yield return $"its ToggleGroup '{RadioGroup.name}' has no first member, so a reset has no " +
                              "home to return the pair to. Author one of the group's toggles on.";
-            else if (first == this && !MirrorInGroup())
-                yield return $"it is the first member of its ToggleGroup '{RadioGroup.name}' but no " +
-                             "TwoPanelMirrorToggle in that group names it, so nothing can switch it off: " +
-                             "a click on it is refused and a reset would go home to itself. Add the mirror.";
         }
 
 #if UNITY_EDITOR

@@ -387,33 +387,16 @@ namespace Submodules.Utility.Tests.EditMode
             Assert.That(pair.mirror.AuthoringProblems(), Is.Empty);
         }
 
-        /// <summary>With the driver first, only a mirror can switch it off from the group's side: a click
-        /// on it is refused and a reset would go home to itself. Without one a peek cannot flip it.</summary>
+        /// <summary>The driver does not look for its mirror, so a missing or misplaced one is the mirror's
+        /// to warn about (an unset driver, another group), not the driver's.</summary>
         [Test]
-        public void ADriverThatIsTheFirstMember_WithNoMirror_IsWarned()
-        {
-            var backwards = scene.Group(groupCanUntoggle: false);
-            var other = scene.Element<TwoPanelToggle>(parent: backwards.transform);
-            var inert = scene.Toggle(backwards);
-            UiTestScene.SetObject(other, "panelWhenOff", panelA);
-            UiTestScene.SetObject(other, "panelWhenOn", panelB);
-            backwards.Activate(other);
-            backwards.Activate(inert);
-            backwards.Activate(other);
-
-            Assert.That(other.AuthoringProblems().Single(), Does.Contain("TwoPanelMirrorToggle"));
-        }
-
-        [Test]
-        public void ADriverThatIsTheFirstMember_WhoseMirrorIsInAnotherGroup_IsWarned()
+        public void ADriverThatIsTheFirstMember_ChecksNothingAboutItsMirror()
         {
             var pair = DriverFirstPair();
-            var elsewhere = scene.Group(groupCanUntoggle: false);
-            var stray = scene.Element<TwoPanelMirrorToggle>(parent: elsewhere.transform);
-            UiTestScene.SetObject(stray, "driver", pair.driver);
             UiTestScene.SetObject(pair.mirror, "driver", null);
 
-            Assert.That(pair.driver.AuthoringProblems().Single(), Does.Contain("TwoPanelMirrorToggle"));
+            Assert.That(pair.driver.AuthoringProblems(), Is.Empty);
+            Assert.That(pair.mirror.AuthoringProblems().Single(), Does.Contain("driver is unset"));
         }
 
         [Test]
@@ -461,6 +444,20 @@ namespace Submodules.Utility.Tests.EditMode
             Assert.That(pair.mirror.IsOn, Is.True);
             Assert.That(pair.driver.Writes, Is.EqualTo(writes + 1));
             Assert.That(Showing("A"), Is.True);
+        }
+
+        /// <summary>The switch-off goes through the group, which knows its own members: nothing looks for
+        /// the mirror, so it does not matter whether the other button names the driver.</summary>
+        [Test]
+        public void TheGroupsSideWrite_OffOnTheFirstMemberDriver_DoesNotNeedTheOtherButtonToNameIt()
+        {
+            var pair = DriverFirstPair();
+            UiTestScene.SetObject(pair.mirror, "driver", null);
+
+            ((ITwoPanelDriver)pair.driver).SetFromGroup(false);
+
+            Assert.That(pair.driver.IsOn, Is.False);
+            Assert.That(pair.mirror.IsOn, Is.True);
         }
 
         [Test]
@@ -515,11 +512,9 @@ namespace Submodules.Utility.Tests.EditMode
         [Test]
         public void WithTheFirstMemberUnrecorded_TheActiveDriverIsTakenForIt_ByTheWarning()
         {
-            var withMirror = UnrecordedFirstMemberPair(withMirror: true);
-            var withoutMirror = UnrecordedFirstMemberPair(withMirror: false);
+            var pair = UnrecordedFirstMemberPair(withMirror: true);
 
-            Assert.That(withMirror.driver.AuthoringProblems(), Is.Empty);
-            Assert.That(withoutMirror.driver.AuthoringProblems().Single(), Does.Contain("TwoPanelMirrorToggle"));
+            Assert.That(pair.driver.AuthoringProblems(), Is.Empty, "a first member is taken to exist");
         }
 
         /// <summary>Returning home on closing is the group's opt-in (<c>ResetWithParentPanel</c>); a group

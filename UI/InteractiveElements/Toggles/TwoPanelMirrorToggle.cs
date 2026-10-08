@@ -9,17 +9,15 @@ namespace Submodules.Utility.UI
     /// the driver's off-state button, and so the only way to switch the driver off when the driver is
     /// the group's first member. It does
     /// nothing itself, because the group does the mirroring: switching it on switches the driver off,
-    /// which moves the panels, and the driver switching on switches it off. What it adds is the
-    /// reference - a pair named by a field rather than found by hierarchy - and the warnings that
-    /// can only be made once the driver is known.
+    /// which moves the panels, and the driver switching on switches it off. The driver never looks for
+    /// it: even a peek that switches the driver off from the group's side asks the group to switch to
+    /// another member. What it adds is the reference - a pair named by a field rather than found by
+    /// hierarchy - and the warnings that can only be made once the driver is known.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class TwoPanelMirrorToggle : AbstractToggle
     {
         [SerializeField] private TwoPanelToggle driver;
-
-        /// <summary>The driver this mirror stands in for, so the driver can find its mirror.</summary>
-        internal TwoPanelToggle Driver => driver;
 
         protected override void OnToggle() { }
 
