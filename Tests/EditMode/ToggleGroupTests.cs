@@ -257,48 +257,6 @@ namespace Submodules.Utility.Tests.EditMode
         }
 
         [Test]
-        public void ActivateAnother_FromTheOnlyActiveMember_SwitchesToAnotherMemberWithoutBeingTold()
-        {
-            var locked = scene.Group(groupCanUntoggle: false);
-            var first = scene.Toggle(locked);
-            var second = scene.Toggle(locked);
-            locked.Activate(first);
-
-            Assert.That(locked.ActivateAnother(first), Is.True);
-
-            Assert.That(locked.ActiveMember, Is.SameAs(second));
-            Assert.That(first.IsOn, Is.False);
-        }
-
-        [Test]
-        public void ActivateAnother_PrefersTheMemberTheGroupWasOnBefore()
-        {
-            var locked = scene.Group(groupCanUntoggle: false);
-            var first = scene.Toggle(locked);
-            scene.Toggle(locked);
-            var third = scene.Toggle(locked);
-            locked.Activate(third);
-            locked.Activate(first);
-
-            locked.ActivateAnother(first);
-
-            Assert.That(locked.ActiveMember, Is.SameAs(third));
-        }
-
-        [Test]
-        public void ActivateAnother_ForAMemberAlone_ChangesNothing()
-        {
-            var locked = scene.Group(groupCanUntoggle: false);
-            var only = scene.Toggle(locked);
-            locked.Activate(only);
-
-            Assert.That(locked.ActivateAnother(only), Is.False);
-
-            Assert.That(locked.ActiveMember, Is.SameAs(only));
-            Assert.That(only.IsOn, Is.True);
-        }
-
-        [Test]
         public void ResetToFirst_OnAGroupThatCanNeverBeEmpty_SwitchesBackToTheFirstToggle()
         {
             var locked = scene.Group(groupCanUntoggle: false);
@@ -369,10 +327,10 @@ namespace Submodules.Utility.Tests.EditMode
             Assert.That(group.ActiveMember, Is.SameAs(toggle));
         }
 
-        /// <summary>The count says that a reset ran, not that it moved anything: a group already home has
+        /// <summary>The event says that a reset ran, not that it moved anything: a group already home has
         /// nothing to switch, and an observer (a peek) must still be able to tell the panel closed.</summary>
         [Test]
-        public void ResetWhenCollapsed_IsCounted_EvenWhereTheGroupIsAlreadyHome()
+        public void ResetWhenCollapsed_RaisesWasReset_EvenWhereTheGroupIsAlreadyHome()
         {
             var locked = scene.Group(groupCanUntoggle: false);
             var first = scene.Toggle(locked);
@@ -380,23 +338,29 @@ namespace Submodules.Utility.Tests.EditMode
             var closing = scene.Panel();
             closing.Disappear(true);
 
+            var raised = 0;
+            locked.WasReset += () => raised++;
+
             locked.ResetWhenCollapsed(closing);
 
             Assert.That(locked.ActiveMember, Is.SameAs(first));
-            Assert.That(locked.Resets, Is.EqualTo(1));
+            Assert.That(raised, Is.EqualTo(1));
         }
 
         [Test]
-        public void ResetWhenCollapsed_WhileTheParentIsStillUp_IsNotCounted()
+        public void ResetWhenCollapsed_WhileTheParentIsStillUp_RaisesNothing()
         {
             var locked = scene.Group(groupCanUntoggle: false);
             locked.Activate(scene.Toggle(locked));
             var up = scene.Panel();
             up.Appear(true);
 
+            var raised = 0;
+            locked.WasReset += () => raised++;
+
             locked.ResetWhenCollapsed(up);
 
-            Assert.That(locked.Resets, Is.EqualTo(0));
+            Assert.That(raised, Is.EqualTo(0));
         }
 
         /// <summary>A group that can never be empty goes home even with nothing active - the state a

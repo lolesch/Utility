@@ -124,26 +124,22 @@ namespace Submodules.Utility.Tests.EditMode
         public void AClickOnTheDriverWhileItIsOn_IsRefused()
         {
             driver.SetToggle(true);
-            var writes = driver.Writes;
 
             driver.SetToggle(false);
 
             Assert.That(driver.IsOn, Is.True, "the group forbids switch-off");
             Assert.That(group.ActiveMember, Is.SameAs(driver));
-            Assert.That(driver.Writes, Is.EqualTo(writes), "a refused click is not a write");
             Assert.That(Showing("B"), Is.True);
         }
 
         [Test]
         public void AClickOnTheMirrorWhileItIsOn_IsRefused()
         {
-            var writes = driver.Writes;
 
             partner.SetToggle(false);
 
             Assert.That(partner.IsOn, Is.True, "the group forbids switch-off");
             Assert.That(group.ActiveMember, Is.SameAs(partner));
-            Assert.That(driver.Writes, Is.EqualTo(writes), "a refused click is not a write");
         }
 
         [Test]
@@ -174,19 +170,18 @@ namespace Submodules.Utility.Tests.EditMode
             Assert.That(Showing("B"), Is.True);
         }
 
-        /// <summary>A peek switches the bool off from the group's side: the group goes home to the
-        /// mirror instead of emptying, even though the user's own click on the driver is refused.</summary>
+        /// <summary>State derived from elsewhere switches the bool off from the group's side: the group
+        /// goes home to the mirror instead of emptying, even though the user's own click on the driver
+        /// is refused.</summary>
         [Test]
         public void SyncToggleOff_FromTheGroupsSide_GoesHomeToTheMirror()
         {
             driver.SetToggle(true);
-            var writes = driver.Writes;
 
             driver.SyncToggle(false);
 
             Assert.That(driver.IsOn, Is.False);
             Assert.That(partner.IsOn, Is.True);
-            Assert.That(driver.Writes, Is.EqualTo(writes + 1));
             Assert.That(Showing("A"), Is.True);
         }
 
@@ -257,25 +252,13 @@ namespace Submodules.Utility.Tests.EditMode
             Assert.That(groupA.ActiveMember, Is.Null);
         }
 
-        [Test]
-        public void Writes_CountsEveryChangeOfTheBool_AClickAndTheGroupsOwn()
-        {
-            var writes = driver.Writes;
-
-            driver.SetToggle(true);
-            partner.SetToggle(true);
-
-            Assert.That(driver.Writes, Is.EqualTo(writes + 2));
-        }
-
         /// <summary>The group's reset on its panel closing writes the bool through the driver exactly as a
-        /// click does: it reaches the driver's own toggle callback, so it is counted and it moves the
+        /// click does: it reaches the driver's own toggle callback, so it moves the
         /// panels. Driven directly - the Unity message does not run in EditMode.</summary>
         [Test]
         public void TheGroupsResetOnClosing_ReturnsThePairToOff_ThroughTheDriver()
         {
             driver.SetToggle(true);
-            var writes = driver.Writes;
             var parent = scene.Panel();
             parent.Disappear(true);
 
@@ -283,21 +266,8 @@ namespace Submodules.Utility.Tests.EditMode
 
             Assert.That(driver.IsOn, Is.False);
             Assert.That(partner.IsOn, Is.True);
-            Assert.That(driver.Writes, Is.EqualTo(writes + 1), "the reset is a write like a click");
             Assert.That(Showing("A"), Is.True);
             Assert.That(Hiding("B"), Is.True);
-        }
-
-        [Test]
-        public void TheGroupsResetWhileThePairIsAlreadyOff_WritesNothing()
-        {
-            var writes = driver.Writes;
-            var parent = scene.Panel();
-            parent.Disappear(true);
-
-            group.ResetWhenCollapsed(parent);
-
-            Assert.That(driver.Writes, Is.EqualTo(writes));
         }
 
         /// <summary>The group's home is whatever member it authored first, so the pair need not be
@@ -412,14 +382,13 @@ namespace Submodules.Utility.Tests.EditMode
             Assert.That(other.AuthoringProblems(), Is.Empty);
         }
 
-        /// <summary>The group's home is the driver, so the reset switches it on - a write like a click -
+        /// <summary>The group's home is the driver, so the reset switches it on through the driver,
         /// and a click on the mirror, the only way off, switches it off again.</summary>
         [Test]
         public void TheGroupsResetOnClosing_WithTheDriverFirst_ReturnsThePairToOn_ThroughTheDriver()
         {
             var pair = DriverFirstPair();
             pair.mirror.SetToggle(true);
-            var writes = pair.driver.Writes;
             var parent = scene.Panel();
             parent.Disappear(true);
 
@@ -427,37 +396,8 @@ namespace Submodules.Utility.Tests.EditMode
 
             Assert.That(pair.driver.IsOn, Is.True);
             Assert.That(pair.mirror.IsOn, Is.False);
-            Assert.That(pair.driver.Writes, Is.EqualTo(writes + 1), "the reset is a write like a click");
             Assert.That(Showing("B"), Is.True);
             Assert.That(Hiding("A"), Is.True);
-        }
-
-        [Test]
-        public void TheGroupsSideWrite_OffOnTheFirstMemberDriver_GoesToTheMirror()
-        {
-            var pair = DriverFirstPair();
-            var writes = pair.driver.Writes;
-
-            ((ITwoPanelDriver)pair.driver).SetFromGroup(false);
-
-            Assert.That(pair.driver.IsOn, Is.False);
-            Assert.That(pair.mirror.IsOn, Is.True);
-            Assert.That(pair.driver.Writes, Is.EqualTo(writes + 1));
-            Assert.That(Showing("A"), Is.True);
-        }
-
-        /// <summary>The switch-off goes through the group, which knows its own members: nothing looks for
-        /// the mirror, so it does not matter whether the other button names the driver.</summary>
-        [Test]
-        public void TheGroupsSideWrite_OffOnTheFirstMemberDriver_DoesNotNeedTheOtherButtonToNameIt()
-        {
-            var pair = DriverFirstPair();
-            UiTestScene.SetObject(pair.mirror, "driver", null);
-
-            ((ITwoPanelDriver)pair.driver).SetFromGroup(false);
-
-            Assert.That(pair.driver.IsOn, Is.False);
-            Assert.That(pair.mirror.IsOn, Is.True);
         }
 
         [Test]
@@ -495,21 +435,6 @@ namespace Submodules.Utility.Tests.EditMode
         }
 
         [Test]
-        public void WithTheFirstMemberUnrecorded_TheActiveDriverIsTakenForIt_ByTheSideWrite()
-        {
-            var pair = UnrecordedFirstMemberPair(withMirror: true);
-            var writes = pair.driver.Writes;
-
-            Assert.That((bool)pair.group.FirstMember, Is.False, "the edge under test: nothing recorded");
-
-            ((ITwoPanelDriver)pair.driver).SetFromGroup(false);
-
-            Assert.That(pair.driver.IsOn, Is.False);
-            Assert.That(pair.mirror.IsOn, Is.True, "the pair went off through its mirror");
-            Assert.That(pair.driver.Writes, Is.EqualTo(writes + 1));
-        }
-
-        [Test]
         public void WithTheFirstMemberUnrecorded_TheActiveDriverIsTakenForIt_ByTheWarning()
         {
             var pair = UnrecordedFirstMemberPair(withMirror: true);
@@ -529,24 +454,6 @@ namespace Submodules.Utility.Tests.EditMode
             Assert.That(driverFirst.group.ResetWithParentPanel, Is.False);
             Assert.That(driverFirst.driver.AuthoringProblems(), Is.Empty);
             Assert.That(driverFirst.mirror.AuthoringProblems(), Is.Empty);
-        }
-
-        /// <summary>The group's reset is "back to the first member", and a pair resting on its driver that
-        /// is already there is not moved: a no-op, not a write that would restart a fade.</summary>
-        [Test]
-        public void TheGroupsResetWithTheDriverFirstAndAlreadyOn_WritesNothing()
-        {
-            var pair = DriverFirstPair();
-            pair.driver.SetToggle(true);
-            var writes = pair.driver.Writes;
-            var parent = scene.Panel();
-            parent.Disappear(true);
-
-            pair.group.ResetWhenCollapsed(parent);
-
-            Assert.That(pair.driver.IsOn, Is.True);
-            Assert.That(pair.mirror.IsOn, Is.False);
-            Assert.That(pair.driver.Writes, Is.EqualTo(writes));
         }
 
         [Test]

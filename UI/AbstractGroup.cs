@@ -1,3 +1,4 @@
+using System;
 using NaughtyAttributes;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -37,11 +38,10 @@ namespace Submodules.Utility.UI
         /// group returns to (<see cref="ResetToFirst"/>) instead of being cleared.</summary>
         public TMember FirstMember { get; private set; }
 
-        /// <summary>How often the group ran its reset on its parent panel having finished closing
+        /// <summary>Raised once the group has run its reset on its parent panel having finished closing
         /// (<see cref="ResetWithParentPanel"/>), whether or not that moved anything: a group already
-        /// home has nothing to switch, and an observer still needs to tell that the panel closed. Compare
-        /// two reads rather than trusting the absolute number.</summary>
-        public int Resets { get; private set; }
+        /// home has nothing to switch, and an observer still needs to tell that the panel closed.</summary>
+        public event Action WasReset;
 
         /// <summary>The panel this group lives in, found once on the way up like a toggle finds its
         /// group. Only looked for where <see cref="ResetWithParentPanel"/> is on.</summary>
@@ -127,12 +127,12 @@ namespace Submodules.Utility.UI
             if (!parent.IsCollapsed)
                 return;
 
-            Resets++;
-
             if (ReturnsToFirst)
                 ResetToFirst();
             else
                 ResetGroup();
+
+            WasReset?.Invoke();
         }
 
         /// <summary>Switches back to <see cref="FirstMember"/>. Only a group that can never be empty
@@ -166,34 +166,6 @@ namespace Submodules.Utility.UI
                 SetMemberActive(PreviousMember, false);
 
             SetMemberActive(ActiveMember, true);
-        }
-
-        /// <summary>Switches to a member other than <paramref name="member"/>: the one the group was on
-        /// before if it is still a member, else the first other member under the group. For a caller that
-        /// needs <paramref name="member"/> off while it is the group's home, where deactivating it would
-        /// only go home to itself; the group knows its members, the caller need not look for one. False
-        /// where <paramref name="member"/> is alone.</summary>
-        internal bool ActivateAnother(TMember member)
-        {
-            var other = Exists(PreviousMember) && !Same(PreviousMember, member) && IsMember(PreviousMember)
-                ? PreviousMember
-                : null;
-
-            if (!Exists(other))
-                foreach (var candidate in GetComponentsInChildren<TMember>(true))
-                {
-                    if (Same(candidate, member) || !IsMember(candidate))
-                        continue;
-
-                    other = candidate;
-                    break;
-                }
-
-            if (!Exists(other))
-                return false;
-
-            Activate(other);
-            return true;
         }
 
         /// <param name="byUser">Whether the un-toggle is the user's own (a click, a hotkey, a
