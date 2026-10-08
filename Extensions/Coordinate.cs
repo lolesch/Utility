@@ -53,7 +53,9 @@ namespace Submodules.Utility.Extensions
         /// <summary>
         /// Returns true if the given Coordinate is exactly equal to this Coordinate. Exact, so that equal
         /// coordinates always hash equal: an approximate comparison cannot have a matching hash and is not
-        /// transitive, which is why a Coordinate is not used as a dictionary key either.
+        /// transitive, which is why a Coordinate is not used as a dictionary key either. For the tolerance the
+        /// comparison used to have, call <see cref="Approximately(Coordinate, Coordinate)"/> or
+        /// <see cref="Approximately(Coordinate, Coordinate, float)"/>; <c>==</c> is the same exact comparison.
         /// </summary>
         /// <param name="other"></param>
         /// <returns></returns>
@@ -90,6 +92,23 @@ namespace Submodules.Utility.Extensions
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override int GetHashCode() => HashCode.Combine( x + 0f, z + 0f ); // + 0f folds -0 into +0, which Equals treats as one
+
+        /// <summary>
+        /// Whether each component of <paramref name="a"/> is <see cref="Mathf.Approximately"/> that of
+        /// <paramref name="b"/>: the comparison <c>==</c> had before it became exact. Not transitive, and not
+        /// something to hash by.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool Approximately(Coordinate a, Coordinate b) =>
+            Mathf.Approximately(a.x, b.x) && Mathf.Approximately(a.z, b.z);
+
+        /// <summary>
+        /// Whether each component of <paramref name="a"/> is within <paramref name="tolerance"/> of that of
+        /// <paramref name="b"/>, edges included. A negative tolerance, or a NaN component, matches nothing.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool Approximately(Coordinate a, Coordinate b, float tolerance) =>
+            Math.Abs(a.x - b.x) <= tolerance && Math.Abs(a.z - b.z) <= tolerance;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Magnitude(Coordinate coord) => (float)Math.Sqrt((coord.x * coord.x) + (coord.z * coord.z));

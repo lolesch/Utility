@@ -237,5 +237,51 @@ namespace Submodules.Utility.Tests.EditMode
             Assert.That(new Coordinate(1f, 2f).Equals(new Coordinate(2f, 1f)), Is.False);
             Assert.That(new Coordinate(1f, 2f) == new Coordinate(1f, 3f), Is.False);
         }
+
+        // --- Approximately ---
+
+        [Test]
+        public void Approximately_AcceptsWhatEqualsRefuses()
+        {
+            var a = new Coordinate(1f, 1f);
+            var near = new Coordinate(1f + 1e-7f, 1f);
+
+            Assert.That(a == near, Is.False);
+            Assert.That(Coordinate.Approximately(a, near), Is.True);
+        }
+
+        [Test]
+        public void Approximately_RefusesACoordinateThatIsReallyApart()
+        {
+            Assert.That(Coordinate.Approximately(new Coordinate(1f, 1f), new Coordinate(1.01f, 1f)), Is.False);
+            Assert.That(Coordinate.Approximately(new Coordinate(1f, 1f), new Coordinate(1f, 1.01f)), Is.False);
+        }
+
+        [Test]
+        public void Approximately_AcceptsEqualCoordinates() =>
+            Assert.That(Coordinate.Approximately(new Coordinate(-2f, 5f), new Coordinate(-2f, 5f)), Is.True);
+
+        [Test]
+        public void ApproximatelyWithATolerance_AcceptsDifferencesUpToItOnEachAxis()
+        {
+            var a = new Coordinate(1f, 1f);
+
+            Assert.That(Coordinate.Approximately(a, new Coordinate(1.05f, 0.95f), 0.1f), Is.True);
+            Assert.That(Coordinate.Approximately(a, new Coordinate(1.25f, 1f), 0.1f), Is.False);
+            Assert.That(Coordinate.Approximately(a, new Coordinate(1f, 0.75f), 0.1f), Is.False);
+        }
+
+        [Test]
+        public void ApproximatelyWithATolerance_CountsTheEdgeAsWithin() =>
+            Assert.That(Coordinate.Approximately(new Coordinate(0f, 0f), new Coordinate(0.5f, -0.5f), 0.5f), Is.True);
+
+        [Test]
+        public void ApproximatelyWithATolerance_ANegativeToleranceOrNaN_MatchesNothing()
+        {
+            var a = new Coordinate(1f, 1f);
+
+            Assert.That(Coordinate.Approximately(a, a, -1f), Is.False);
+            Assert.That(Coordinate.Approximately(a, new Coordinate(float.NaN, 1f), 1f), Is.False);
+        }
     }
 }
