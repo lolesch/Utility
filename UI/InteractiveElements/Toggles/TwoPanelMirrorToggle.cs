@@ -16,6 +16,9 @@ namespace Submodules.Utility.UI
     {
         [SerializeField] private TwoPanelToggle driver;
 
+        /// <summary>The driver this mirror stands in for, so the driver can find its mirror.</summary>
+        internal TwoPanelToggle Driver => driver;
+
         protected override void OnToggle() { }
 
         /// <summary>What is wrong with how this mirror is authored, one sentence each; empty when it is

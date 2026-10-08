@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace Submodules.Utility.UI
@@ -28,7 +29,7 @@ namespace Submodules.Utility.UI
     /// for a while can tell, on giving it back, whether anything else wrote it meanwhile.</para>
     /// </summary>
     [DisallowMultipleComponent]
-    public sealed class TwoPanelToggle : AbstractToggle
+    public sealed class TwoPanelToggle : AbstractToggle, ITwoPanelDriver
     {
         [SerializeField] private SimplePanel panelWhenOff;
         [SerializeField] private SimplePanel panelWhenOn;
@@ -55,6 +56,31 @@ namespace Submodules.Utility.UI
             if (hidden && !SharesPanelGroup(shown, hidden))
                 hidden.ToggleState(false);
         }
+
+        /// <summary>The group-side write a <see cref="TwoPanelPeek"/> makes. Switching the driver off from
+        /// the group's side normally goes home to the group's first member; when that is the driver
+        /// itself there is nowhere to go and the write would do nothing, so the pair is switched off by
+        /// switching its <see cref="TwoPanelMirrorToggle"/> on instead, which the group answers by
+        /// switching this toggle off.</summary>
+        void ITwoPanelDriver.SetFromGroup(bool on)
+        {
+            if (!on && IsOn && RadioGroup && RadioGroup.FirstMember == this)
+            {
+                var mirror = MirrorInGroup();
+
+                if (mirror)
+                {
+                    mirror.SyncToggle(true);
+                    return;
+                }
+            }
+
+            SyncToggle(on);
+        }
+
+        private TwoPanelMirrorToggle MirrorInGroup() =>
+            RadioGroup.GetComponentsInChildren<TwoPanelMirrorToggle>(true)
+                .FirstOrDefault(mirror => mirror.Driver == this && mirror.RadioGroup == RadioGroup);
 
         private static bool SharesPanelGroup(SimplePanel a, SimplePanel b) =>
             a && b && a.RadioGroup && a.RadioGroup == b.RadioGroup;
