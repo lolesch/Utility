@@ -298,7 +298,7 @@ namespace Submodules.Utility.Tests.EditMode
             Assert.That(locked.PreviousMember, Is.Null, "no switch happened");
         }
 
-        /// <summary><see cref="UI.AbstractGroup{TMember}.ResetWithParentPanel"/>'s reset, driven directly:
+        /// <summary><see cref="UI.ToggleGroup.ResetWithParentPanel"/>'s reset, driven directly:
         /// the Unity message and the group's <c>Awake</c> do not run in EditMode. A group that may be
         /// emptied is emptied once its parent panel has finished closing.</summary>
         [Test]

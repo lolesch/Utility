@@ -18,10 +18,7 @@ namespace Submodules.Utility.UI
     /// <para>A group that can never be empty (neither flag set) also goes home: the first member
     /// to become active is remembered as <see cref="FirstMember"/>, and resetting the group
     /// (<see cref="ResetGroup"/>, state derived from elsewhere) switches back to it instead of
-    /// emptying it. With <see cref="ResetWithParentPanel"/> on, the group resets itself the same way once
-    /// the <see cref="SimplePanel"/> it lives in has finished closing - back to its first tab where it
-    /// can never be empty, emptied where it may be - so a selection never outlives the panel that
-    /// showed it, without the panel knowing its members exist.</para>
+    /// emptying it.</para>
     ///
     /// A subclass supplies only the two things that differ per member kind: what counts as
     /// membership (<see cref="IsMember"/>) and how a member is switched on or off
@@ -37,10 +34,6 @@ namespace Submodules.Utility.UI
         /// group returns to (<see cref="ResetToFirst"/>) instead of being cleared.</summary>
         public TMember FirstMember { get; private set; }
 
-        /// <summary>The panel this group lives in, found once on the way up like a toggle finds its
-        /// group. Only looked for where <see cref="ResetWithParentPanel"/> is on.</summary>
-        private SimplePanel parentPanel;
-
         [field: SerializeField, FormerlySerializedAs("<IsClearable>k__BackingField")]
         [field: Tooltip("The user may switch the active member off by clicking it, leaving the group " +
                         "with nothing active. Off keeps the radio-button rule: one member always stays on.")]
@@ -51,13 +44,6 @@ namespace Submodules.Utility.UI
                         "derived from elsewhere such as a closing context) even where the user may not.")]
         public bool GroupCanUntoggle { get; private set; } = true;
 
-        [field: SerializeField]
-        [field: Tooltip("Reset the group once the panel it lives in has finished closing, so a selection " +
-                        "never outlives the panel that showed it: back to the first member on a group that " +
-                        "can never be empty (neither 'UserCanUntoggle' nor 'GroupCanUntoggle'), emptied " +
-                        "otherwise.")]
-        public bool ResetWithParentPanel { get; private set; }
-
         /// <summary>The one statement of whether the active member may be deactivated with no
         /// replacement - asked by <see cref="Deactivate"/> and by <c>SimplePanel.Collapse</c>
         /// alike, so a panel and a toggle in the same group cannot disagree. Where the user may
@@ -66,7 +52,7 @@ namespace Submodules.Utility.UI
 
         /// <summary>A group that can never be empty, neither by the user nor by itself: resetting it
         /// means going back to <see cref="FirstMember"/>.</summary>
-        private bool ReturnsToFirst => !CanUntoggle(byUser: false);
+        protected bool ReturnsToFirst => !CanUntoggle(byUser: false);
 
         /// <summary>Whether <paramref name="member"/> belongs to this group — the back-reference
         /// the member kind keeps to its own group.</summary>
@@ -94,37 +80,8 @@ namespace Submodules.Utility.UI
 
         protected virtual void Awake()
         {
-            if (ResetWithParentPanel)
-                parentPanel = GetComponentInParent<SimplePanel>(true);
-
             if (ReturnsToFirst && !Exists(FirstMember) && Exists(ActiveMember))
                 FirstMember = ActiveMember;
-        }
-
-        /// <summary>Unity's message for a change on a <c>CanvasGroup</c> above this object - alpha,
-        /// interactable or blocksRaycasts alike - so it also fires on every frame of a fade. The
-        /// panel's <see cref="SimplePanel.IsCollapsed"/> is what says the fade-out has finished,
-        /// with nothing left to see swap.</summary>
-        private void OnCanvasGroupChanged()
-        {
-            if (parentPanel)
-                ResetWhenCollapsed(parentPanel);
-        }
-
-        /// <summary>The reset <see cref="ResetWithParentPanel"/> asks for, once <paramref name="parent"/>
-        /// has finished closing: back to <see cref="FirstMember"/> on a group that can never be empty
-        /// (even with nothing active - <see cref="ResetGroup"/> would find no member to deactivate and
-        /// stop), emptied otherwise. Split out of <see cref="OnCanvasGroupChanged"/> so it can be
-        /// driven without the Unity message or an <c>Awake</c>.</summary>
-        internal void ResetWhenCollapsed(SimplePanel parent)
-        {
-            if (!parent.IsCollapsed)
-                return;
-
-            if (ReturnsToFirst)
-                ResetToFirst();
-            else
-                ResetGroup();
         }
 
         /// <summary>Switches back to <see cref="FirstMember"/>. Only a group that can never be empty
