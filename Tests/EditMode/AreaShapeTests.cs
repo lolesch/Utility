@@ -364,6 +364,80 @@ namespace Submodules.Utility.Tests.EditMode
             Assert.That(disk.Contains(At(5.01f, 0f), Zero, East), Is.False);
         }
 
+        // --- Boundary margin ---
+
+        // A boundary counts as inside with LinearMargin (1e-3 ground units) of slack, the same slack as the
+        // simulation's range checks: on it and within the margin is in, beyond the margin is out.
+
+        private const float Beyond = AreaShape.LinearMargin * 3f;
+        private const float Within = AreaShape.LinearMargin * 0.5f;
+
+        [Test]
+        public void Disk_OuterRadius_HoldsPointsWithinTheMarginAndNotBeyondIt()
+        {
+            var disk = AreaShape.Disk(5f);
+
+            Assert.That(disk.Contains(At(5f, 0f), Zero, East), Is.True);
+            Assert.That(disk.Contains(At(5f + Within, 0f), Zero, East), Is.True);
+            Assert.That(disk.Contains(At(5f + Beyond, 0f), Zero, East), Is.False);
+        }
+
+        [Test]
+        public void Disk_InnerRadius_HoldsPointsWithinTheMarginAndNotBeyondIt()
+        {
+            var ring = AreaShape.Disk(5f, innerRadius: 2f);
+
+            Assert.That(ring.Contains(At(2f, 0f), Zero, East), Is.True);
+            Assert.That(ring.Contains(At(2f - Within, 0f), Zero, East), Is.True);
+            Assert.That(ring.Contains(At(2f - Beyond, 0f), Zero, East), Is.False);
+        }
+
+        [Test]
+        public void Disk_WithoutAnInnerRadius_KeepsItsOrigin() =>
+            Assert.That(AreaShape.Disk(5f).Contains(Zero, Zero, East), Is.True);
+
+        [Test]
+        public void Disk_InnerRadiusBelowTheMargin_StillExcludesNothingNegative() =>
+            Assert.That(AreaShape.Disk(5f, innerRadius: Within).Contains(Zero, Zero, East), Is.True);
+
+        [Test]
+        public void Sector_RadiiShareTheLinearMargin()
+        {
+            var arc = AreaShape.Sector(5f, 90f, innerRadius: 2f);
+
+            Assert.That(arc.Contains(At(5f + Within, 0f), Zero, East), Is.True);
+            Assert.That(arc.Contains(At(5f + Beyond, 0f), Zero, East), Is.False);
+            Assert.That(arc.Contains(At(2f - Within, 0f), Zero, East), Is.True);
+            Assert.That(arc.Contains(At(2f - Beyond, 0f), Zero, East), Is.False);
+        }
+
+        [Test]
+        public void Rectangle_EveryEdge_HoldsPointsWithinTheMarginAndNotBeyondIt()
+        {
+            var box = AreaShape.Rectangle(4f, 2f);
+
+            Assert.That(box.Contains(At(4f + Within, 0f), Zero, East), Is.True, "far short edge");
+            Assert.That(box.Contains(At(-Within, 0f), Zero, East), Is.True, "near short edge");
+            Assert.That(box.Contains(At(2f, 1f + Within), Zero, East), Is.True, "+side long edge");
+            Assert.That(box.Contains(At(2f, -1f - Within), Zero, East), Is.True, "-side long edge");
+
+            Assert.That(box.Contains(At(4f + Beyond, 0f), Zero, East), Is.False, "far short edge");
+            Assert.That(box.Contains(At(-Beyond, 0f), Zero, East), Is.False, "near short edge");
+            Assert.That(box.Contains(At(2f, 1f + Beyond), Zero, East), Is.False, "+side long edge");
+            Assert.That(box.Contains(At(2f, -1f - Beyond), Zero, East), Is.False, "-side long edge");
+        }
+
+        [Test]
+        public void Rectangle_Margin_IsMeasuredInGroundUnits_NotInFacingLengths()
+        {
+            // A long facing vector must not stretch the slack: the box normalises it first.
+            var box = AreaShape.Rectangle(4f, 2f);
+            var far = At(1000f, 0f);
+
+            Assert.That(box.Contains(At(4f + Within, 0f), Zero, far), Is.True);
+            Assert.That(box.Contains(At(4f + Beyond, 0f), Zero, far), Is.False);
+        }
+
         // --- Anchor ---
 
         [Test]

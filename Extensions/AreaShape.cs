@@ -25,14 +25,23 @@ namespace Submodules.Utility.Extensions
     /// A pure description of an area on the XZ ground plane that answers whether a point lies inside it, so a
     /// skill can define its area as data. Build one with <see cref="Disk"/>, <see cref="Sector"/> or
     /// <see cref="Rectangle"/>; an annulus or an arc is the inner radius of a disk or sector, not a shape of its
-    /// own. Every boundary counts as inside. Angles are degrees, positive from +x toward +z, as in
-    /// <see cref="Coordinate"/>.
+    /// own. Every boundary counts as inside, with a sliver of slack so that a point meant to sit on one is not
+    /// lost to float error: <see cref="EdgeMargin"/> degrees on a sector's edges, and <see cref="LinearMargin"/>
+    /// ground units on the outer radius, the inner radius and a rectangle's edges. The linear margin matches the
+    /// slack of the simulation's range checks, so a Strike and a Cast agree about the same distance. Angles are
+    /// degrees, positive from +x toward +z, as in <see cref="Coordinate"/>.
     /// </summary>
     [Serializable]
     public struct AreaShape
     {
         /// <summary>Degrees of slack on a sector's edge, which trigonometry does not hit exactly.</summary>
-        private const float EdgeMargin = 1e-3f;
+        public const float EdgeMargin = 1e-3f;
+
+        /// <summary>
+        /// Ground units of slack on the outer radius, the inner radius and a rectangle's edges: a point that far
+        /// outside the outer boundary, or that far inside the inner one, still counts as in.
+        /// </summary>
+        public const float LinearMargin = 1e-3f;
 
         [field: SerializeField] public AreaShapeKind Kind { get; private set; }
         [field: SerializeField] public float Radius { get; private set; }
@@ -126,8 +135,10 @@ namespace Submodules.Utility.Extensions
         private bool ContainsInRing(Coordinate offset, Coordinate facing)
         {
             var distanceSquared = Coordinate.SqrMagnitude(offset);
+            var outer = Radius + LinearMargin;
+            var inner = Math.Max(InnerRadius - LinearMargin, 0f);
 
-            if (distanceSquared > Radius * Radius || distanceSquared < InnerRadius * InnerRadius)
+            if (distanceSquared > outer * outer || distanceSquared < inner * inner)
                 return false;
 
             return Kind != AreaShapeKind.Sector
@@ -140,8 +151,8 @@ namespace Submodules.Utility.Extensions
             var along = Coordinate.Dot(offset, unit);
             var across = unit.x * offset.z - unit.z * offset.x;
 
-            return along >= -PivotAlong * Length && along <= (1f - PivotAlong) * Length
-                   && across >= -PivotAcross * Width && across <= (1f - PivotAcross) * Width;
+            return along >= -PivotAlong * Length - LinearMargin && along <= (1f - PivotAlong) * Length + LinearMargin
+                   && across >= -PivotAcross * Width - LinearMargin && across <= (1f - PivotAcross) * Width + LinearMargin;
         }
 
         private static Coordinate FacingOrEast(Coordinate facing) =>
