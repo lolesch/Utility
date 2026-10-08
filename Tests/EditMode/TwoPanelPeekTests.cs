@@ -29,7 +29,7 @@ namespace Submodules.Utility.Tests.EditMode
         private AbstractToggle supplyTab;
         private AbstractToggle soldTab;
         private List<string> log;
-        private TwoPanelPeek peek;
+        private ITwoPanelPeek peek;
         private bool keyHeld;
         private bool panelOpen;
 

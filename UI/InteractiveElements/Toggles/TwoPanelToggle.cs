@@ -71,7 +71,7 @@ namespace Submodules.Utility.UI
         /// switching this toggle off.</summary>
         void ITwoPanelDriver.SetFromGroup(bool on)
         {
-            if (!on && IsOn && RadioGroup && RadioGroup.FirstMember == this)
+            if (!on && IsOn && GroupsFirstMember() == this)
             {
                 var mirror = MirrorInGroup();
 
@@ -84,6 +84,12 @@ namespace Submodules.Utility.UI
 
             SyncToggle(on);
         }
+
+        /// <summary>The toggle the group goes home to, null without a group. A group records its first
+        /// member in <c>Awake</c> or on a first activation; until then the active member is home, as
+        /// the group itself reads it.</summary>
+        private AbstractToggle GroupsFirstMember() =>
+            !RadioGroup ? null : RadioGroup.FirstMember ? RadioGroup.FirstMember : RadioGroup.ActiveMember;
 
         private TwoPanelMirrorToggle MirrorInGroup() =>
             RadioGroup.GetComponentsInChildren<TwoPanelMirrorToggle>(true)
@@ -107,7 +113,8 @@ namespace Submodules.Utility.UI
             if (!RadioGroup)
             {
                 yield return "it has no ToggleGroup on its parent, so nothing switches it off when the " +
-                             "other tab button is clicked. Put it and its TwoPanelMirrorToggle under a ToggleGroup.";                yield break;
+                             "other tab button is clicked. Put it and its TwoPanelMirrorToggle under a ToggleGroup.";
+                yield break;
             }
 
             if (RadioGroup.CanUntoggle(byUser: false))
@@ -115,7 +122,7 @@ namespace Submodules.Utility.UI
                              "be off and the group cannot go home. Disable 'UserCanUntoggle' and " +
                              "'GroupCanUntoggle' on the group.";
 
-            var first = RadioGroup.FirstMember ? RadioGroup.FirstMember : RadioGroup.ActiveMember;
+            var first = GroupsFirstMember();
 
             if (!first)
                 yield return $"its ToggleGroup '{RadioGroup.name}' has no first member, so a reset has no " +

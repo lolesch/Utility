@@ -5,7 +5,8 @@ namespace Submodules.Utility.UI
     /// <summary>
     /// A peek: while a key is held and a panel is open it flips a two-panel switch to its other state,
     /// and on release it flips it back - unless something else wrote the bool since the peek began. It is
-    /// a real selection made through the group, not a view-only overlay, so both tab buttons follow.
+    /// a real selection made through the group, not a view-only overlay, so both tab buttons follow; it
+    /// touches the driver's bool and nothing else.
     ///
     /// <para>The restore is "nothing else wrote the bool, and the panel stayed open": the driver counts
     /// its writes (<see cref="ITwoPanelDriver.Writes"/>) and the peek compares the count after its own
@@ -26,15 +27,15 @@ namespace Submodules.Utility.UI
     /// panel closed and reopened during one hold is not peeked at again, and a hold begun while the panel
     /// was closed peeks when it opens.</para>
     /// </summary>
-    public sealed class TwoPanelPeek
+    public sealed class TwoPanelPeek : ITwoPanelPeek
     {
         private readonly ITwoPanelDriver driver;
         private readonly Func<bool> keyHeld;
         private readonly Func<bool> panelOpen;
 
-        private bool spent;
+        private bool peekedThisHold;
         private bool restorePending;
-        private bool home;
+        private bool homeState;
         private int writesAfterPeek;
 
         public TwoPanelPeek(ITwoPanelDriver driver, Func<bool> keyHeld, Func<bool> panelOpen)
@@ -44,13 +45,14 @@ namespace Submodules.Utility.UI
             this.panelOpen = panelOpen;
         }
 
-        /// <summary>Evaluates "key held and panel open" for this frame.</summary>
+        /// <inheritdoc/>
+        /// <remarks>Evaluates "key held and panel open" for this frame.</remarks>
         public void Tick()
         {
             if (!keyHeld())
             {
                 Release();
-                spent = false;
+                peekedThisHold = false;
                 return;
             }
 
@@ -62,23 +64,23 @@ namespace Submodules.Utility.UI
                 return;
             }
 
-            if (spent)
+            if (peekedThisHold)
                 return;
 
-            spent = true;
+            peekedThisHold = true;
             restorePending = true;
-            home = driver.IsOn;
-            driver.SetFromGroup(!home);
+            homeState = driver.IsOn;
+            driver.SetFromGroup(!homeState);
             writesAfterPeek = driver.Writes;
         }
 
-        /// <summary>Gives the peek back now, as a release does: the app lost focus, or the owner is
-        /// being disabled. The hold stays spent until <see cref="Tick"/> sees the key let go, so a key that
-        /// is still reported held does not peek a second time.</summary>
+        /// <inheritdoc/>
+        /// <remarks>A hold peeks once: it stays used up until <see cref="Tick"/> sees the key let go, so a
+        /// key that is still reported held does not peek a second time.</remarks>
         public void Release()
         {
             if (restorePending && driver.Writes == writesAfterPeek)
-                driver.SetFromGroup(home);
+                driver.SetFromGroup(homeState);
 
             restorePending = false;
         }

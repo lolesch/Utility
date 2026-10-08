@@ -475,6 +475,85 @@ namespace Submodules.Utility.Tests.EditMode
             Assert.That(other.AuthoringProblems().Single(), Does.Contain("first member"));
         }
 
+        /// <summary>A pair whose group is authored on with its driver and nothing else: no first member
+        /// has been recorded (that happens in the group's <c>Awake</c> or on a first
+        /// <c>Activate</c>), only the active one. The group's own rule is that the active member is
+        /// home until told otherwise, and the driver reads it the same way everywhere.</summary>
+        private (ToggleGroup group, TwoPanelToggle driver, TwoPanelMirrorToggle mirror) UnrecordedFirstMemberPair(
+            bool withMirror)
+        {
+            var fresh = scene.Group(groupCanUntoggle: false);
+            var first = scene.Element<TwoPanelToggle>(parent: fresh.transform);
+            var second = scene.Element<TwoPanelMirrorToggle>(parent: fresh.transform);
+            UiTestScene.SetObject(first, "panelWhenOff", panelA);
+            UiTestScene.SetObject(first, "panelWhenOn", panelB);
+
+            if (withMirror)
+                UiTestScene.SetObject(second, "driver", first);
+
+            UiTestScene.SetObject(fresh, "<ActiveMember>k__BackingField", first);
+            UiTestScene.SetBool(first, "<IsOn>k__BackingField", true);
+
+            return (fresh, first, second);
+        }
+
+        [Test]
+        public void WithTheFirstMemberUnrecorded_TheActiveDriverIsTakenForIt_ByTheSideWrite()
+        {
+            var pair = UnrecordedFirstMemberPair(withMirror: true);
+            var writes = pair.driver.Writes;
+
+            Assert.That((bool)pair.group.FirstMember, Is.False, "the edge under test: nothing recorded");
+
+            ((ITwoPanelDriver)pair.driver).SetFromGroup(false);
+
+            Assert.That(pair.driver.IsOn, Is.False);
+            Assert.That(pair.mirror.IsOn, Is.True, "the pair went off through its mirror");
+            Assert.That(pair.driver.Writes, Is.EqualTo(writes + 1));
+        }
+
+        [Test]
+        public void WithTheFirstMemberUnrecorded_TheActiveDriverIsTakenForIt_ByTheWarning()
+        {
+            var withMirror = UnrecordedFirstMemberPair(withMirror: true);
+            var withoutMirror = UnrecordedFirstMemberPair(withMirror: false);
+
+            Assert.That(withMirror.driver.AuthoringProblems(), Is.Empty);
+            Assert.That(withoutMirror.driver.AuthoringProblems().Single(), Does.Contain("TwoPanelMirrorToggle"));
+        }
+
+        /// <summary>Returning home on closing is the group's opt-in (<c>ResetWithParentPanel</c>); a group
+        /// without it simply keeps the player's tab, which is a choice and not a mistake.</summary>
+        [Test]
+        public void AGroupWithoutResetWithParentPanel_IsNotWarned_WhicheverButtonIsFirst()
+        {
+            var driverFirst = DriverFirstPair();
+
+            Assert.That(group.ResetWithParentPanel, Is.False);
+            Assert.That(driver.AuthoringProblems(), Is.Empty);
+            Assert.That(driverFirst.group.ResetWithParentPanel, Is.False);
+            Assert.That(driverFirst.driver.AuthoringProblems(), Is.Empty);
+            Assert.That(driverFirst.mirror.AuthoringProblems(), Is.Empty);
+        }
+
+        /// <summary>The group's reset is "back to the first member", and a pair resting on its driver that
+        /// is already there is not moved: a no-op, not a write that would restart a fade.</summary>
+        [Test]
+        public void TheGroupsResetWithTheDriverFirstAndAlreadyOn_WritesNothing()
+        {
+            var pair = DriverFirstPair();
+            pair.driver.SetToggle(true);
+            var writes = pair.driver.Writes;
+            var parent = scene.Panel();
+            parent.Disappear(true);
+
+            pair.group.ResetWhenCollapsed(parent);
+
+            Assert.That(pair.driver.IsOn, Is.True);
+            Assert.That(pair.mirror.IsOn, Is.False);
+            Assert.That(pair.driver.Writes, Is.EqualTo(writes));
+        }
+
         [Test]
         public void ADriverAmongOtherToggles_IsNotWarned()
         {
