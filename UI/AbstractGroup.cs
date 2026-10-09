@@ -9,15 +9,15 @@ namespace Submodules.Utility.UI
     /// <typeparamref name="TMember"/>s of which at most one is active at a time.
     /// <see cref="Activate"/> deactivates whichever sibling held the slot. Deactivating the
     /// active member with no replacement leaves the group with nothing active. Whether that is
-    /// allowed depends on who asks (<see cref="CanUntoggle"/>): the <b>user</b> (a click or hotkey
-    /// on the active member) needs <see cref="UserCanUntoggle"/>, off by default - radio
-    /// behaviour; the <b>group</b> (<see cref="ResetGroup"/>, or state derived from elsewhere,
-    /// such as a context closing) needs <see cref="GroupCanUntoggle"/>, on by default, and is
+    /// allowed depends on who asks (<see cref="GroupCanBeCleared"/>): the <b>user</b> (a click or hotkey
+    /// on the active member) needs <see cref="UserCanClear"/>, off by default - radio
+    /// behaviour; the <b>group</b> (<see cref="Deactivate"/> with <c>byUser: false</c>, or state derived from elsewhere,
+    /// such as a context closing) needs <see cref="SystemCanClear"/>, on by default, and is
     /// also allowed wherever the user is.
     ///
     /// <para>A group that can never be empty (neither flag set) also goes home: the first member
-    /// to become active is remembered as <see cref="FirstMember"/>, and resetting the group
-    /// (<see cref="ResetGroup"/>, state derived from elsewhere) switches back to it instead of
+    /// to become active is remembered as <see cref="FirstMember"/>, and deactivating it from the
+    /// group's side (state derived from elsewhere) switches back to it instead of
     /// emptying it.</para>
     ///
     /// A subclass supplies only the two things that differ per member kind: what counts as
@@ -31,28 +31,28 @@ namespace Submodules.Utility.UI
 
         /// <summary>The first member that became active - the authored selection, or the first one
         /// activated at runtime. Only a group that can never be empty keeps one: it is what that
-        /// group returns to (<see cref="ResetToFirst"/>) instead of being cleared.</summary>
+        /// group returns to (<see cref="Deactivate"/>) instead of being cleared.</summary>
         public TMember FirstMember { get; private set; }
 
         [field: SerializeField, FormerlySerializedAs("<IsClearable>k__BackingField")]
         [field: Tooltip("The user may switch the active member off by clicking it, leaving the group " +
                         "with nothing active. Off keeps the radio-button rule: one member always stays on.")]
-        public bool UserCanUntoggle { get; private set; }
+        public bool UserCanClear { get; private set; }
 
         [field: SerializeField, FormerlySerializedAs("<IsClearableByGroup>k__BackingField")]
-        [field: Tooltip("The group itself may switch the active member off (ResetGroup, or state " +
+        [field: Tooltip("The group itself may switch the active member off (Deactivate by the group, or state " +
                         "derived from elsewhere such as a closing context) even where the user may not.")]
-        public bool GroupCanUntoggle { get; private set; } = true;
+        public bool SystemCanClear { get; private set; } = true;
 
         /// <summary>The one statement of whether the active member may be deactivated with no
         /// replacement - asked by <see cref="Deactivate"/> and by <c>SimplePanel.Collapse</c>
         /// alike, so a panel and a toggle in the same group cannot disagree. Where the user may
         /// untoggle the group may too.</summary>
-        public bool CanUntoggle(bool byUser) => byUser ? UserCanUntoggle : GroupCanUntoggle || UserCanUntoggle;
+        public bool GroupCanBeCleared(bool byUser) => byUser ? UserCanClear : SystemCanClear || UserCanClear;
 
         /// <summary>A group that can never be empty, neither by the user nor by itself: resetting it
         /// means going back to <see cref="FirstMember"/>.</summary>
-        protected bool ReturnsToFirst => !CanUntoggle(byUser: false);
+        private bool IsRequired => !GroupCanBeCleared(byUser: false);
 
         /// <summary>Whether <paramref name="member"/> belongs to this group — the back-reference
         /// the member kind keeps to its own group.</summary>
@@ -80,69 +80,62 @@ namespace Submodules.Utility.UI
 
         protected virtual void Awake()
         {
-            if (ReturnsToFirst && !Exists(FirstMember) && Exists(ActiveMember))
+            if (IsRequired && !Exists(FirstMember) && Exists(ActiveMember))
                 FirstMember = ActiveMember;
         }
 
-        /// <summary>Switches back to <see cref="FirstMember"/>. Only a group that can never be empty
-        /// has one, so any other group is left as it is: there is no home to return to.</summary>
-        internal void ResetToFirst()
-        {
-            if (!Exists(FirstMember) || Same(ActiveMember, FirstMember))
-                return;
-
-            Activate(FirstMember);
-        }
-
-        /// <summary>Puts the group back to its resting state from the group's side: empty where it may
-        /// be emptied, on <see cref="FirstMember"/> where it can never be empty
-        /// (<see cref="Deactivate"/>). The one call for "the state this group is derived from is
-        /// gone", whichever kind of group it is.</summary>
-        public void ResetGroup() => Deactivate(ActiveMember, byUser: false);
-
         internal void Activate(TMember member)
         {
-            if (!Exists(member) || !IsMember(member) || Same(ActiveMember, member))
+            if (!Exists(member) || !IsMember(member))
+                return;
+
+            if (IsRequired && !Exists(FirstMember))
+                FirstMember = member;
+
+            SwitchTo(member);
+        }
+
+        /// <param name="byUser">Whether the un-toggle is the user's own (a click, a hotkey, a
+        /// panel's Collapse) rather than the group's (a closing panel, a derived-state
+        /// sync, a member leaving). Defaults to the strict, user side. The group's own un-toggle of
+        /// a group that can never be empty returns to <see cref="FirstMember"/>; the user's own is
+        /// refused, so clicking the active tab never switches to another.</param>
+        internal void Deactivate(TMember member, bool byUser = true)
+        {
+            if (!Exists(member) || !Same(ActiveMember, member))
+                return;
+
+            if (!byUser && IsRequired)
+            {
+                if (Exists(FirstMember))
+                    SwitchTo(FirstMember);
+
+                return;
+            }
+
+            if (!GroupCanBeCleared(byUser))
+            {
+                Debug.Log("SetToggle(false) prevented. To allow un-toggle, enable 'UserCanClear' in the " +
+                          $"RadioGroup, or re-parent {member.name} out of any RadioGroup.", this);
+                return;
+            }
+
+            SwitchTo(null);
+        }
+
+        private void SwitchTo(TMember member)
+        {
+            if (Same(ActiveMember, member))
                 return;
 
             PreviousMember = ActiveMember;
             ActiveMember = member;
 
-            if (ReturnsToFirst && !Exists(FirstMember))
-                FirstMember = member;
-
             if (Exists(PreviousMember))
                 SetMemberActive(PreviousMember, false);
 
-            SetMemberActive(ActiveMember, true);
-        }
-
-        /// <param name="byUser">Whether the un-toggle is the user's own (a click, a hotkey, a
-        /// panel's Collapse) rather than the group's (<see cref="ResetGroup"/>, a derived-state
-        /// sync, a member leaving). Defaults to the strict, user side. The group's own un-toggle of
-        /// a group that can never be empty is a <see cref="ResetToFirst"/>; the user's own is
-        /// refused, so clicking the active tab never switches to another.</param>
-        internal void Deactivate(TMember member, bool byUser = true)
-        {
-            if (!Exists(member) || !IsMember(member) || !Same(ActiveMember, member))
-                return;
-
-            if (!byUser && ReturnsToFirst)
-            {
-                ResetToFirst();
-                return;
-            }
-
-            if (!CanUntoggle(byUser))
-            {
-                Debug.Log("SetToggle(false) prevented. To allow un-toggle, enable 'UserCanUntoggle' in the " +
-                          $"RadioGroup, or re-parent {member.name} out of any RadioGroup.", this);
-                return;
-            }
-
-            PreviousMember = ActiveMember;
-            ActiveMember = null;
-            SetMemberActive(PreviousMember, false);
+            if (Exists(ActiveMember))
+                SetMemberActive(ActiveMember, true);
         }
     }
 }

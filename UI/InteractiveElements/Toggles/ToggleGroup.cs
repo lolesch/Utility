@@ -15,50 +15,34 @@ namespace Submodules.Utility.UI
     /// </summary>
     public sealed class ToggleGroup : AbstractGroup<AbstractToggle>
     {
-        /// <summary>The panel this group lives in, found once on the way up like a toggle finds its
-        /// group. Only looked for where <see cref="ResetWithParentPanel"/> is on.</summary>
         private SimplePanel parentPanel;
 
         [field: SerializeField]
         [field: Tooltip("Reset the group once the panel it lives in has finished closing, so a selection " +
                         "never outlives the panel that showed it: back to the first member on a group that " +
-                        "can never be empty (neither 'UserCanUntoggle' nor 'GroupCanUntoggle'), emptied " +
+                        "can never be empty (neither 'UserCanClear' nor 'SystemCanClear'), emptied " +
                         "otherwise.")]
         public bool ResetWithParentPanel { get; private set; }
 
         protected override void Awake()
         {
+            base.Awake();
+
             if (ResetWithParentPanel)
                 parentPanel = GetComponentInParent<SimplePanel>(true);
-
-            base.Awake();
         }
 
-        /// <summary>Unity's message for a change on a <c>CanvasGroup</c> above this object - alpha,
-        /// interactable or blocksRaycasts alike - so it also fires on every frame of a fade. The
-        /// panel's <see cref="SimplePanel.IsCollapsed"/> is what says the fade-out has finished,
-        /// with nothing left to see swap.</summary>
+        /// <summary>Unity calls this on any <c>CanvasGroup</c> change above, so on every frame of a fade;
+        /// <see cref="SimplePanel.IsCollapsed"/> says the fade-out is done.</summary>
         private void OnCanvasGroupChanged()
         {
-            if (parentPanel)
-                ResetWhenCollapsed(parentPanel);
+            if (parentPanel) ResetWhenCollapsed(parentPanel);
         }
 
-        /// <summary>The reset <see cref="ResetWithParentPanel"/> asks for, once <paramref name="parent"/>
-        /// has finished closing: back to <see cref="AbstractGroup{TMember}.FirstMember"/> on a group that
-        /// can never be empty (even with nothing active - <see cref="AbstractGroup{TMember}.ResetGroup"/>
-        /// would find no member to deactivate and stop), emptied otherwise. Split out of
-        /// <see cref="OnCanvasGroupChanged"/> so it can be driven without the Unity message or an
-        /// <c>Awake</c>.</summary>
         internal void ResetWhenCollapsed(SimplePanel parent)
         {
-            if (!parent.IsCollapsed)
-                return;
-
-            if (ReturnsToFirst)
-                ResetToFirst();
-            else
-                ResetGroup();
+            if (parent.IsCollapsed)
+                Deactivate(ActiveMember, byUser: false);
         }
 
         protected override bool IsMember(AbstractToggle toggle) => toggle.RadioGroup == this;

@@ -7,7 +7,7 @@ namespace Submodules.Utility.Tests.TestSupport
     /// without a keyboard. Lives beside <see cref="SpyToggle"/> for the same reason: a MonoBehaviour
     /// compiled into an Editor-only assembly can't be attached to a GameObject.
     /// </summary>
-    public sealed class SpyPeekToggle : PanelPeekToggle
+    internal sealed class SpyPeekToggle : PanelPeekToggle
     {
         public bool KeyHeld { get; set; }
 

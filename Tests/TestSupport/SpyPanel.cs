@@ -15,7 +15,7 @@ namespace Submodules.Utility.Tests.TestSupport
     /// <i>first</i>", and only a shared record can tell the two apart. Set it to a list the
     /// test owns, and give the panel a <see cref="Label"/> to keep the entries readable.</para>
     /// </summary>
-    public sealed class SpyPanel : SimplePanel
+    internal sealed class SpyPanel : SimplePanel
     {
         public int FadeInCalls { get; private set; }
         public int FadeOutCalls { get; private set; }

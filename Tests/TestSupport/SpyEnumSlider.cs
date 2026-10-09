@@ -15,7 +15,7 @@ namespace Submodules.Utility.Tests.TestSupport
 
     /// <summary>The smallest concrete <see cref="EnumSlider{TEnum}"/>, narrowed the way a real one
     /// drops a "none" member. Lives in a runtime assembly for the same reason as <see cref="SpyToggle"/>.</summary>
-    public sealed class SpyEnumSlider : EnumSlider<TestRarity>
+    internal sealed class SpyEnumSlider : EnumSlider<TestRarity>
     {
         private static readonly TestRarity[] Offered = { TestRarity.Common, TestRarity.Magic, TestRarity.Rare, TestRarity.Unique };
 

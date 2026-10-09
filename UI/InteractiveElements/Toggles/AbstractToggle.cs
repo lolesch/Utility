@@ -69,10 +69,10 @@ namespace Submodules.Utility.UI
             }
         }
 
-        /// <summary>On, and the active member of a group whose <c>UserCanUntoggle</c> is off: a
+        /// <summary>On, and the active member of a group whose <c>UserCanClear</c> is off: a
         /// click on it is refused by <see cref="SetToggle"/>, so it must not look as if it were
         /// being switched off.</summary>
-        public bool IsLockedOn => IsOn && RadioGroup && RadioGroup.ActiveMember == this && !RadioGroup.CanUntoggle(byUser: true);
+        public bool IsLockedOn => IsOn && RadioGroup && RadioGroup.ActiveMember == this && !RadioGroup.GroupCanBeCleared(byUser: true);
 
         protected override void DoStateTransition(SelectionState state, bool instant)
         {
@@ -91,13 +91,13 @@ namespace Submodules.Utility.UI
         /// whichever sibling was on. Ungrouped, it just applies.
         ///
         /// <para>This is the <b>user</b> side: switching the group's active member off is refused
-        /// unless the group's <c>UserCanUntoggle</c> allows it. State derived from elsewhere
+        /// unless the group's <c>UserCanClear</c> allows it. State derived from elsewhere
         /// goes through <see cref="SyncToggle"/> instead.</para></summary>
         public void SetToggle(bool toggleOn) => Apply(toggleOn, byUser: true);
 
         /// <summary>The <b>group</b> side of <see cref="SetToggle"/>, for a toggle that mirrors
-        /// state owned elsewhere (a context, a run phase): the group's <c>GroupCanUntoggle</c>
-        /// governs switching its active member off, not <c>UserCanUntoggle</c>, so a mirror can
+        /// state owned elsewhere (a context, a run phase): the group's <c>SystemCanClear</c>
+        /// governs switching its active member off, not <c>UserCanClear</c>, so a mirror can
         /// always follow the state it reflects without the user being allowed to click it off.</summary>
         public void SyncToggle(bool toggleOn) => Apply(toggleOn, byUser: false);
 
