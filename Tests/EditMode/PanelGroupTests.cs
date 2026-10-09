@@ -217,27 +217,16 @@ namespace Submodules.Utility.Tests.EditMode
             Assert.That(panel.FadeOutCalls, Is.EqualTo(fadeOutsBefore), "the panel must not fade out behind the group's back");
         }
 
-        /// <summary>The convenience a caller like Go Venture needs: close whichever panel is
-        /// open without first asking the group which one that is.</summary>
         [Test]
-        public void ResetGroup_ClearsWhicheverPanelIsShown()
+        public void DeactivateByGroup_ClearsThePanelThatIsShown()
         {
             var clearable = scene.PanelGroup(userCanUntoggle: true);
             var panel = scene.Panel(clearable);
             clearable.Activate(panel);
 
-            clearable.ResetGroup();
+            clearable.Deactivate(clearable.ActiveMember, byUser: false);
 
             Assert.That(clearable.ActiveMember, Is.Null);
-        }
-
-        [Test]
-        public void ResetGroup_WhenNothingIsActive_IsANoOp()
-        {
-            var clearable = scene.PanelGroup(userCanUntoggle: true);
-
-            Assert.That(() => clearable.ResetGroup(), Throws.Nothing);
-            Assert.That(clearable.PreviousMember, Is.Null);
         }
 
         /// <summary>The self-heal counterpart to the membership guard, mirroring

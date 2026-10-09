@@ -17,7 +17,7 @@ namespace Submodules.Utility.Tests.TestSupport
     /// <c>Selectable</c> is <c>[ExecuteAlways]</c>, so the editor may tick <c>Start</c>
     /// (which calls <c>SetToggle(IsOn)</c>) at a moment no test controls.
     /// </summary>
-    public sealed class SpyToggle : AbstractToggle
+    internal sealed class SpyToggle : AbstractToggle
     {
         public int OnToggleCalls { get; private set; }
 

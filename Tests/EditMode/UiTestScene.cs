@@ -78,10 +78,10 @@ namespace Submodules.Utility.Tests.EditMode
         private static void ConfigureUntoggling(Object group, bool userCanUntoggle, bool groupCanUntoggle)
         {
             if (userCanUntoggle)
-                SetBool(group, "<UserCanUntoggle>k__BackingField", true);
+                SetBool(group, "<UserCanClear>k__BackingField", true);
 
             if (!groupCanUntoggle)
-                SetBool(group, "<GroupCanUntoggle>k__BackingField", false);
+                SetBool(group, "<SystemCanClear>k__BackingField", false);
         }
 
         /// <summary>A <see cref="PanelGroup"/> whose children are the panels it owns.</summary>

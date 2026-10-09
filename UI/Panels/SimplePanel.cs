@@ -100,13 +100,13 @@ namespace Submodules.Utility.UI
 
         /// <summary>The group-aware entry point, mirroring <see cref="Expand"/>. Prevented
         /// outright on the sole active panel of a group the user cannot untoggle
-        /// (<see cref="AbstractGroup{TMember}.UserCanUntoggle"/>) — the same guard <see cref="AbstractToggle.SetToggle"/> has for
+        /// (<see cref="AbstractGroup{TMember}.UserCanClear"/>) — the same guard <see cref="AbstractToggle.SetToggle"/> has for
         /// un-toggling the active one.</summary>
         public void Collapse()
         {
-            if (RadioGroup && RadioGroup.ActiveMember == this && !RadioGroup.CanUntoggle(byUser: true))
+            if (RadioGroup && RadioGroup.ActiveMember == this && !RadioGroup.GroupCanBeCleared(byUser: true))
             {
-                Debug.Log("Collapse() prevented. Enable 'UserCanUntoggle' in the " +
+                Debug.Log("Collapse() prevented. Enable 'UserCanClear' in the " +
                           $"RadioGroup, or re-parent {name} out of any RadioGroup.", RadioGroup);
                 return;
             }
@@ -128,14 +128,8 @@ namespace Submodules.Utility.UI
         {
             instantInEditor = !Application.isPlaying;
 
-            try
-            {
-                toggle();
-            }
-            finally
-            {
-                instantInEditor = false;
-            }
+            try { toggle(); }
+            finally { instantInEditor = false; }
         }
 
         /// <summary>The actual appear primitive, named to match <see cref="AbstractToggle.SetToggle"/>'s

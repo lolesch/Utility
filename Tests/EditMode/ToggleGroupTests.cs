@@ -162,23 +162,23 @@ namespace Submodules.Utility.Tests.EditMode
         }
 
         /// <summary>The two initiators of an un-toggle: the user (Deactivate's default) and the
-        /// group (<see cref="UI.AbstractGroup{TMember}.ResetGroup"/>). A default group refuses the
+        /// group (<c>Deactivate(…, byUser: false)</c>). A default group refuses the
         /// first and allows the second - radio behaviour for a click, but a derived-state sync or
         /// a phase change can still empty it.</summary>
         [Test]
-        public void ResetGroup_OnADefaultGroup_ClearsIt_WhereTheUserCannot()
+        public void DeactivateByGroup_OnADefaultGroup_ClearsIt_WhereTheUserCannot()
         {
             var toggle = scene.Toggle(group);
             group.Activate(toggle);
 
-            group.ResetGroup();
+            group.Deactivate(group.ActiveMember, byUser: false);
 
             Assert.That(group.ActiveMember, Is.Null);
             Assert.That(toggle.IsOn, Is.False);
         }
 
         [Test]
-        public void ResetGroup_WhenTheGroupMayNotUntoggle_GoesBackToTheFirstToggle()
+        public void DeactivateByGroup_WhenTheGroupMayNotUntoggle_GoesBackToTheFirstToggle()
         {
             var locked = scene.Group(groupCanUntoggle: false);
             var first = scene.Toggle(locked);
@@ -186,7 +186,7 @@ namespace Submodules.Utility.Tests.EditMode
             locked.Activate(first);
             locked.Activate(second);
 
-            locked.ResetGroup();
+            locked.Deactivate(locked.ActiveMember, byUser: false);
 
             Assert.That(locked.ActiveMember, Is.SameAs(first), "never empty: cleared means back to the first");
             Assert.That(first.IsOn, Is.True);
@@ -194,13 +194,13 @@ namespace Submodules.Utility.Tests.EditMode
         }
 
         [Test]
-        public void ResetGroup_WhenTheFirstToggleIsAlreadyActive_ChangesNothing()
+        public void DeactivateByGroup_WhenTheFirstToggleIsAlreadyActive_ChangesNothing()
         {
             var locked = scene.Group(groupCanUntoggle: false);
             var first = scene.Toggle(locked);
             locked.Activate(first);
 
-            locked.ResetGroup();
+            locked.Deactivate(locked.ActiveMember, byUser: false);
 
             Assert.That(locked.ActiveMember, Is.SameAs(first));
             Assert.That(first.IsOn, Is.True);
@@ -228,7 +228,7 @@ namespace Submodules.Utility.Tests.EditMode
             var toggle = scene.Toggle(userGroup);
             userGroup.Activate(toggle);
 
-            userGroup.ResetGroup();
+            userGroup.Deactivate(userGroup.ActiveMember, byUser: false);
 
             Assert.That(userGroup.ActiveMember, Is.Null, "where the user may untoggle, the group may as well");
         }
@@ -256,49 +256,7 @@ namespace Submodules.Utility.Tests.EditMode
             Assert.That(group.FirstMember, Is.Null);
         }
 
-        [Test]
-        public void ResetToFirst_OnAGroupThatCanNeverBeEmpty_SwitchesBackToTheFirstToggle()
-        {
-            var locked = scene.Group(groupCanUntoggle: false);
-            var first = scene.Toggle(locked);
-            var second = scene.Toggle(locked);
-            locked.Activate(first);
-            locked.Activate(second);
-
-            locked.ResetToFirst();
-
-            Assert.That(locked.ActiveMember, Is.SameAs(first));
-            Assert.That(first.IsOn, Is.True);
-            Assert.That(second.IsOn, Is.False);
-        }
-
-        [Test]
-        public void ResetToFirst_OnAGroupThatMayBeEmptied_LeavesTheActiveToggleAlone()
-        {
-            var first = scene.Toggle(group);
-            var second = scene.Toggle(group);
-            group.Activate(first);
-            group.Activate(second);
-
-            group.ResetToFirst();
-
-            Assert.That(group.ActiveMember, Is.SameAs(second), "with no obligation to keep one on there is no home");
-        }
-
-        [Test]
-        public void ResetToFirst_WhereTheFirstToggleIsAlreadyActive_ChangesNothing()
-        {
-            var locked = scene.Group(groupCanUntoggle: false);
-            var first = scene.Toggle(locked);
-            locked.Activate(first);
-
-            locked.ResetToFirst();
-
-            Assert.That(locked.ActiveMember, Is.SameAs(first));
-            Assert.That(locked.PreviousMember, Is.Null, "no switch happened");
-        }
-
-        /// <summary><see cref="UI.AbstractGroup{TMember}.ResetWithParentPanel"/>'s reset, driven directly:
+        /// <summary><see cref="UI.ToggleGroup.ResetWithParentPanel"/>'s reset, driven directly:
         /// the Unity message and the group's <c>Awake</c> do not run in EditMode. A group that may be
         /// emptied is emptied once its parent panel has finished closing.</summary>
         [Test]
@@ -327,18 +285,14 @@ namespace Submodules.Utility.Tests.EditMode
             Assert.That(group.ActiveMember, Is.SameAs(toggle));
         }
 
-        /// <summary>A group that can never be empty goes home even with nothing active - the state a
-        /// destroyed or cleared active member leaves behind, which <c>ResetGroup</c> alone would
-        /// treat as "nothing to deactivate".</summary>
         [Test]
-        public void ResetWhenCollapsed_AGroupThatCanNeverBeEmpty_GoesBackToTheFirstToggle_EvenWithNothingActive()
+        public void ResetWhenCollapsed_AGroupThatCanNeverBeEmpty_GoesBackToTheFirstToggle()
         {
             var locked = scene.Group(groupCanUntoggle: false);
             var first = scene.Toggle(locked);
             var second = scene.Toggle(locked);
             locked.Activate(first);
             locked.Activate(second);
-            UiTestScene.SetObject(locked, "<ActiveMember>k__BackingField", null);
             var parent = scene.Panel();
             parent.Disappear(true);
 
