@@ -14,6 +14,7 @@ namespace Submodules.Utility.UI
     /// The panel owns its <c>CanvasGroup</c>'s <c>alpha</c>, <c>blocksRaycasts</c> and
     /// <c>interactable</c>: hidden, nothing below it can be clicked or driven by a hotkey.
     /// </summary>
+    [DisallowMultipleComponent]
     [RequireComponent(typeof(CanvasGroup), typeof(GraphicRaycaster))]
     public class SimplePanel : MonoBehaviour
     {
@@ -49,7 +50,7 @@ namespace Submodules.Utility.UI
         private bool IsMoving => moveFrom != Vector2.zero;
 
 #if UNITY_EDITOR
-        protected void OnValidate()
+        protected virtual void OnValidate()
         {
             var resolved = transform.parent?.GetComponent<PanelGroup>();
             
