@@ -99,6 +99,20 @@ namespace Submodules.Utility.Tests.EditMode
         }
 
         [Test]
+        public void Reset_DisposesTheArmedRegistrysServices_OnceNotAgain()
+        {
+            var registry = new ServiceRegistry();
+            var owner = new FakeOwner();
+            registry.Register(owner);
+            ServiceLocator.Install(registry);
+
+            ServiceLocator.Reset();
+            ServiceLocator.Reset();
+
+            Assert.That(owner.Disposals, Is.EqualTo(1));
+        }
+
+        [Test]
         public void ReadingTheLocator_CreatesNoGameObject()
         {
             var before = Resources.FindObjectsOfTypeAll<GameObject>().Length;

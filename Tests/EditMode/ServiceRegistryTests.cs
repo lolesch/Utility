@@ -13,9 +13,29 @@ namespace Submodules.Utility.Tests.EditMode
 
     internal sealed class FakeCounter : IService { }
 
+    internal sealed class FakeOwner : IService, IDisposable
+    {
+        public int Disposals { get; private set; }
+
+        public void Dispose() => Disposals++;
+    }
+
     [TestFixture]
     public sealed class ServiceRegistryTests
     {
+        [Test]
+        public void Dispose_ReleasesTheDisposableServices_AndLeavesTheRestAlone()
+        {
+            var registry = new ServiceRegistry();
+            var owner = new FakeOwner();
+            registry.Register(owner);
+            registry.Register(new FakeCounter());
+
+            registry.Dispose();
+
+            Assert.That(owner.Disposals, Is.EqualTo(1));
+        }
+
         [Test]
         public void Get_ReturnsTheInstanceRegisteredUnderThatType()
         {

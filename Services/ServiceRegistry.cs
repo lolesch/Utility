@@ -8,9 +8,10 @@ namespace Submodules.Utility.Services
     /// no statics, no scene, no Unity types - build one in a test and register fakes. The
     /// one-instance-per-type rule is enforced here, so a duplicate is unrepresentable and no
     /// scan-and-disable guard is needed. <see cref="ServiceLocator"/> is the static holder for
-    /// the one the game boots with.
+    /// the one the game boots with. A service that owns something (an input clone) is
+    /// <see cref="IDisposable"/> and is released with the registry.
     /// </summary>
-    public sealed class ServiceRegistry
+    public sealed class ServiceRegistry : IDisposable
     {
         private readonly Dictionary<Type, IService> services = new();
 
@@ -45,5 +46,16 @@ namespace Submodules.Utility.Services
         }
 
         public bool Contains<T>() where T : class, IService => services.ContainsKey(typeof(T));
+
+        /// <summary>Disposes every registered service that is <see cref="IDisposable"/>. The registry
+        /// is not usable afterwards.</summary>
+        public void Dispose()
+        {
+            foreach (var service in services.Values)
+            {
+                if (service is IDisposable disposable)
+                    disposable.Dispose();
+            }
+        }
     }
 }

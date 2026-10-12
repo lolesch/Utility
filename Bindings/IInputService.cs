@@ -14,7 +14,8 @@ namespace Submodules.Utility.Bindings
     /// </summary>
     public interface IInputService<TAction> : IService where TAction : struct, Enum
     {
-        /// <summary>A button action went down. Not raised for a value action (the pointer).</summary>
+        /// <summary>A button action went down. Not raised for a value action (the pointer), nor
+        /// again for the same action within the service's repeat guard.</summary>
         event Action<TAction> Performed;
 
         /// <summary>Whether the action's control is down right now.</summary>
@@ -24,11 +25,12 @@ namespace Submodules.Utility.Bindings
         Vector2 PointerPosition { get; }
 
         /// <summary>
-        /// Listens for the next control the player presses and binds <paramref name="action"/>'s
-        /// binding at <paramref name="bindingIndex"/> to it, saving the result. Escape cancels.
-        /// <paramref name="completed"/> is told whether a new control was bound.
+        /// Listens for the next key the player presses and binds <paramref name="action"/>'s
+        /// binding at <paramref name="bindingIndex"/> to it, saving the result. Escape cancels; a
+        /// key another action already uses is refused, bar one the two actions are authored to share.
+        /// <paramref name="completed"/> is told which of those happened.
         /// </summary>
-        void Rebind(TAction action, int bindingIndex, Action<bool> completed);
+        void Rebind(TAction action, int bindingIndex, Action<RebindResult> completed);
 
         /// <summary>Drops every rebinding, back to the asset's defaults, and saves that.</summary>
         void ResetBindings();

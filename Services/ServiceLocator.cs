@@ -54,7 +54,14 @@ namespace Submodules.Utility.Services
 
         public static T Get<T>() where T : class, IService => Current.Get<T>();
 
-        public static void Reset() => current = null;
+        /// <summary>Disarms, and disposes the registry's disposable services: whoever resets (a test's
+        /// teardown, the next Play entry, leaving Play) ends the boot, and its input clone with it.</summary>
+        public static void Reset()
+        {
+            var old = current;
+            current = null;
+            old?.Dispose();
+        }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetOnPlayEntry() => Reset();

@@ -10,7 +10,8 @@ namespace Submodules.Utility.Tests.Bindings
     // The Input System's own fixture: virtual devices, and a fresh input state per test.
     public sealed class InputServiceTests : InputTestFixture
     {
-        private enum TestAction { None, Fire, Hold, Aim }
+        // Hold and Twin are authored onto the same key, as QuickMove and SecondSlot are.
+        private enum TestAction { None, Fire, Hold, Aim, Twin }
 
         private Keyboard keyboard;
         private Mouse mouse;
@@ -25,7 +26,7 @@ namespace Submodules.Utility.Tests.Bindings
             keyboard = InputSystem.AddDevice<Keyboard>();
             mouse = InputSystem.AddDevice<Mouse>();
             store = new InMemoryBindingStore();
-            source = Author("Fire", "Hold", "Aim");
+            source = Author("Fire", "Hold", "Aim", "Twin");
 
             // One fixture instance serves every test, so what one raised must not reach the next.
             performed.Clear();
@@ -50,7 +51,7 @@ namespace Submodules.Utility.Tests.Bindings
                 var path = name switch
                 {
                     "Fire" => "<Keyboard>/f",
-                    "Hold" => "<Keyboard>/leftShift",
+                    "Hold" or "Twin" => "<Keyboard>/leftShift",
                     _ => "<Keyboard>/a",
                 };
 
@@ -67,9 +68,9 @@ namespace Submodules.Utility.Tests.Bindings
             InputSystem.Update();
         }
 
-        private InputService<TestAction> Build()
+        private InputService<TestAction> Build(float minRepeatSeconds = 0f)
         {
-            service = new InputService<TestAction>(source, store);
+            service = new InputService<TestAction>(source, store, minRepeatSeconds);
             service.Performed += performed.Add;
 
             return service;
@@ -147,7 +148,7 @@ namespace Submodules.Utility.Tests.Bindings
         [Test]
         public void Rebinding_MovesTheActionToTheNextKey_AndSavesIt()
         {
-            bool? bound = null;
+            RebindResult? bound = null;
             _ = Build();
 
             service.Rebind(TestAction.Fire, 0, result => bound = result);
@@ -155,7 +156,7 @@ namespace Submodules.Utility.Tests.Bindings
             Settle();
             Release(keyboard.gKey);
 
-            Assert.That(bound, Is.True);
+            Assert.That(bound, Is.EqualTo(RebindResult.Bound));
             Assert.That(store.Saves, Is.EqualTo(1));
             performed.Clear();
 
@@ -171,7 +172,7 @@ namespace Submodules.Utility.Tests.Bindings
         [Test]
         public void Escape_CancelsARebinding_AndSavesNothing()
         {
-            bool? bound = null;
+            RebindResult? bound = null;
             _ = Build();
 
             service.Rebind(TestAction.Fire, 0, result => bound = result);
@@ -179,11 +180,114 @@ namespace Submodules.Utility.Tests.Bindings
             Settle();
             Release(keyboard.escapeKey);
 
-            Assert.That(bound, Is.False);
+            Assert.That(bound, Is.EqualTo(RebindResult.Cancelled));
             Assert.That(store.Saves, Is.Zero);
 
             Press(keyboard.fKey);
             Assert.That(performed, Is.EqualTo(new[] { TestAction.Fire }), "still bound to F, and enabled again");
+        }
+
+        [Test]
+        public void AMouseClickOrAPadButton_IsNotAPick()
+        {
+            RebindResult? bound = null;
+            var pad = InputSystem.AddDevice<Gamepad>();
+            _ = Build();
+
+            service.Rebind(TestAction.Fire, 0, result => bound = result);
+            Press(mouse.leftButton);
+            Press(pad.buttonSouth);
+            Settle();
+
+            Assert.That(bound, Is.Null, "still listening for a key");
+
+            Press(keyboard.gKey);
+            Settle();
+
+            Assert.That(bound, Is.EqualTo(RebindResult.Bound));
+        }
+
+        [Test]
+        public void AKeyAnotherActionUses_IsRefused_AndNothingChanges()
+        {
+            RebindResult? bound = null;
+            _ = Build();
+
+            service.Rebind(TestAction.Fire, 0, result => bound = result);
+            Press(keyboard.aKey);
+            Settle();
+            Release(keyboard.aKey);
+
+            Assert.That(bound, Is.EqualTo(RebindResult.Conflict));
+            Assert.That(store.Saves, Is.Zero);
+            Assert.That(source.FindAction("Fire").bindings[0].overridePath, Is.Null);
+
+            Press(keyboard.fKey);
+            Release(keyboard.fKey);
+            Press(keyboard.aKey);
+
+            Assert.That(performed, Is.EqualTo(new[] { TestAction.Fire, TestAction.Aim }), "each on its own key, both enabled again");
+        }
+
+        [Test]
+        public void AKeyTwoActionsAreAuthoredOnto_CanBeRestoredToThem()
+        {
+            RebindResult? bound = null;
+            _ = Build();
+
+            service.Rebind(TestAction.Hold, 0, null);
+            Press(keyboard.gKey);
+            Settle();
+            Release(keyboard.gKey);
+
+            service.Rebind(TestAction.Hold, 0, result => bound = result);
+            Press(keyboard.leftShiftKey);
+            Settle();
+            Release(keyboard.leftShiftKey);
+
+            Assert.That(bound, Is.EqualTo(RebindResult.Bound), "Twin shares Shift by authoring, not by accident");
+        }
+
+        [Test]
+        public void ASharedKey_IsRefused_ToAnActionNotAuthoredOnIt()
+        {
+            RebindResult? bound = null;
+            _ = Build();
+
+            service.Rebind(TestAction.Fire, 0, result => bound = result);
+            Press(keyboard.leftShiftKey);
+            Settle();
+
+            Assert.That(bound, Is.EqualTo(RebindResult.Conflict));
+        }
+
+        [Test]
+        public void ARepeatedPress_WithinTheGuard_IsDropped_AndAfterItIsNot()
+        {
+            _ = Build(minRepeatSeconds: 0.2f);
+
+            Press(keyboard.fKey);
+            Release(keyboard.fKey);
+            currentTime += 0.05;
+            Press(keyboard.fKey);
+            Release(keyboard.fKey);
+            Assert.That(performed, Is.EqualTo(new[] { TestAction.Fire }), "the second came too soon");
+
+            currentTime += 0.5;
+            Press(keyboard.fKey);
+            Release(keyboard.fKey);
+            Assert.That(performed, Is.EqualTo(new[] { TestAction.Fire, TestAction.Fire }));
+        }
+
+        [Test]
+        public void TheRepeatGuard_IsPerAction()
+        {
+            _ = Build(minRepeatSeconds: 0.2f);
+
+            Press(keyboard.fKey);
+            Press(keyboard.aKey);
+
+            Assert.That(performed, Is.EqualTo(new[] { TestAction.Fire, TestAction.Aim }));
         }
 
         [Test]
@@ -201,13 +305,13 @@ namespace Submodules.Utility.Tests.Bindings
         [Test]
         public void AnOlderRebinding_IsCancelled_ByANewerOne()
         {
-            bool? first = null;
+            RebindResult? first = null;
             _ = Build();
 
             service.Rebind(TestAction.Fire, 0, result => first = result);
             service.Rebind(TestAction.Hold, 0, null);
 
-            Assert.That(first, Is.False);
+            Assert.That(first, Is.EqualTo(RebindResult.Cancelled));
         }
 
         [Test]

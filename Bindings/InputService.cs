@@ -21,19 +21,24 @@ namespace Submodules.Utility.Bindings
     {
         private readonly InputActionAsset asset;
         private readonly Dictionary<TAction, InputAction> actions = new();
+        private readonly Dictionary<TAction, double> lastPerformed = new();
         private readonly IBindingOverrideStore store;
+        private readonly float minRepeatSeconds;
         private RebindingOperation rebinding;
 
         public event Action<TAction> Performed;
 
         /// <param name="source">The authored actions; cloned, never changed.</param>
         /// <param name="store">Where rebindings are kept. Saved ones are applied here.</param>
-        public InputService(InputActionAsset source, IBindingOverrideStore store)
+        /// <param name="minRepeatSeconds">Key-spam guard: a press of an action within this many seconds
+        /// (input time) of its last accepted press is dropped. Zero accepts every press.</param>
+        public InputService(InputActionAsset source, IBindingOverrideStore store, float minRepeatSeconds = 0f)
         {
             if (source == null)
                 throw new ArgumentNullException(nameof(source));
 
             this.store = store ?? throw new ArgumentNullException(nameof(store));
+            this.minRepeatSeconds = minRepeatSeconds;
             asset = UnityEngine.Object.Instantiate(source);
 
             foreach (var id in (TAction[])Enum.GetValues(typeof(TAction)))
@@ -48,7 +53,7 @@ namespace Submodules.Utility.Bindings
 
                 // A value action (the pointer) changes every frame; only a button is an event.
                 if (action.type == InputActionType.Button)
-                    action.performed += _ => RaisePerformed(id);
+                    action.performed += context => RaisePerformed(id, context.time);
             }
 
             ApplySavedOverrides();
@@ -59,7 +64,7 @@ namespace Submodules.Utility.Bindings
 
         public Vector2 PointerPosition => Pointer.current != null ? Pointer.current.position.ReadValue() : Vector2.zero;
 
-        public void Rebind(TAction action, int bindingIndex, Action<bool> completed)
+        public void Rebind(TAction action, int bindingIndex, Action<RebindResult> completed)
         {
             if (!actions.TryGetValue(action, out var target))
                 throw new ArgumentException($"'{action}' is not an action of this service.", nameof(action));
@@ -74,11 +79,51 @@ namespace Submodules.Utility.Bindings
             // An enabled action cannot be rebound.
             target.Disable();
 
+            // Keys only: a click or a pad button is the player reaching for the settings screen, not a pick.
+            var conflicted = false;
+
             rebinding = target.PerformInteractiveRebinding(bindingIndex)
+                .WithControlsHavingToMatchPath("<Keyboard>")
                 .WithCancelingThrough("<Keyboard>/escape")
-                .OnComplete(operation => Finish(operation, target, true, completed))
-                .OnCancel(operation => Finish(operation, target, false, completed))
+                .OnApplyBinding((operation, path) =>
+                {
+                    conflicted = IsTakenByAnother(target, bindingIndex, operation.selectedControl);
+
+                    if (!conflicted)
+                        target.ApplyBindingOverride(bindingIndex, path);
+                })
+                .OnComplete(operation => Finish(operation, target, conflicted ? RebindResult.Conflict : RebindResult.Bound, completed))
+                .OnCancel(operation => Finish(operation, target, RebindResult.Cancelled, completed))
                 .Start();
+        }
+
+        // Two actions on one key fire together. The exception is a pair authored onto the same key
+        // (QuickMove and SecondSlot on Shift): putting either back on it is not a collision.
+        private bool IsTakenByAnother(InputAction target, int bindingIndex, InputControl picked)
+        {
+            var authoredHere = InputControlPath.Matches(target.bindings[bindingIndex].path, picked);
+
+            foreach (var other in actions.Values)
+            {
+                if (other == target)
+                    continue;
+
+                foreach (var binding in other.bindings)
+                {
+                    if (binding.isComposite || string.IsNullOrEmpty(binding.effectivePath))
+                        continue;
+
+                    if (!InputControlPath.Matches(binding.effectivePath, picked))
+                        continue;
+
+                    if (authoredHere && InputControlPath.Matches(binding.path, picked))
+                        continue;
+
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         public void ResetBindings()
@@ -100,22 +145,28 @@ namespace Submodules.Utility.Bindings
         }
 
         // The key that is being picked for one action must not also fire the others.
-        private void RaisePerformed(TAction id)
+        private void RaisePerformed(TAction id, double time)
         {
-            if (rebinding == null)
-                Performed?.Invoke(id);
+            if (rebinding != null)
+                return;
+
+            if (minRepeatSeconds > 0f && lastPerformed.TryGetValue(id, out var last) && time - last < minRepeatSeconds)
+                return;
+
+            lastPerformed[id] = time;
+            Performed?.Invoke(id);
         }
 
-        private void Finish(RebindingOperation operation, InputAction target, bool bound, Action<bool> completed)
+        private void Finish(RebindingOperation operation, InputAction target, RebindResult result, Action<RebindResult> completed)
         {
             operation.Dispose();
             rebinding = null;
             target.Enable();
 
-            if (bound)
+            if (result == RebindResult.Bound)
                 Save();
 
-            completed?.Invoke(bound);
+            completed?.Invoke(result);
         }
 
         private void Save() => store.Save(asset.SaveBindingOverridesAsJson());
