@@ -1,0 +1,25 @@
+{
+    "name": "Utility.Bindings",
+    "rootNamespace": "",
+    "references": [
+        "Utility",
+        "Unity.InputSystem"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [
+        "UTILITY_INPUT_SYSTEM"
+    ],
+    "versionDefines": [
+        {
+            "name": "com.unity.inputsystem",
+            "expression": "1.0.0",
+            "define": "UTILITY_INPUT_SYSTEM"
+        }
+    ],
+    "noEngineReferences": false
+}
