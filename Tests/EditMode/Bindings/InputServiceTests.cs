@@ -315,6 +315,42 @@ namespace Submodules.Utility.Tests.Bindings
         }
 
         [Test]
+        public void ADisposedService_HearsNothing()
+        {
+            _ = Build();
+            service.Dispose();
+
+            Press(keyboard.fKey);
+
+            Assert.That(performed, Is.Empty);
+        }
+
+        [Test]
+        public void Dispose_DestroysItsCloneOnly_AndMayBeCalledTwice()
+        {
+            _ = Build();
+            service.Dispose();
+
+            Assert.That(source != null, Is.True, "the authored asset is the caller's");
+            Assert.DoesNotThrow(service.Dispose);
+        }
+
+        [Test]
+        public void DisposingMidRebind_DropsThePick_WithoutAnAnswer_AndSavesNothing()
+        {
+            var answered = false;
+            _ = Build();
+
+            service.Rebind(TestAction.Fire, 0, _ => answered = true);
+            service.Dispose();
+            Press(keyboard.gKey);
+            Settle();
+
+            Assert.That(answered, Is.False);
+            Assert.That(store.Saves, Is.Zero);
+        }
+
+        [Test]
         public void ABindingTheActionLacks_ThrowsBeforeAnythingIsSwitchedOff()
         {
             _ = Build();

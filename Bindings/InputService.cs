@@ -25,6 +25,7 @@ namespace Submodules.Utility.Bindings
         private readonly IBindingOverrideStore store;
         private readonly float minRepeatSeconds;
         private RebindingOperation rebinding;
+        private bool disposed;
 
         public event Action<TAction> Performed;
 
@@ -134,6 +135,11 @@ namespace Submodules.Utility.Bindings
 
         public void Dispose()
         {
+            // A registry's Dispose and the owner's own may both land.
+            if (disposed)
+                return;
+
+            disposed = true;
             rebinding?.Dispose();
             rebinding = null;
             asset.Disable();
