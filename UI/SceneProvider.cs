@@ -11,8 +11,6 @@ namespace Submodules.Utility.UI
     [RequireComponent(typeof(RootCanvas), typeof(LoadingScreenPanel), typeof(Image))]
     public class SceneProvider : AbstractProvider<SceneProvider>
     {
-        private AsyncOperation loaderOperation = null;
-
         private LoadingScreenPanel display = null;
         private LoadingScreenPanel Display => display ? display : display = GetComponent<LoadingScreenPanel>();
 
@@ -20,6 +18,9 @@ namespace Submodules.Utility.UI
         private float timeStamp;
         private float targetProgress;
         private float currentProgress;
+
+        /// <summary>True from the moment a load is accepted until its loading screen has faded out again.</summary>
+        public bool IsLoading { get; private set; }
 
         public event Action<string> OnSceneLoaded;
 
@@ -36,98 +37,107 @@ namespace Submodules.Utility.UI
             Display.Collapse();
         }
 
-        public void LoadScene(string sceneToLoad, bool showProgress = true)
+        /// <summary>
+        /// Starts a scene change. <c>false</c>, with a log line and nothing started (no fade), when another load is
+        /// still under way, the name is blank or the build does not hold the scene.
+        /// </summary>
+        public bool LoadScene(string sceneToLoad, bool showProgress = true)
         {
-            if (loaderOperation != null)
+            if (IsLoading)
             {
                 Debug.LogError("Can't load a sceneName while another is still loading");
-                return;
+                return false;
             }
-            else if (string.IsNullOrWhiteSpace(sceneToLoad))
+
+            if (string.IsNullOrWhiteSpace(sceneToLoad))
             {
                 Debug.LogError($"Cant load '{sceneToLoad}' as sceneName");
-                //LoadScene(Constants.MainMenuScene);
+                return false;
             }
-            else
+
+            if (!Application.CanStreamedLevelBeLoaded(sceneToLoad))
             {
-                _ = StartCoroutine(LoadNextScene(sceneToLoad, showProgress));
+                Debug.LogError($"Can't load '{sceneToLoad}': it is not in the build");
+                return false;
             }
+
+            // Set before the first yield, so a second request in the same frame is refused too.
+            IsLoading = true;
+            _ = StartCoroutine(LoadNextScene(sceneToLoad, showProgress));
+            return true;
         }
 
         private IEnumerator LoadNextScene(string sceneToLoad, bool showProgress = true)
         {
-            yield return null;
-
-            Debug.Log($"{"LOADING:".Colored(ColorExtensions.Orange)}\t{sceneToLoad.Colored(ColorExtensions.LightBlue)}");
-
-            if (Display && showProgress)
+            try
             {
-                Display.SetLoadingProgression(0);
-                Display.SetLoadingText(sceneToLoad);
-                Display.Expand();
+                yield return null;
 
-                timeStamp = Time.unscaledTime;
+                Debug.Log($"{"LOADING:".Colored(ColorExtensions.Orange)}\t{sceneToLoad.Colored(ColorExtensions.LightBlue)}");
 
-                // Wait for Expand
-                yield return new WaitWhile(() => Time.unscaledTime - timeStamp < Display.FadeDuration);
-
-                if (loaderOperation != null)
+                if (Display && showProgress)
                 {
-                    Debug.LogError("Can't load a sceneName while another is still loading");
+                    Display.SetLoadingProgression(0);
+                    Display.SetLoadingText(sceneToLoad);
+                    Display.Expand();
+
+                    timeStamp = Time.unscaledTime;
+
+                    // Wait for Expand
+                    yield return new WaitWhile(() => Time.unscaledTime - timeStamp < Display.FadeDuration);
+
+                    var loaderOperation = SceneManager.LoadSceneAsync(sceneToLoad, LoadSceneMode.Single);
+                    loaderOperation.allowSceneActivation = false;
+
+                    currentProgress = 0;
+
+                    // Wait for progressionBar
+                    while (currentProgress < 1)
+                    {
+                        yield return null;
+
+                        // map progress (from 0f to .9f) to 0f to 1f
+                        targetProgress = loaderOperation.progress.MapTo01(0, 0.9f);
+
+                        // Wait for the new sceneName to preload
+                        if (targetProgress < .45f)
+                            targetProgress *= 0.2f;
+
+                        delta += Time.unscaledDeltaTime * 0.2f;
+
+                        currentProgress = Mathf.Clamp01(Mathf.Lerp(currentProgress, targetProgress, delta));
+
+                        Display.SetLoadingProgression(currentProgress);
+
+                        if (targetProgress >= 1 && !loaderOperation.allowSceneActivation)
+                            loaderOperation.allowSceneActivation = true;
+                    }
+
+                    yield return new WaitForSeconds(.3f);
+
                     Display.Collapse();
-                    yield break;
-                }
 
-                loaderOperation = SceneManager.LoadSceneAsync(sceneToLoad, LoadSceneMode.Single);
-                loaderOperation.allowSceneActivation = false;
-
-                currentProgress = 0;
-
-                // Wait for progressionBar
-                while (currentProgress < 1)
-                {
                     yield return null;
-
-                    // map progress (from 0f to .9f) to 0f to 1f
-                    targetProgress = loaderOperation.progress.MapTo01(0, 0.9f);
-
-                    // Wait for the new sceneName to preload
-                    if (targetProgress < .45f)
-                        targetProgress *= 0.2f;
-
-                    delta += Time.unscaledDeltaTime * 0.2f;
-
-                    currentProgress = Mathf.Clamp01(Mathf.Lerp(currentProgress, targetProgress, delta));
-
-                    Display.SetLoadingProgression(currentProgress);
-
-                    if (targetProgress >= 1 && !loaderOperation.allowSceneActivation)
-                        loaderOperation.allowSceneActivation = true;
                 }
+                else
+                {
+                    LogExtensions.MissingComponent(nameof(LoadingScreenPanel), gameObject);
 
-                yield return new WaitForSeconds(.3f);
+                    var loaderOperation = SceneManager.LoadSceneAsync(sceneToLoad, LoadSceneMode.Single);
 
-                Display.Collapse();
+                    loaderOperation.allowSceneActivation = false;
 
-                yield return null;
+                    yield return new WaitWhile(() => (loaderOperation.progress / .9f) < 1);
 
-                loaderOperation = null;
+                    loaderOperation.allowSceneActivation = true;
+
+                    yield return null;
+                }
             }
-            else
+            finally
             {
-                LogExtensions.MissingComponent(nameof(LoadingScreenPanel), gameObject);
-
-                loaderOperation = SceneManager.LoadSceneAsync(sceneToLoad, LoadSceneMode.Single);
-
-                loaderOperation.allowSceneActivation = false;
-
-                yield return new WaitWhile(() => (loaderOperation.progress / .9f) < 1);
-
-                loaderOperation.allowSceneActivation = true;
-
-                yield return null;
-
-                loaderOperation = null;
+                // Every way out, an exception included, frees the loader; a handler of OnSceneLoaded may load next.
+                IsLoading = false;
             }
 
             OnSceneLoaded?.Invoke(sceneToLoad);
