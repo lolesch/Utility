@@ -1,6 +1,7 @@
 using Submodules.Utility.Services;
 using System;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace Submodules.Utility.Bindings
 {
@@ -20,6 +21,13 @@ namespace Submodules.Utility.Bindings
 
         /// <summary>Whether the action's control is down right now.</summary>
         bool IsHeld(TAction action);
+
+        /// <summary>
+        /// Whether the keyboard's <paramref name="key"/> is down right now, whatever it is bound to. For a rule
+        /// about the keys themselves rather than the game's actions: the operating system's own chords (Alt+Tab)
+        /// are made of keys, and rebinding an action does not move them.
+        /// </summary>
+        bool IsKeyHeld(Key key);
 
         /// <summary>The pointer (mouse, pen or touch) in screen pixels; zero when there is none.</summary>
         Vector2 PointerPosition { get; }

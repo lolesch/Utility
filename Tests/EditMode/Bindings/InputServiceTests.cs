@@ -102,6 +102,31 @@ namespace Submodules.Utility.Tests.Bindings
         }
 
         [Test]
+        public void IsKeyHeld_IsTheKeyItself_NotWhatItIsBoundTo()
+        {
+            _ = Build();
+
+            Press(keyboard.leftAltKey);
+            Assert.That(service.IsKeyHeld(Key.LeftAlt), Is.True, "a key no action uses");
+            Assert.That(service.IsKeyHeld(Key.RightAlt), Is.False, "the other Alt");
+
+            Press(keyboard.fKey);
+            Assert.That(service.IsKeyHeld(Key.F), Is.True);
+
+            Release(keyboard.leftAltKey);
+            Assert.That(service.IsKeyHeld(Key.LeftAlt), Is.False);
+        }
+
+        [Test]
+        public void IsKeyHeld_WithoutAKeyboard_IsFalse()
+        {
+            _ = Build();
+            InputSystem.RemoveDevice(keyboard);
+
+            Assert.That(service.IsKeyHeld(Key.LeftAlt), Is.False);
+        }
+
+        [Test]
         public void NoAction_IsNeverHeld()
         {
             _ = Build();

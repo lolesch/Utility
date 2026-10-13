@@ -24,9 +24,9 @@ namespace Submodules.Utility.UI
     ///
     /// <para><b>Held, not pressed.</b> The key is read every frame as "held and reachable", and a peek begins
     /// and ends on the edges of that, once per hold. Reachable is <see cref="Selectable.IsInteractable"/>,
-    /// which a closed or hidden <see cref="SimplePanel"/> takes away through its <c>CanvasGroup</c>: Alt
+    /// which a closed or hidden <see cref="SimplePanel"/> takes away through its <c>CanvasGroup</c>: the key
     /// moves no tab nobody can see, a hold begun before the panel opened peeks on open, and a panel
-    /// closing during a hold gives the peek back at once. Alt+Tab needs no case: the next frame
+    /// closing during a hold gives the peek back at once. A window switch away needs no case: the next frame
     /// back reads the key as up.</para>
     ///
     /// <para>The key is the subclass's to name, so this stays generic UI and the game decides what

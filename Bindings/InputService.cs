@@ -63,6 +63,8 @@ namespace Submodules.Utility.Bindings
 
         public bool IsHeld(TAction action) => actions.TryGetValue(action, out var found) && found.IsPressed();
 
+        public bool IsKeyHeld(Key key) => Keyboard.current != null && Keyboard.current[key].isPressed;
+
         public Vector2 PointerPosition => Pointer.current != null ? Pointer.current.position.ReadValue() : Vector2.zero;
 
         public void Rebind(TAction action, int bindingIndex, Action<RebindResult> completed)
