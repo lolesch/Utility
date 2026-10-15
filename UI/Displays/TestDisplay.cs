@@ -7,7 +7,7 @@ namespace Submodules.Utility.UI
     {
         [SerializeField] protected TextMeshProUGUI testText;
 
-        public void Refresh(TextAndFontSize newData)
+        public void Repaint(TextAndFontSize newData)
         {
             testText.text = newData.text;
             testText.fontSize = newData.fontSize;
@@ -19,7 +19,7 @@ namespace Submodules.Utility.UI
             if (testText == null)
                 testText = GetComponent<TextMeshProUGUI>();
 
-            Refresh(new("This is a test display - requires further implementation", testText.fontSize));
+            Repaint(new("This is a test display - requires further implementation", testText.fontSize));
         }
 #endif //UNITY_EDITOR
     }
