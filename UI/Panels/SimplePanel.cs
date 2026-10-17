@@ -30,7 +30,11 @@ namespace Submodules.Utility.UI
         
         #endregion COMPONENT REFERENCES
 
-        [field: SerializeField, Range(0, 1)] public float FadeDuration { get; private set; } = .2f;
+        [field: SerializeField, Range(0, 5)] public float FadeDuration { get; private set; } = .2f;
+
+        [Tooltip("The curve of the fade in; the fade out has its own.")]
+        [SerializeField] private Ease expandEase = Ease.InOutQuad;
+        [SerializeField] private Ease collapseEase = Ease.InQuad;
 
         [SerializeField, Range(0f, 2f)] protected float scaleFrom = 1f;
         [SerializeField] protected Vector2 moveFrom = Vector2.zero;
@@ -148,15 +152,15 @@ namespace Submodules.Utility.UI
                 return;
             }
 
-            _ = CanvasGroup.TweenAlpha(1f, FadeDuration, Ease.InOutQuad).OnComplete(OnAppear);
+            _ = CanvasGroup.TweenAlpha(1f, FadeDuration, expandEase).OnComplete(OnAppear);
 
             if (IsMoving)
-                _ = Transform.TweenAnchoredPosition(startPosition, FadeDuration, Ease.InOutQuad);
+                _ = Transform.TweenAnchoredPosition(startPosition, FadeDuration, expandEase);
 
             if (IsScaling)
             {
                 Transform.localScale = new Vector3(scaleFrom, scaleFrom, 1f);
-                _ = Transform.TweenScale(1f, FadeDuration, Ease.InOutQuad);
+                _ = Transform.TweenScale(1f, FadeDuration, expandEase);
             }
         }
 
@@ -195,13 +199,13 @@ namespace Submodules.Utility.UI
                 return;
             }
 
-            _ = CanvasGroup.TweenAlpha(0f, FadeDuration, Ease.InQuad).OnComplete(OnDisappear);
+            _ = CanvasGroup.TweenAlpha(0f, FadeDuration, collapseEase).OnComplete(OnDisappear);
 
             if (IsMoving)
-                _ = Transform.TweenAnchoredPosition(startPosition + moveFrom, FadeDuration, Ease.InQuad);
+                _ = Transform.TweenAnchoredPosition(startPosition + moveFrom, FadeDuration, collapseEase);
 
             if (IsScaling)
-                _ = Transform.TweenScale(scaleFrom, FadeDuration, Ease.InQuad);
+                _ = Transform.TweenScale(scaleFrom, FadeDuration, collapseEase);
         }
 
         /// <summary> Called right before the CanvasGroup fades out. Also takes the panel's contents out of

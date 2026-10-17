@@ -1,5 +1,6 @@
 using NUnit.Framework;
 using Submodules.Utility.Tests.TestSupport;
+using Submodules.Utility.Tools.Timer;
 using Submodules.Utility.Tools.Tweening;
 using Submodules.Utility.UI;
 using UnityEngine;
@@ -148,6 +149,66 @@ namespace Submodules.Utility.Tests.EditMode
             var group = panel.GetComponent<CanvasGroup>();
             Assert.That(group.blocksRaycasts, Is.True);
             Assert.That(group.interactable, Is.True);
+        }
+
+        // Eased alpha of the one running fade after `fraction` of its duration, from a known-good literal curve.
+        private float AlphaAfter(float fraction)
+        {
+            Assume.That(Tween.ActiveCount, Is.EqualTo(1));
+            TimerTicker.Tweens[0].Tick(panel.FadeDuration * fraction);
+            return panel.GetComponent<CanvasGroup>().alpha;
+        }
+
+        private void SetEase(string field, Ease ease)
+        {
+            var serialized = new UnityEditor.SerializedObject(panel);
+            serialized.FindProperty(field).enumValueIndex = (int)ease;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        [Test]
+        public void AnUnchangedPanel_ExpandsOnInOutQuad()
+        {
+            panel.Disappear(true);
+            panel.Appear(false);
+
+            Assert.That(AlphaAfter(.25f), Is.EqualTo(.125f).Within(1e-5f), "InOutQuad(0.25) = 0.125");
+        }
+
+        [Test]
+        public void AnUnchangedPanel_CollapsesOnInQuad()
+        {
+            panel.Appear(true);
+            panel.Disappear(false);
+
+            Assert.That(AlphaAfter(.5f), Is.EqualTo(.75f).Within(1e-5f), "InQuad(0.5) = 0.25, so alpha = 1 - 0.25");
+        }
+
+        [Test]
+        public void TheExpandEase_IsSetApartFromTheCollapseEase()
+        {
+            SetEase("expandEase", Ease.Linear);
+
+            panel.Disappear(true);
+            panel.Appear(false);
+            Assert.That(AlphaAfter(.25f), Is.EqualTo(.25f).Within(1e-5f), "the expand follows its own ease");
+
+            panel.Disappear(false);
+            Assert.That(AlphaAfter(.5f), Is.EqualTo(.1875f).Within(1e-5f), "the collapse still follows InQuad: 0.25 * (1 - 0.25)");
+        }
+
+        [Test]
+        public void TheCollapseEase_IsSetApartFromTheExpandEase()
+        {
+            SetEase("collapseEase", Ease.Linear);
+
+            panel.Appear(true);
+            panel.Disappear(false);
+            Assert.That(AlphaAfter(.5f), Is.EqualTo(.5f).Within(1e-5f), "the collapse follows its own ease");
+
+            panel.Disappear(true);
+            panel.Appear(false);
+            Assert.That(AlphaAfter(.25f), Is.EqualTo(.125f).Within(1e-5f), "the expand still follows InOutQuad");
         }
     }
 }
