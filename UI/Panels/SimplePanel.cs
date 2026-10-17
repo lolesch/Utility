@@ -3,6 +3,7 @@ using System;
 using Submodules.Utility.Extensions;
 using Submodules.Utility.Tools.Tweening;
 using UnityEngine;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 namespace Submodules.Utility.UI
@@ -32,9 +33,9 @@ namespace Submodules.Utility.UI
 
         [field: SerializeField, Range(0, 5)] public float FadeDuration { get; private set; } = .2f;
 
-        [Tooltip("The curve of the fade in; the fade out has its own.")]
-        [SerializeField] private Ease expandEase = Ease.InOutQuad;
-        [SerializeField] private Ease collapseEase = Ease.InQuad;
+        [Tooltip("The curve of both the fade in and the fade out.")]
+        [FormerlySerializedAs("expandEase")]
+        [SerializeField] private Ease ease = Ease.InOutQuad;
 
         [SerializeField, Range(0f, 2f)] protected float scaleFrom = 1f;
         [SerializeField] protected Vector2 moveFrom = Vector2.zero;
@@ -152,15 +153,15 @@ namespace Submodules.Utility.UI
                 return;
             }
 
-            _ = CanvasGroup.TweenAlpha(1f, FadeDuration, expandEase).OnComplete(OnAppear);
+            _ = CanvasGroup.TweenAlpha(1f, FadeDuration, ease).OnComplete(OnAppear);
 
             if (IsMoving)
-                _ = Transform.TweenAnchoredPosition(startPosition, FadeDuration, expandEase);
+                _ = Transform.TweenAnchoredPosition(startPosition, FadeDuration, ease);
 
             if (IsScaling)
             {
                 Transform.localScale = new Vector3(scaleFrom, scaleFrom, 1f);
-                _ = Transform.TweenScale(1f, FadeDuration, expandEase);
+                _ = Transform.TweenScale(1f, FadeDuration, ease);
             }
         }
 
@@ -199,13 +200,13 @@ namespace Submodules.Utility.UI
                 return;
             }
 
-            _ = CanvasGroup.TweenAlpha(0f, FadeDuration, collapseEase).OnComplete(OnDisappear);
+            _ = CanvasGroup.TweenAlpha(0f, FadeDuration, ease).OnComplete(OnDisappear);
 
             if (IsMoving)
-                _ = Transform.TweenAnchoredPosition(startPosition + moveFrom, FadeDuration, collapseEase);
+                _ = Transform.TweenAnchoredPosition(startPosition + moveFrom, FadeDuration, ease);
 
             if (IsScaling)
-                _ = Transform.TweenScale(scaleFrom, FadeDuration, collapseEase);
+                _ = Transform.TweenScale(scaleFrom, FadeDuration, ease);
         }
 
         /// <summary> Called right before the CanvasGroup fades out. Also takes the panel's contents out of

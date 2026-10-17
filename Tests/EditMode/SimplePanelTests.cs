@@ -167,48 +167,29 @@ namespace Submodules.Utility.Tests.EditMode
         }
 
         [Test]
-        public void AnUnchangedPanel_ExpandsOnInOutQuad()
+        public void AnUnchangedPanel_FadesBothWaysOnInOutQuad()
         {
             panel.Disappear(true);
             panel.Appear(false);
-
             Assert.That(AlphaAfter(.25f), Is.EqualTo(.125f).Within(1e-5f), "InOutQuad(0.25) = 0.125");
-        }
-
-        [Test]
-        public void AnUnchangedPanel_CollapsesOnInQuad()
-        {
-            panel.Appear(true);
-            panel.Disappear(false);
-
-            Assert.That(AlphaAfter(.5f), Is.EqualTo(.75f).Within(1e-5f), "InQuad(0.5) = 0.25, so alpha = 1 - 0.25");
-        }
-
-        [Test]
-        public void TheExpandEase_IsSetApartFromTheCollapseEase()
-        {
-            SetEase("expandEase", Ease.Linear);
-
-            panel.Disappear(true);
-            panel.Appear(false);
-            Assert.That(AlphaAfter(.25f), Is.EqualTo(.25f).Within(1e-5f), "the expand follows its own ease");
-
-            panel.Disappear(false);
-            Assert.That(AlphaAfter(.5f), Is.EqualTo(.1875f).Within(1e-5f), "the collapse still follows InQuad: 0.25 * (1 - 0.25)");
-        }
-
-        [Test]
-        public void TheCollapseEase_IsSetApartFromTheExpandEase()
-        {
-            SetEase("collapseEase", Ease.Linear);
 
             panel.Appear(true);
             panel.Disappear(false);
-            Assert.That(AlphaAfter(.5f), Is.EqualTo(.5f).Within(1e-5f), "the collapse follows its own ease");
+            Assert.That(AlphaAfter(.25f), Is.EqualTo(.875f).Within(1e-5f), "InOutQuad(0.25) = 0.125, so alpha = 1 - 0.125");
+        }
+
+        [Test]
+        public void TheOneEase_ShapesBothTheExpandAndTheCollapse()
+        {
+            SetEase("ease", Ease.Linear);
 
             panel.Disappear(true);
             panel.Appear(false);
-            Assert.That(AlphaAfter(.25f), Is.EqualTo(.125f).Within(1e-5f), "the expand still follows InOutQuad");
+            Assert.That(AlphaAfter(.25f), Is.EqualTo(.25f).Within(1e-5f), "the expand follows it");
+
+            panel.Appear(true);
+            panel.Disappear(false);
+            Assert.That(AlphaAfter(.25f), Is.EqualTo(.75f).Within(1e-5f), "and so does the collapse");
         }
     }
 }
