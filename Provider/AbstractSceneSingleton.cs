@@ -72,6 +72,18 @@ namespace Submodules.Utility.Provider
         }
 
         /// <summary>
+        /// The resolved instance if it is still alive; never finds or creates one. For a release on a
+        /// teardown path (a pointer-exit fired while the scene unloads), where <see cref="Instance"/>
+        /// would conjure an unconfigured replacement of the instance that was just destroyed.
+        /// </summary>
+        public static bool TryGetAlive(out T instance)
+        {
+            instance = _instance;
+
+            return instance != null;
+        }
+
+        /// <summary>
         /// Runs once, right after this becomes the resolved <see cref="Instance"/> - whether
         /// found already in the scene or freshly created. The base does nothing; override to
         /// layer on more than plain scene-singleton resolution (see

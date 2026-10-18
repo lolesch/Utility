@@ -10,6 +10,7 @@ namespace Submodules.Utility.Tests.EditMode
     // without having to reach into the static state to reset it.
     internal sealed class FakeSceneSingletonA : AbstractSceneSingleton<FakeSceneSingletonA> { }
     internal sealed class FakeSceneSingletonB : AbstractSceneSingleton<FakeSceneSingletonB> { }
+    internal sealed class FakeSceneSingletonC : AbstractSceneSingleton<FakeSceneSingletonC> { }
     internal sealed class FakeProviderA : AbstractProvider<FakeProviderA> { }
 
     /// <summary>
@@ -63,6 +64,23 @@ namespace Submodules.Utility.Tests.EditMode
 
             var other = resolved == first ? second : first;
             Assert.That(other.enabled, Is.False, "every later duplicate is disabled, not destroyed");
+        }
+
+        [Test]
+        public void TryGetAlive_AfterTheInstanceIsDestroyed_IsFalse_AndCreatesNothing()
+        {
+            // The release on a teardown path (a pointer-exit fired while the scene unloads) asks after
+            // the instance that was just destroyed; Instance would conjure an unconfigured replacement.
+            var instance = FakeSceneSingletonC.Instance;
+            spawned.Add(instance.gameObject);
+
+            Assert.That(FakeSceneSingletonC.TryGetAlive(out var alive), Is.True);
+            Assert.That(alive, Is.EqualTo(instance));
+
+            Object.DestroyImmediate(instance.gameObject);
+
+            Assert.That(FakeSceneSingletonC.TryGetAlive(out _), Is.False);
+            Assert.That(Object.FindObjectsByType<FakeSceneSingletonC>(FindObjectsSortMode.None), Is.Empty);
         }
 
         [Test]
